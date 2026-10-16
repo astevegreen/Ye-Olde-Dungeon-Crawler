@@ -1,4 +1,5 @@
 import type { ActionHook, StoryChoiceTrigger } from '../../engine';
+import { Companion } from '../../engine';
 import { RELIC_RECOVERED_FLAG } from './relic';
 
 /**
@@ -17,6 +18,32 @@ export const OATH_GUARDIAN_ID = 'sun_chariot_warden';
 
 /** Set when the matriarch's bargain is struck, by either option. */
 const OATH_RESOLVED_FLAG = 'oath_resolved';
+/** Which way it went: the town and the endings speak of it. */
+export const OATH_HONORED_FLAG = 'oath_honored';
+export const OATH_BROKEN_FLAG = 'oath_broken';
+
+/** Each branch bonds its own companion (`choices.ts`), so the companion tells the side. */
+const OATH_SIDE_BY_COMPANION: Record<string, string> = {
+  hearth_frost_hound: OATH_HONORED_FLAG,
+  ember_fang_wolf: OATH_BROKEN_FLAG,
+};
+
+/**
+ * A save that struck the bargain before the side flags existed learns its side from the
+ * companion the Oath bonded, on the first turn that companion stands on the hero's floor.
+ */
+export const OATH_SIDE_HOOK: ActionHook = {
+  id: 'cotw-oath-side',
+  phase: 'post',
+  actionType: '*',
+  execute: ({ actor, engine }) => {
+    if (actor !== engine.player || !engine.getWorldFlag(OATH_RESOLVED_FLAG)) return;
+    if (engine.getWorldFlag(OATH_HONORED_FLAG) || engine.getWorldFlag(OATH_BROKEN_FLAG)) return;
+    const companion = engine.map.getAllEntities().find((e): e is Companion => e instanceof Companion);
+    const side = companion && OATH_SIDE_BY_COMPANION[companion.companionDefinitionId];
+    if (side) engine.setWorldFlag(side, true);
+  },
+};
 
 /** The id stays `oath_hearth`: a save that was already offered the Oath carries `oath_hearth_offered`. */
 export const OATH_TRIGGER: StoryChoiceTrigger = {

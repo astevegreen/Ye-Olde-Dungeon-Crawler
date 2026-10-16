@@ -1,6 +1,7 @@
-import type { QuestArcDefinition } from '../../engine';
+import type { Predicate, QuestArcDefinition } from '../../engine';
 import { TOWN_RETURN_POSITION } from './townLayout';
 import { ALTAR_MARK_FULL, ALTAR_MARK_HALF } from './hostageRitual';
+import { OATH_BROKEN_FLAG, OATH_HONORED_FLAG } from './oath';
 import { HEARTWOOD_LAIR, LAIR_WIDTH, LAIR_HEIGHT, LAIR_PLAYER_SPAWN, LAIR_STAIRS_UP, LAIR_BOSS_SPAWN } from './lair';
 
 /**
@@ -34,6 +35,9 @@ import { HEARTWOOD_LAIR, LAIR_WIDTH, LAIR_HEIGHT, LAIR_PLAYER_SPAWN, LAIR_STAIRS
  * difficulty (Easy/Medium/Hard now control only monster power via
  * `monsterScaling.ts`, not how much of the campaign is reachable).
  */
+const OATH_HONORED: Predicate = { type: 'hasFlag', flag: OATH_HONORED_FLAG };
+const OATH_BROKEN: Predicate = { type: 'hasFlag', flag: OATH_BROKEN_FLAG };
+
 export const COTW_QUEST: QuestArcDefinition = {
   id: 'cotw_blood_of_thrym',
   name: 'Blood of Thrym',
@@ -99,8 +103,19 @@ export const COTW_QUEST: QuestArcDefinition = {
         'In Midgard the winter that was promised comes early. Heimdall’s horn sounds over the mountains, the wolf slips its chain, and the gods ride out to a battle the skalds always said would come. Fate was patient. You were not.',
         'Bjarnarhaven remembers you as the hero who ended the Root-Gnawer, and the one who ended the age with it. Whether that is praise, no one living can yet say.',
       ],
-      // The altar's mark, told before the last paragraph; neither says whether the blood bought anything.
+      // The Oath's side, then the altar's mark, told before the last paragraph; neither says
+      // whether the blood bought anything.
       conditionalNarrative: [
+        {
+          when: OATH_HONORED,
+          before: 2,
+          text: 'When the matriarch offered you the fire, you kept the cold of Thrym’s line, and the winter that comes now is your own kin’s season. The giants march to the last battle. Whether they would count you one of theirs, no skald will guess.',
+        },
+        {
+          when: OATH_BROKEN,
+          before: 2,
+          text: 'When the matriarch offered you her cold hand, you seized the stolen sun instead and burned your own giant-blood to hold it. The old verses say the last fire will come out of the south and burn the sky. You chose fire once. Now the whole world has.',
+        },
         {
           when: ALTAR_MARK_HALF,
           before: 2,
@@ -129,6 +144,16 @@ export const COTW_QUEST: QuestArcDefinition = {
         'Ragnarök waits, as it always has. But it waits a little longer because of you, and in the long hall the skalds begin a saga that ends with a hero coming home.',
       ],
       conditionalNarrative: [
+        {
+          when: OATH_HONORED,
+          before: 2,
+          text: 'The skalds make much of the matriarch’s bargain: how the giant’s child kept the cold of Thrym’s line, and stood with Midgard all the same.',
+        },
+        {
+          when: OATH_BROKEN,
+          before: 2,
+          text: 'The skalds make much of the matriarch’s bargain: how the giant’s child seized the stolen sun rather than her hand, and burned their own blood to break the siphon. Some call it courage. The old folk only nod, and keep near the hearth.',
+        },
         {
           when: ALTAR_MARK_HALF,
           before: 2,

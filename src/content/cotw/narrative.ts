@@ -8,6 +8,7 @@ import { HEARTH_TEAR_RETURNED_FLAG, RELIC_RECOVERED_FLAG } from './relic';
 import { prologueVillagerSaved } from './prologue';
 import { altarMark, captiveNamesForThanks, listNames, raidVillagersStillCaptive } from './hostageRitual';
 import { ZEALOT_CLAIM_HEARD_FLAG } from './siphonPylon';
+import { OATH_BROKEN_FLAG, OATH_HONORED_FLAG } from './oath';
 
 /**
  * Story Choice Trigger: fires when Víðnir, Herald of the Wyrm (miniboss on floor 45)
@@ -187,6 +188,7 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
     const isTainted = altarMark(engine) !== 'none';
     const vidnirSlain = getFlag(engine.worldState, 'vidnir_slain');
     const tyrDesecrated = getFlag(engine.worldState, 'tyr_desecrated');
+    const oathSide = getFlag(engine.worldState, OATH_HONORED_FLAG) ? 'honored' : getFlag(engine.worldState, OATH_BROKEN_FLAG) ? 'broken' : 'none';
 
     // Announce the Great Thaw once upon first entering town with the relic
     if (hasRelic && !getFlag(engine.worldState, HEARTH_TEAR_RETURNED_FLAG)) {
@@ -201,6 +203,7 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
     const astrid = engine.map.getEntityById('npc-astrid') as NPC | null;
     const mimir = engine.map.getEntityById('npc-sage') as NPC | null;
     const torvald = engine.map.getEntityById('npc-priest') as NPC | null;
+    const ranvild = engine.map.getEntityById('npc-trainer') as NPC | null;
 
     if (olaf) {
       if (vidnirSlain) {
@@ -266,9 +269,14 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
           'Whether you slay or seal the beast, strike true. Duergar steel and frost-giant blood will see you through.'
         );
       } else if (hasRelic) {
+        // The Oath's side, in the smith's trade: the cold stood firm (+Defense), the fire struck harder (+Attack).
         gunther.setDialogue(
           'The forge fire burns hot again without choking on ice! But the anvil vibrates with deep tremors.',
-          'Whatever is gnawing at the mountain’s roots below has the strength of mountains. Take our heaviest plate into the World-Bark.'
+          {
+            none: 'Whatever is gnawing at the mountain’s roots below has the strength of mountains. Take our heaviest plate into the World-Bark.',
+            honored: 'Folk say you took the troll-wife’s cold hand and kept your own frost. Good: frost-blood wears plate well. Take our heaviest into the World-Bark; whatever gnaws the roots has the strength of mountains.',
+            broken: 'Folk say you seized the stolen fire bare-handed and burned your own blood to do it. Then you will want an edge to match: take our sharpest steel into the World-Bark. Whatever gnaws the roots has the strength of mountains.',
+          }[oathSide]
         );
       } else if (deepest >= 10) {
         gunther.setDialogue(
@@ -355,6 +363,18 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
           'The cellar leads where the troll-wives went. Come back to this hall when the dark gets into your wounds.'
         );
       }
+    }
+
+    // The hound-warden knows which companion the Oath sent, and what that says of the hero.
+    if (ranvild && oathSide !== 'none') {
+      ranvild.setDialogue(
+        oathSide === 'honored'
+          ? 'So a frost-hound has taken to you. They come only to blood that chose the cold.'
+          : 'So an ember-wolf answered you. They come to the stolen sun, and you smell of it, a little.',
+        oathSide === 'honored'
+          ? 'For a price I can revive a companion that has fallen, or teach it new tricks. A frost-hound holds the line by nature; I only teach it where to stand.'
+          : 'For a price I can revive a companion that has fallen, or teach it new tricks. Mind that one near the hay: an ember-wolf was never meant for a cold country.'
+      );
     }
 
   },

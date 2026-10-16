@@ -5,6 +5,7 @@ import { SKALDIC_RUNESTONE_CHOICES } from './runestones';
 import { VIDNIR_REVELATION_CHOICE } from './narrative';
 import { IRON_CLANS_BARROW_CHOICES, IVALDA_CHOICE, IVALDA_TOWN_CHOICE, IVALDA_TOWN_PLUNDERED_CHOICE } from './ironClans';
 import { GATEWARD_CHOICE } from './prologue';
+import { OATH_BROKEN_FLAG, OATH_HONORED_FLAG } from './oath';
 import { COTW_MILESTONE_CHOICES, COTW_SAGA_CHOICES } from './perks';
 import { COTW_ESSENCE_BY_ELEMENT } from './items/essences';
 
@@ -28,6 +29,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           'Stand with your nature. Permanently -2 Attack, +3 Defense. Bonds you with a Frost-Ward Hound.',
         consequences: [
           { type: 'setFlag', flag: 'oath_resolved', value: true },
+          { type: 'setFlag', flag: OATH_HONORED_FLAG, value: true },
           { type: 'recordMilestone', milestoneId: 'matriarch_bargain' },
           { type: 'modifyPermanentStat', stat: 'attack', delta: -2 },
           { type: 'modifyPermanentStat', stat: 'defense', delta: 3 },
@@ -46,6 +48,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           'Fight your own blood. Permanently +3 Attack, -2 Defense. Bonds you with an Ember-Fang Wolf.',
         consequences: [
           { type: 'setFlag', flag: 'oath_resolved', value: true },
+          { type: 'setFlag', flag: OATH_BROKEN_FLAG, value: true },
           { type: 'recordMilestone', milestoneId: 'matriarch_bargain' },
           { type: 'modifyPermanentStat', stat: 'attack', delta: 3 },
           { type: 'modifyPermanentStat', stat: 'defense', delta: -2 },

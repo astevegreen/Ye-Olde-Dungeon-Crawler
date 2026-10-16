@@ -15,6 +15,7 @@ import { COTW_TILES } from '../tiles';
 import { COTW_QUEST } from '../quest';
 import { OATH_BROKEN_FLAG, OATH_HONORED_FLAG } from '../oath';
 import { RELIC_RECOVERED_FLAG } from '../relic';
+import { HEARTH_COLD_STAGES, HEARTH_COLD_TURNS_COUNTER } from '../hearthCold';
 
 /** Story choices the town answers in its talk, played on a real engine. */
 function engineOn(floor: number): { engine: GameEngine; player: Player; map: GameMap } {
@@ -117,5 +118,68 @@ describe('The Matriarch’s Blood-Oath, remembered', () => {
     for (const ending of Object.values(COTW_QUEST.endings ?? {})) {
       expect(endingNarrative(ending, engine.worldState).join('\n')).not.toContain('matriarch');
     }
+  });
+});
+
+describe('Bjarnarhaven’s cold, while the Hearth-Tear is lost', () => {
+  const [first, second, third] = HEARTH_COLD_STAGES;
+  const turnsBelow = (e: GameEngine) => e.worldState.counters[HEARTH_COLD_TURNS_COUNTER] ?? 0;
+  const told = (e: GameEngine, line: string) => e.messages.filter((m) => m.includes(line)).length;
+
+  it('deepens with every turn spent below, and is told once per stage on coming home', () => {
+    const { engine, player } = engineOn(5);
+    engine.worldState.counters[HEARTH_COLD_TURNS_COUNTER] = first.turns - 2;
+    engine.handlePlayerAction(new WaitAction(player));
+    expect(turnsBelow(engine)).toBe(first.turns - 1);
+
+    // Still short of the first stage: home is as it was.
+    engine.changeFloor(0);
+    engine.handlePlayerAction(new WaitAction(player));
+    const bjorn = engine.map.getEntityById('npc-guard') as NPC;
+    expect(bjorn.greeting).toBe('Halt! Keep your weapons sheathed in Bjarnarhaven, adventurer.');
+    expect(turnsBelow(engine)).toBe(first.turns - 1); // time in town does not count
+
+    engine.changeFloor(5);
+    engine.handlePlayerAction(new WaitAction(player));
+    engine.changeFloor(0);
+    engine.handlePlayerAction(new WaitAction(player));
+    engine.handlePlayerAction(new WaitAction(player));
+    expect(told(engine, first.arrival)).toBe(1);
+    expect(bjorn.greeting).toBe(first.greeting);
+
+    // A long trip past two stages tells only the deeper one.
+    engine.changeFloor(5);
+    engine.worldState.counters[HEARTH_COLD_TURNS_COUNTER] = third.turns;
+    engine.handlePlayerAction(new WaitAction(player));
+    engine.changeFloor(0);
+    engine.handlePlayerAction(new WaitAction(player));
+    expect(told(engine, second.arrival)).toBe(0);
+    expect(told(engine, third.arrival)).toBe(1);
+    expect(bjorn.dialogText).toBe(third.dialogText);
+  });
+
+  it('stops when the Hearth-Tear is won, and the guard remarks on the thaw', () => {
+    const { engine, player } = engineOn(5);
+    engine.worldState.counters[HEARTH_COLD_TURNS_COUNTER] = first.turns;
+    engine.changeFloor(0);
+    engine.handlePlayerAction(new WaitAction(player));
+    const bjorn = engine.map.getEntityById('npc-guard') as NPC;
+    expect(bjorn.greeting).toBe(first.greeting);
+
+    engine.changeFloor(25);
+    engine.setWorldFlag(RELIC_RECOVERED_FLAG, true);
+    engine.handlePlayerAction(new WaitAction(player));
+    expect(turnsBelow(engine)).toBe(first.turns);
+    engine.changeFloor(0);
+    engine.handlePlayerAction(new WaitAction(player));
+    expect(bjorn.greeting).toContain('The ice let go of the gate-hinges');
+  });
+
+  it('leaves the guard alone at the thaw if the cold never set in', () => {
+    const { engine, player } = engineOn(25);
+    engine.setWorldFlag(RELIC_RECOVERED_FLAG, true);
+    engine.changeFloor(0);
+    engine.handlePlayerAction(new WaitAction(player));
+    expect((engine.map.getEntityById('npc-guard') as NPC).greeting).toBe('Halt! Keep your weapons sheathed in Bjarnarhaven, adventurer.');
   });
 });

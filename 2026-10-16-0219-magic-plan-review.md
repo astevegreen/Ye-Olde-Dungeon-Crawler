@@ -31,3 +31,4 @@ Sonnet 5.5 at medium for the tidy-ups; Opus at high for P-36 (soak-bot casting l
 
 ## Verification
 - d3230277: lint + test green (3,276); pre-push sim, build, Playwright 3 browsers green; pushed. visual-check after captures in `.prompts/captures/spellbook-after2/` (scroll fixed; the 16px footer shift was then fixed by a "Spells known" button, not re-captured).
+Resumed: 2026-10-16 02:32 UTC

@@ -33,3 +33,4 @@ Complete. The first push from this repo opens a Credential Manager browser sign-
 ## Verification
 - lint + full suite (428 files, 3290 tests): green on 1eb6072a
 - pre-push sim, build, Playwright in three browsers (91 passed): green on 1eb6072a, pushed 5bf4c25f..1eb6072a
+Resumed: 2026-10-16 20:07 UTC

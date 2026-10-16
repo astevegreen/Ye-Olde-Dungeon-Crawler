@@ -174,6 +174,33 @@ describe('The Iron Clans', () => {
     expect(engine.map.getEntityById(IVALDA_ID)).toBeNull();
   });
 
+  it('thanks the hero for keeping faith with the dead only while no barrow is plundered', () => {
+    const { engine, player } = engineOn(1);
+    engine.worldState.factions[IRON_CLANS_FACTION] = 0;
+    engine.changeFloor(0);
+    engine.handlePlayerAction(new WaitAction(player));
+    engine.handlePlayerAction(new WaitAction(player));
+    expect((engine.map.getEntityById(IVALDA_ID) as NPC).choiceId).toBe(IVALDA_TOWN_CHOICE.id);
+    expect(IVALDA_TOWN_CHOICE.description).toContain('You kept faith with our dead');
+
+    // A barrow broken open after she came up: on the hero's next turn in town she knows.
+    engine.setWorldFlag('duergar_barrow_3_plundered', true);
+    engine.handlePlayerAction(new WaitAction(player));
+    const ivaldas = engine.map.getAllEntities().filter((e) => e.id === IVALDA_ID) as NPC[];
+    expect(ivaldas).toHaveLength(1);
+    expect(ivaldas[0].choiceId).toBe('ivalda_forge_town_plundered');
+    expect([ivaldas[0].x, ivaldas[0].y]).toEqual([IVALDA_TOWN_POSITION.x, IVALDA_TOWN_POSITION.y]);
+    const grieved = cotwManifest.choices!['ivalda_forge_town_plundered'];
+    expect(grieved.description).not.toContain('kept faith');
+    expect(grieved.description).toContain('whose hands were in the silver');
+    expect(grieved.options.map((o) => o.id)).toEqual(['forge_spell']);
+
+    // The swap holds: she stays one NPC, with the same choice, turn after turn.
+    engine.handlePlayerAction(new WaitAction(player));
+    expect(engine.map.getAllEntities().filter((e) => e.id === IVALDA_ID)).toHaveLength(1);
+    expect((engine.map.getEntityById(IVALDA_ID) as NPC).choiceId).toBe('ivalda_forge_town_plundered');
+  });
+
   it('has the Haugbui stand aside for a trusted hero, until one is hurt or trust is lost', () => {
     const { engine, player, map } = engineOn(16);
     const wight = new Monster({ id: 'wight', name: 'Haugbui', definitionId: 'haugbui', position: { x: 6, y: 5 }, stats: { hp: 55, maxHp: 55, attack: 12, defense: 7 } });

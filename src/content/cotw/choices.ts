@@ -3,7 +3,7 @@ import { ALTAR_MARKED, BLOOD_ALTAR_CHOICE, SIPHON_GIFT_CHOICES } from './hostage
 import { SIPHON_CORE_CHOICE, ZEALOT_LEADER_LAST_WORDS } from './siphonPylon';
 import { SKALDIC_RUNESTONE_CHOICES } from './runestones';
 import { VIDNIR_REVELATION_CHOICE } from './narrative';
-import { IRON_CLANS_BARROW_CHOICES, IVALDA_CHOICE, IVALDA_TOWN_CHOICE } from './ironClans';
+import { IRON_CLANS_BARROW_CHOICES, IVALDA_CHOICE, IVALDA_TOWN_CHOICE, IVALDA_TOWN_PLUNDERED_CHOICE } from './ironClans';
 import { GATEWARD_CHOICE } from './prologue';
 import { COTW_MILESTONE_CHOICES, COTW_SAGA_CHOICES } from './perks';
 import { COTW_ESSENCE_BY_ELEMENT } from './items/essences';
@@ -154,6 +154,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
   ...IRON_CLANS_BARROW_CHOICES,
   [IVALDA_CHOICE.id]: IVALDA_CHOICE,
   [IVALDA_TOWN_CHOICE.id]: IVALDA_TOWN_CHOICE,
+  [IVALDA_TOWN_PLUNDERED_CHOICE.id]: IVALDA_TOWN_PLUNDERED_CHOICE,
   [GATEWARD_CHOICE.id]: GATEWARD_CHOICE,
 
   choice_dwarven_hearth: {

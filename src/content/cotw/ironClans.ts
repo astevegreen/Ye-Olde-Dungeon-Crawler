@@ -38,6 +38,7 @@ const IVALDA_FORGE_STANDING = 10;
 export const IVALDA_ID = 'npc-ivalda';
 const IVALDA_CHOICE_ID = 'ivalda_forge';
 const IVALDA_TOWN_CHOICE_ID = 'ivalda_forge_town';
+const IVALDA_TOWN_PLUNDERED_CHOICE_ID = 'ivalda_forge_town_plundered';
 export const IVALDA_IN_TOWN_FLAG = 'ivalda_in_town';
 const IVALDA_TEMPERED_FLAG = 'ivalda_tempered';
 const DWARVEN_HEARTH_FLOOR = 13;
@@ -114,6 +115,14 @@ export const IVALDA_TOWN_CHOICE: ChoiceDefinition = {
     'Ivalda has set her own anvil at the back of Gunther’s armory, and the two of them argue about quench-water in two languages. She looks up as you come in.\n\n“You kept faith with our dead, Thrym’s blood or no. The forges below are warming; mine came up to meet the trade your grandfathers kept. Now: steel. Show me the piece across Gunther’s counter, at his forge.”',
   options: IVALDA_CHOICE.options.filter((o) => o.id !== 'temper'),
   cancelLabel: 'Leave her to her anvil',
+};
+
+/** Her forge in town for a hero who broke open a clan barrow: she keeps the Accord, and the count. */
+export const IVALDA_TOWN_PLUNDERED_CHOICE: ChoiceDefinition = {
+  ...IVALDA_TOWN_CHOICE,
+  id: IVALDA_TOWN_PLUNDERED_CHOICE_ID,
+  description:
+    'Ivalda has set her own anvil at the back of Gunther’s armory, and the two of them argue about quench-water in two languages. She looks up as you come in, and the argument stops.\n\n“The clans count their barrows, Thrym’s blood, and the count comes up short. You have done my kin enough good that they call the debt settled, and I keep the Accord my fathers swore. But I know whose hands were in the silver. Show me the piece across Gunther’s counter, at his forge, and we will speak of steel and nothing else.”',
 };
 
 /**
@@ -258,7 +267,9 @@ const IRON_CLANS_STANDING_HOOK: ActionHook = {
 /**
  * Once trusted and off her floor, Ivalda leaves the hearth for town: she is added to the
  * stored town map on the hero's next turn there, and taken off Floor 13 on the next turn
- * there. Not while the hero stands on Floor 13, so she never vanishes mid-visit.
+ * there. Not while the hero stands on Floor 13, so she never vanishes mid-visit. In town she
+ * speaks as the barrows stand: a barrow plundered after she came up swaps her choice on the
+ * hero's next turn there.
  */
 function moveIvaldaToTown(engine: Parameters<ActionHook['execute']>[0]['engine'], isTrusted: boolean): void {
   const ws = engine.worldState;
@@ -270,10 +281,14 @@ function moveIvaldaToTown(engine: Parameters<ActionHook['execute']>[0]['engine']
   const here = engine.map.getEntityById(IVALDA_ID);
   if (engine.currentFloor === DWARVEN_HEARTH_FLOOR && here) {
     engine.removeEntity(here);
-  } else if (engine.currentFloor === 0 && !here) {
-    const { x, y } = IVALDA_TOWN_POSITION;
-    if (engine.map.getEntityAt(x, y)) return; // someone is in her spot; next turn
-    engine.map.addEntity(new NPC({ ...IVALDA, role: 'villager', position: { x, y }, choiceId: IVALDA_TOWN_CHOICE_ID }));
+  } else if (engine.currentFloor === 0) {
+    const plundered = BARROWS.some((b) => getFlag(ws, `duergar_barrow_${b.n}_plundered`));
+    const choiceId = plundered ? IVALDA_TOWN_PLUNDERED_CHOICE_ID : IVALDA_TOWN_CHOICE_ID;
+    if (here instanceof NPC && here.choiceId === choiceId) return;
+    const { x, y } = here ?? IVALDA_TOWN_POSITION;
+    if (here) engine.removeEntity(here);
+    else if (engine.map.getEntityAt(x, y)) return; // someone is in her spot; next turn
+    engine.map.addEntity(new NPC({ ...IVALDA, role: 'villager', position: { x, y }, choiceId }));
   }
 }
 

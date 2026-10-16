@@ -24,6 +24,8 @@ Sonnet 5.5 at medium for the tidy-ups; Opus at high for P-36 (soak-bot casting l
 ## Decisions
 - Wave-2 numbers stay until P-36 measures them — owner: "keep current numbers"
 - Build the Spells page before P-36 — owner: "Do it"
+- Unfound spells keep their names on the Spells page — owner: "Keep names visible"
+- Do the three tidy-ups, then start P-36 — owner: "do whatever cleanup/tidy-up is left from implementing the magic system and then start on P-36"
 
 ## Read first
 - `src/ui/characterMenu/spellbookTab.ts` — the Known / All spells views.

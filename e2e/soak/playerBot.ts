@@ -56,6 +56,10 @@ export interface PlayerBotState {
   castPlan: CastPlan | null;
   /** The turn each spell was last chosen, for the summon, terrain and control cooldowns. */
   lastCast: Record<string, number>;
+  /** Spell altars ("floor:x:y") the bot has answered or found waiting, each once (P-36). */
+  altarsTried: string[];
+  /** The altar the last step went onto: no rite card on the next decision means it waits. */
+  altarPending: { key: string; altarId: string } | null;
   telemetry: BotTelemetry;
 }
 
@@ -104,6 +108,15 @@ export interface BotTelemetry {
   castsChosen: Partial<Record<CastKind, number>>;
   /** Learning-stone cards answered with a face. */
   stoneFacesRead: number;
+  /** Spell altars reached, by "altarId:outcome": `performed`, `waits` (the altar refused to
+   *  open), `no-offering` (nothing the bot can spare), `skipped` (a restat: the bot has no
+   *  stat preference), `refused` (no choice the altar takes), `stuck` (the card never readied). */
+  altars: Record<string, number>;
+  /** Spell-offer cards answered: `learned` into a free slot, `swapped` for a forgotten spell,
+   *  `declined` (not now: the offer waits in the Spellbook). */
+  spellOffers: Record<string, number>;
+  /** Free-forge cards answered: `forged`, or `declined` (no spell the forge takes). */
+  forgeOffers: Record<string, number>;
   /** Mastery perks are `perksTaken`; these are the Saga and milestone perks held at the end. */
   heldPerks: Record<string, number>;
   /** The hero's state at the last decision: what the death cause is read from. */
@@ -228,6 +241,8 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
       statFailures: 0,
       castPlan: null,
       lastCast: {},
+      altarsTried: [],
+      altarPending: null,
       telemetry: {
         potionsDrunk: 0,
         telegraphTurns: 0,
@@ -248,6 +263,9 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
         heldPerks: {},
         castsChosen: {},
         stoneFacesRead: 0,
+        altars: {},
+        spellOffers: {},
+        forgeOffers: {},
         last: null,
       },
     };
@@ -311,6 +329,14 @@ interface DecisionResult {
   targeting?: boolean;
   /** A learning stone's face was read. */
   stoneFace?: boolean;
+  /** A spell altar's rite card was answered; `outcome` once the bot confirms or leaves. */
+  altar?: { key: string; altarId: string; outcome?: string };
+  /** A spell-offer card answered: learned, swapped or declined. */
+  spellOffer?: string;
+  /** A free-forge card answered: forged or declined. */
+  forgeOffer?: string;
+  /** A step onto a spell altar ("floor:x:y"). */
+  altarStep?: { key: string; altarId: string };
 }
 
 export interface PlayerDecisionContext {
@@ -347,7 +373,11 @@ export interface PlayerDecisionContext {
  * when badly hurt in melee or ringed, summons, terrain and control to open a real fight,
  * a blast or cone on two foes beside it, and the hardest-hitting damage spell from range.
  * It hunts each floor's learning-stone carrier, takes the shard to the stone and reads the
- * face of the type it has fewest of. What the casts did is the summary's `magic` (magicTap.ts).
+ * face of the type it has fewest of. It walks onto each spell altar it sees and performs the
+ * rite with an offering it can spare (no restat: it has no stat preference), forges a free
+ * forge onto its hardest-hitting spell, and answers a spell offer by learning it where it fits
+ * or swapping out a spell of a crowded type. Tablets wait: it never reaches town past floor
+ * 10, where Astrid sells them. What the casts did is the summary's `magic` (magicTap.ts).
  */
 export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<DispatchedAction> {
   const { page, prng, actionIndex, inDialog } = ctx;
@@ -382,6 +412,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       charMenuDecisions: number;
       castPlan: CastPlan | null;
       lastCast: Record<string, number>;
+      altarsTried: string[];
     }) => {
       const w = window as any;
       const e = w.__cotwEngine;
@@ -665,6 +696,174 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       }
 
       // Character menu handling (for overburden recovery and general dismissal)
+      // A spell offered with every grimoire slot full, or with room (P-36): learn it where it
+      // fits; else forget a slotted spell of the type the hero has most of, when the offer's type
+      // is rarer there, or a weaker spell of the same type; else not now (it waits in the book).
+      if (stack[stack.length - 1] === 'spell-offer-card') {
+        const learnBtn = document.getElementById('spell-offer-learn');
+        const forgetBtn = document.getElementById('spell-offer-forget');
+        const later = { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor, spellOffer: 'declined' };
+        const press = (el: Element, outcome?: string) => {
+          const rect = el.getBoundingClientRect();
+          const action = { type: 'click' as const, x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) };
+          return { action, curPos, curTurn, curFloor, ...(outcome ? { spellOffer: outcome } : {}) };
+        };
+        if (learnBtn) return press(learnBtn, 'learned');
+        if (forgetBtn) return press(forgetBtn, 'swapped');
+        const spellDefs: any[] = e.manifest?.spells ?? [];
+        const title = document.querySelector('#spell-offer-card .ui-dialog-title')?.textContent ?? '';
+        const offered =
+          spellDefs.find((d: any) => title === `Learn ${d.name}?` && p.pendingSpellOffers?.includes(d.id)) ??
+          spellDefs.find((d: any) => d.id === p.pendingSpellOffers?.[0]);
+        const slottedIds: string[] = (e.diagnostics?.resolvedCasts?.() ?? []).map((c: any) => c.spellId);
+        const slotted = slottedIds.map((id) => spellDefs.find((d: any) => d.id === id)).filter(Boolean);
+        if (!offered || slotted.length === 0) return later;
+        const count = (type: string) => slotted.filter((d: any) => d.spellType === type).length;
+        const power = (d: any) => (d.effects ?? []).find((f: any) => f.type === 'damage')?.amount ?? d.manaCost ?? 0;
+        const keep = (d: any) => d.id === 'magic_arrow' || (d.spellType === 'heal' && count('heal') === 1);
+        const spread = slotted
+          .filter((d: any) => !keep(d) && count(d.spellType) >= 2 && count(d.spellType) > count(offered.spellType) + 1)
+          .sort((a: any, b: any) => count(b.spellType) - count(a.spellType) || power(a) - power(b))[0];
+        const weaker = slotted
+          .filter((d: any) => !keep(d) && d.spellType === offered.spellType && power(d) < power(offered))
+          .sort((a: any, b: any) => power(a) - power(b))[0];
+        const forget = spread ?? weaker;
+        const pick = forget ? document.querySelector(`[data-forget-pick="${CSS.escape(forget.id)}"]`) : null;
+        return pick ? press(pick) : later;
+      }
+
+      // A free forge a choice gave (P-36): the hardest-hitting spell the hero casts, then each
+      // element in turn until the forge takes one; one click a decision.
+      if (stack[stack.length - 1] === 'forge-offer-card') {
+        const card = document.getElementById('forge-offer-card');
+        const forgeBtn = document.getElementById('forge-offer-forge') as HTMLButtonElement | null;
+        const later = { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor, forgeOffer: 'declined' };
+        const press = (el: Element, outcome?: string) => {
+          const rect = el.getBoundingClientRect();
+          const action = { type: 'click' as const, x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) };
+          return { action, curPos, curTurn, curFloor, ...(outcome ? { forgeOffer: outcome } : {}) };
+        };
+        const memo = (w.__soakForgeUi ??= { turn: -1, clicks: 0, tried: [] as string[] });
+        if (memo.turn !== curTurn) Object.assign(memo, { turn: curTurn, clicks: 0, tried: [] });
+        if (!card || ++memo.clicks > 20) return later;
+        if (forgeBtn && !forgeBtn.disabled) return press(forgeBtn, 'forged');
+        const spellDefs: any[] = e.manifest?.spells ?? [];
+        const damageOf = (id: string) => (spellDefs.find((d: any) => d.id === id)?.effects ?? []).find((f: any) => f.type === 'damage')?.amount ?? 0;
+        const casts = new Set<string>((e.diagnostics?.resolvedCasts?.() ?? []).map((c: any) => c.spellId));
+        const attrOf = (el: Element, a: string) => el.getAttribute(a) ?? '';
+        const spellBtns = [...card.querySelectorAll('[data-forge-spell]')];
+        const elementBtns = [...card.querySelectorAll('[data-forge-element]')];
+        const spells = spellBtns
+          .map((el) => attrOf(el, 'data-forge-spell'))
+          .sort((a, b) => Number(casts.has(b)) - Number(casts.has(a)) || damageOf(b) - damageOf(a));
+        const elements = elementBtns.length ? elementBtns.map((el) => attrOf(el, 'data-forge-element')) : [''];
+        const chosen = (btns: Element[], a: string) => attrOf(btns.find((el) => el.classList.contains('ui-btn--primary')) ?? card, a);
+        const nowSpell = chosen(spellBtns, 'data-forge-spell');
+        const nowElement = elementBtns.length ? chosen(elementBtns, 'data-forge-element') : '';
+        if (nowSpell && (nowElement || !elementBtns.length)) memo.tried.push(`${nowSpell}|${nowElement}`);
+        for (const s of spells) {
+          for (const el of elements) {
+            if (memo.tried.includes(`${s}|${el}`)) continue;
+            if (s !== nowSpell) return press(spellBtns.find((b) => attrOf(b, 'data-forge-spell') === s)!);
+            if (el !== nowElement) return press(elementBtns.find((b) => attrOf(b, 'data-forge-element') === el)!);
+          }
+        }
+        return later;
+      }
+
+      // A spell altar's rite card (P-36), one click a decision: an offering the hero can spare
+      // (an Essence-Rune, a spell it can't cast, its weakest of a type it casts two of, one it
+      // has not cast), then the slot or spell, then confirm.
+      // The card's choices live in the DOM: a picked row reads `.is-selected`.
+      if (stack[stack.length - 1] === 'altar') {
+        const tileHere = e.map.getTile(p.x, p.y);
+        const base = (e.manifest?.magic?.altars ?? []).find((a: any) => a.id === tileHere?.interactionHandlerId);
+        const deeper = base?.deeperRites?.filter((d: any) => curFloor >= d.fromFloor).at(-1);
+        const rite: string | undefined = deeper?.rite ?? base?.rite;
+        const key = `${curFloor}:${p.x}:${p.y}`;
+        const altarId: string = base?.id ?? 'unknown';
+        const ui = ((w.__soakAltarUi ??= {})[key] ??= { clicks: 0, tried: [] as string[] });
+        const clickOn = (el: Element, outcome?: string) => {
+          el.scrollIntoView({ block: 'nearest' });
+          const rect = el.getBoundingClientRect();
+          return {
+            action: { type: 'click' as const, x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) },
+            curPos,
+            curTurn,
+            curFloor,
+            altar: { key, altarId, outcome },
+          };
+        };
+        const leave = (outcome: string) => ({ action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor, altar: { key, altarId, outcome } });
+        if (++ui.clicks > 12) return leave('stuck');
+        const confirm = document.getElementById('btn-altar-confirm') as HTMLButtonElement | null;
+        if (confirm && !confirm.disabled) return clickOn(confirm, 'performed');
+        if (!base || rite === 'restat') return leave('skipped');
+
+        const spellDefs: any[] = e.manifest?.spells ?? [];
+        const castIds = new Set<string>(
+          p.grimoireSystem
+            ? (e.diagnostics?.resolvedCasts?.() ?? []).map((c: any) => c.spellId)
+            : ((p.quickSpells ?? []) as Array<string | null>).filter(Boolean)
+        );
+        const spare = (id: string) => !castIds.has(id) && id !== 'magic_arrow';
+        const idOfName = (name: string) => spellDefs.find((d: any) => d.name === name)?.id as string | undefined;
+        const rowText = (el: Element, sel: string) => el.querySelector(sel)?.textContent?.trim() ?? '';
+        let burning: string | undefined;
+        if (!base.free) {
+          const rows = [...document.querySelectorAll('[data-offering]')];
+          const picked = rows.find((el) => el.classList.contains('is-selected'));
+          if (!picked) {
+            const essence = rows.find((el) => rowText(el, '.ui-faint').startsWith('essence'));
+            const spellRows = rows
+              .map((el) => ({ el, d: rowText(el, '.ui-faint').startsWith('spell') ? spellDefs.find((s: any) => s.id === idOfName(rowText(el, '.bs-name'))) : undefined }))
+              .filter((r) => r.d && r.d.id !== 'magic_arrow');
+            // Nothing spare: the weakest spell of a type the hero casts two of, never its only heal.
+            const castDefs = spellDefs.filter((s: any) => castIds.has(s.id));
+            const typeCount = (type: string) => castDefs.filter((s: any) => s.spellType === type).length;
+            const weakness = (d: any) => (d.effects ?? []).find((f: any) => f.type === 'damage')?.amount ?? d.manaCost ?? 0;
+            const doubled = spellRows
+              .filter((r) => typeCount(r.d.spellType) >= 2)
+              .sort((a, b) => weakness(a.d) - weakness(b.d))[0];
+            // Or one it has not cast this run (magicTap's tally), save its only heal.
+            const castTally: Record<string, number> = {};
+            for (const f of Object.values<any>(w.__soakMagic?.floors ?? {})) {
+              for (const [id, n] of Object.entries<number>(f.casts ?? {})) castTally[id] = (castTally[id] ?? 0) + n;
+            }
+            const unused = spellRows.find((r) => !castTally[r.d.id] && !(r.d.spellType === 'heal' && typeCount('heal') < 2));
+            const offer = essence ?? spellRows.find((r) => spare(r.d.id))?.el ?? doubled?.el ?? unused?.el;
+            return offer ? clickOn(offer) : leave('no-offering');
+          }
+          burning = idOfName(rowText(picked, '.bs-name'));
+        }
+
+        // The slot or spell the rite works on, best first; each is tried once.
+        const placements: any[] = p.grimoireState?.placements ?? [];
+        const neighbours = (s: any) =>
+          placements.filter((o: any) => o.grimoireId === s.grimoireId && Math.abs(o.x - s.x) + Math.abs(o.y - s.y) === 1).length;
+        const damageOf = (id: string) =>
+          (spellDefs.find((d: any) => d.id === id)?.effects ?? []).find((f: any) => f.type === 'damage')?.amount ?? 0;
+        let attr = '';
+        let wanted: string[] = [];
+        if (rite === 'double') {
+          attr = 'data-slot';
+          wanted = [...placements].sort((a, b) => neighbours(b) - neighbours(a)).map((s) => `${s.grimoireId}|${s.x}|${s.y}`);
+        } else if (rite === 'addSlot') {
+          attr = 'data-slot';
+          wanted = [...document.querySelectorAll('[data-slot]')].map((el) => (el as HTMLElement).dataset.slot ?? '');
+        } else if (rite === 'forge') {
+          attr = 'data-spell';
+          wanted = [...castIds].filter((id) => id !== burning).sort((a, b) => damageOf(b) - damageOf(a));
+        }
+        for (const v of wanted) {
+          if (!v || ui.tried.includes(v)) continue;
+          ui.tried.push(v);
+          const row = document.querySelector(`[${attr}="${CSS.escape(v)}"]:not([disabled])`);
+          if (row) return clickOn(row);
+        }
+        return leave('refused');
+      }
+
       const characterMenuOpen = stack.includes('character-menu') || Boolean(h?.characterMenuModal?.isOpen);
       if (characterMenuOpen) {
         const modal = h?.characterMenuModal;
@@ -1704,6 +1903,29 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           }
         }
 
+        // A spell altar seen on this floor (P-36): walk onto it, and its rite card opens there.
+        const altarIds = new Set((e.manifest?.magic?.altars ?? []).map((a: any) => a.id));
+        if (altarIds.size > 0 && curTurn - args.floorEnteredTurn < 1000) {
+          for (let y = 0; y < e.map.height; y++) {
+            for (let x = 0; x < e.map.width; x++) {
+              const altarId = e.map.getTile(x, y)?.interactionHandlerId;
+              const key = `${curFloor}:${x}:${y}`;
+              if (!altarIds.has(altarId) || !e.fov.isExplored(x, y) || args.altarsTried.includes(key)) continue;
+              if (x === p.x && y === p.y) continue;
+              const step = bfsStepToGoal(p, { x, y }, true);
+              if (!step) continue;
+              const onto = step.x === x && step.y === y;
+              return {
+                action: { type: 'key' as const, key: stepToKey(step.x - p.x, step.y - p.y) },
+                curPos,
+                curTurn,
+                curFloor,
+                ...(onto ? { altarStep: { key, altarId } } : {}),
+              };
+            }
+          }
+        }
+
         const seenStairsDown = findStairs('down');
 
         const turnsOnFloor = curTurn - args.floorEnteredTurn;
@@ -1770,6 +1992,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       charMenuDecisions: state.charMenuDecisions,
       castPlan: state.castPlan,
       lastCast: state.lastCast,
+      altarsTried: state.altarsTried,
     }
   );
 
@@ -1825,6 +2048,23 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
     state.castPlan = null;
   }
   if (evalResult.stoneFace) tel.stoneFacesRead++;
+  if (evalResult.spellOffer) tel.spellOffers[evalResult.spellOffer] = (tel.spellOffers[evalResult.spellOffer] ?? 0) + 1;
+  if (evalResult.forgeOffer) tel.forgeOffers[evalResult.forgeOffer] = (tel.forgeOffers[evalResult.forgeOffer] ?? 0) + 1;
+  // An altar answered on its card, or stood on with no card: it waits (altarWaitReason).
+  const altarDone = (key: string, outcome: string, altarId: string) => {
+    if (state.altarsTried.includes(key)) return;
+    state.altarsTried.push(key);
+    tel.altars[`${altarId}:${outcome}`] = (tel.altars[`${altarId}:${outcome}`] ?? 0) + 1;
+  };
+  if (evalResult.altar) {
+    if (evalResult.altar.outcome) altarDone(evalResult.altar.key, evalResult.altar.outcome, evalResult.altar.altarId);
+    state.altarPending = null;
+  } else if (state.altarPending) {
+    const [, x, y] = state.altarPending.key.split(':');
+    if (curPos === `${x},${y}`) altarDone(state.altarPending.key, 'waits', state.altarPending.altarId);
+    state.altarPending = null;
+  }
+  if (evalResult.altarStep) state.altarPending = evalResult.altarStep;
   if (evalResult.perk) tel.perksTaken++;
   if (evalResult.chest) tel.chestsLooted++;
   if (evalResult.potion) tel.potionsDrunk++;

@@ -115,10 +115,6 @@ export const COTW_MAGIC: MagicSystemConfig = {
     learnMessage: "*** GALDR OF THE SLAIN! You sever {monster}'s spirit thread and claim {spell}! ***",
     essenceMessage: "Galdr resonance! {monster}'s spirit hardens into rune-stone: {essence}.",
     essenceItems: COTW_ESSENCE_BY_ELEMENT,
-    // A full clear met 87–229 rites per element against 12 altars; this leaves about 4–11
-    // runes of each. Healing rites are rarer, lightning ones rarest.
-    essenceDropChance: 0.1,
-    essenceDropChanceByElement: { healing: 0.2, lightning: 1 },
   },
   grimoires: COTW_GRIMOIRES,
   learningStones: COTW_LEARNING_STONES,

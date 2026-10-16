@@ -15,18 +15,18 @@ A spell is a `SpellDefinition` (`src/engine/magic/types.ts`) composed from the e
    - `visual` is optional (the element's colour by default); its archetypes are in `src/engine/types/effects.ts`.
    - **Numbers** come from neighbours: single-target bolts deal 2.3–2.7 damage per mana (`firebolt` 12/5, `cold_ray` 14/6); bounces and bursts cost more (`lightning_bolt` 16/9, `fireball` 18/12); heal 20/4; utility 4–14 mana. `basePower` is the first damage or heal amount, 0 for utility. Content never scales a spell by level: its grimoire slot's stats, Intelligence and gear do.
 3. **Check the element** is in `COTW_AFFINITY_MATRIX` (`elements.ts`), and every effect's element too. `poison` has its Essence-Rune, Eihwaz (`COTW_ESSENCE_BY_ELEMENT`).
-4. **Make it learnable.** Every spell outside the schools `BloodMagic`, `Lore` and `Scroll` must be learnable from kill rites alone by floor 33 (`killRites.test.ts`).
-   1. **Rite:** set `teachesSpellId` on a rite in `COTW_KILL_RITES` (`killRites.ts`) whose monster teaches nothing yet and isn't one of the night raid's. The rite must be meetable on that monster's `minFloor` with the spells learnable by then. Update the pacing comment at the file's top.
-   2. **Tablet:** one row in `TABLETS` (`spellTablets.ts`): `spellId`, `spellName`, `soldFromFloor` (the first floor past the spell's zone), `value`. The row makes the `learn_<id>` spell, the tablet item and its place in the alchemist's stock.
+4. **Make it learnable.** Learning stones teach spells; kill rites teach none (`killRites.test.ts`), only open a stone's card early when the shard's carrier dies its rite's way.
+   1. **Zone:** add the id to the `spellIds` of the zone in `COTW_LEARNING_STONES.zones` (`learningStones.ts`) whose floors first show it. A zone's `carrierIds` must keep one kind whose rite a starting hero can meet.
+   2. **Tablet:** one row in `TABLETS` (`spellTablets.ts`): `spellId`, `spellName`, `soldFromFloor` (the first floor past the spell's zone), `value`. The row makes the `learn_<id>` spell, the tablet item and its place in the alchemist's stock. Every zone spell needs one (`killRites.test.ts`).
    3. **Loki:** add the id to `LOKI_SPELL_POOL` (`magic.ts`).
    4. **Spells page:** a hero's spell no stone zone lists (`zones` in `learningStones.ts`) goes in that file's `elsewhere`, with where it is had (`spellCatalog.test.ts`).
    5. Other ways in, as the design wants: a choice's `learnSpell` consequence, a scroll's or wand's `spellId` (`items/legacy.ts`), a monster's `spells`.
-   A spell nobody learns by rite (scroll-only) takes the school `Scroll`.
-   - **Retiring or merging a spell:** add `<old id>: '<new id>'` (`{ spellId, addedElement }` for the new id forged with an element, or `null` to let it go) to `retired.spells` in `grimoires.ts`, so a save that knew it loads with the replacement in its slot and on its quick key; drop its tablet and rite.
+   A spell no hero learns (scroll-only) takes the school `Scroll`.
+   - **Retiring or merging a spell:** add `<old id>: '<new id>'` (`{ spellId, addedElement }` for the new id forged with an element, or `null` to let it go) to `retired.spells` in `grimoires.ts`, so a save that knew it loads with the replacement in its slot and on its quick key; drop its tablet and its zone entry.
 5. **Two elements:** there are no fused spells. Odin's forge adds a second element to a known spell; its title comes from `forging.titles` in `grimoires.ts` (alphabetical pair, `cold+fire`), and runestone lore may tell of a pair (`forgePair`).
 
 ## Finish
-- **Tests:** the content suite already checks rite learnability and pacing, a tablet per rite-taught spell, forging pairs and Loki ids, elements in the matrix, overkill rites against each element's strongest damage, wand and scroll targets, and a rune per spell. A spell that does something no spell did before gets a test of that effect.
+- **Tests:** the content suite already checks rite pacing and carriers, a tablet per stone spell, every learnable spell on the Spells page, forging pairs and Loki ids, elements in the matrix, overkill rites against each element's strongest damage, wand and scroll targets, and a rune per spell. A spell that does something no spell did before gets a test of that effect.
 - **Sprite:** the belt rune is `spell~<id>` if a recipe has that key, else `spell~<element>` (`sprites/spellRunes.ts`); `spellRunes.test.ts` fails on a spell with neither, so a poison spell needs its own.
 - **Creep:** every spell id is collected, `learn_*` included. An underscored id is also caught inside compounds (`'spell~cold_ray'`). Rename on a clash rather than allowlisting; removing a spell that has an allowlist entry means deleting the entry, which fails as stale otherwise.
 - **Gates:** `npx vitest run src/content/cotw/__tests__` while iterating, then `npm run gate-stamp -- run lint test` and `npm run sim` (it casts cotw spells).

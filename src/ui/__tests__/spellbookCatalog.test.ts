@@ -11,7 +11,7 @@ function open(stones: boolean) {
     id: 'test_pack',
     name: 'Test Pack',
     spells: [
-      { id: 'spark', name: 'Spark', manaCost: 1, element: 'fire', range: 5, description: 'A small flame.', effects: [] },
+      { id: 'spark', name: 'Spark', manaCost: 1, element: 'fire', range: 5, school: 'HealingDivination', description: 'A small flame.', effects: [] },
       { id: 'frost', name: 'Frost', manaCost: 2, element: 'cold', range: 5, description: 'A cold touch.', effects: [] },
       { id: 'storm', name: 'Storm', manaCost: 3, element: 'lightning', range: 5, description: 'A hidden storm.', effects: [] },
       { id: 'learn_storm', name: 'Learn Storm', manaCost: 0, range: 0, effects: [{ type: 'learn_spell', spellId: 'storm' }] },
@@ -79,5 +79,10 @@ describe('the Spells page', () => {
     const { container, press } = open(false);
     expect(container.innerHTML).not.toContain('All spells');
     expect(press('KeyV')).toBe(false);
+  });
+
+  it('spaces a school name on the card', () => {
+    const { container } = open(false);
+    expect(container.innerHTML).toContain('Healing Divination');
   });
 });

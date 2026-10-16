@@ -37,6 +37,11 @@ export interface SpellbookTabOptions {
 
 const SLOT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
+/** A school id as a reader sees it: "HealingDivination" → "Healing Divination". */
+function schoolLabel(school: string | undefined): string {
+  return (school ?? '').replace(/([a-z])([A-Z])/g, '$1 $2');
+}
+
 /**
  * The Spellbook tab (ADR-0011): the spells you know, the selected one's details and
  * quickbar slot, and the three grimoires for packs that have them. Enter casts. With learning
@@ -408,7 +413,7 @@ export class SpellbookTab implements MenuTab {
       : '<div class="ui-note">Not seen yet: what it does shows once a stone offers it.</div>';
     return `
       <div class="ui-card">
-        <div class="bs-head"><span class="bs-title">${escapeHtml(title)}</span><span class="ui-note">${escapeHtml(spell.school ?? '')}</span></div>
+        <div class="bs-head"><span class="bs-title">${escapeHtml(title)}</span><span class="ui-note">${escapeHtml(schoolLabel(spell.school))}</span></div>
         ${what}
         <div class="sb-where">
           ${status ? `<div class="ui-note">${escapeHtml(status)}</div>` : ''}
@@ -441,7 +446,7 @@ export class SpellbookTab implements MenuTab {
 
     return `
       <div class="ui-card">
-        <div class="bs-head"><span class="bs-title">${escapeHtml(title)}</span><span class="ui-note">${escapeHtml(spell.school ?? '')}</span></div>
+        <div class="bs-head"><span class="bs-title">${escapeHtml(title)}</span><span class="ui-note">${escapeHtml(schoolLabel(spell.school))}</span></div>
         <dl class="ui-kv sb-stats">
           <dt>Cost</dt><dd class="ui-num">${changed(spell.manaCost ?? 0, cast.manaCost ?? 0)} ${escapeHtml(unit)}</dd>
           <dt>Element</dt><dd>${escapeHtml(elements.join(' + '))}</dd>

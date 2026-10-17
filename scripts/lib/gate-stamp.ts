@@ -61,26 +61,29 @@ const firstLine = (err: unknown): string => (err instanceof Error ? err.message 
  */
 export function treeKey(root: string, paths?: readonly string[]): string {
   const listed = git(root, ['ls-files', '-z', '--cached', '--others', '--exclude-standard']).split('\0');
-  let files = [...new Set(listed.filter(Boolean))].sort();
+  const under = (file: string, scope: string): boolean => (scope.endsWith('/') ? file.startsWith(scope) : file === scope);
+  const hashed: [string, Buffer][] = [];
+  for (const file of [...new Set(listed.filter(Boolean))].sort()) {
+    if (paths && !paths.some((scope) => under(file, scope))) continue;
+    try {
+      hashed.push([file, createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest()]);
+    } catch (err) {
+      // Listed by git but gone from disk: a deletion not yet staged. It is left out, as git
+      // leaves out a staged one, so staging the deletion for the commit keeps the key its gates
+      // passed on. Anything else (a directory from a nested repository, a permission error) throws.
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
+    }
+  }
   const key = createHash('sha256');
   key.update(`gate-stamp v${STAMP_VERSION}\0node ${process.version}\0`);
   if (paths) {
-    const under = (file: string, scope: string): boolean => (scope.endsWith('/') ? file.startsWith(scope) : file === scope);
-    const empty = paths.find((scope) => !files.some((file) => under(file, scope)));
+    const empty = paths.find((scope) => !hashed.some(([file]) => under(file, scope)));
     if (empty !== undefined) throw new Error(`'${empty}' names no file`);
-    files = files.filter((file) => paths.some((scope) => under(file, scope)));
     key.update(`paths ${[...paths].sort().join('\0')}\0`);
   }
-  for (const file of files) {
+  for (const [file, digest] of hashed) {
     key.update(`${file}\0`);
-    try {
-      key.update(createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest());
-    } catch (err) {
-      // Listed by git but gone from disk: a deletion is part of the tree's state. Anything
-      // else (a directory from a nested repository, a permission error) is not.
-      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
-      key.update('deleted');
-    }
+    key.update(digest);
   }
   return key.digest('hex');
 }

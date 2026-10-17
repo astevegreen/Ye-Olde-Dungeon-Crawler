@@ -93,10 +93,13 @@ describe('treeKey', SLOW, () => {
     expect(treeKey(repo)).toBe(before);
   });
 
-  it('changes when a tracked file is deleted from disk', () => {
+  it('changes when a tracked file is deleted from disk, and stays put when the deletion is staged', () => {
     const before = treeKey(repo);
     fs.rmSync(path.join(repo, 'src/a.ts'));
-    expect(treeKey(repo)).not.toBe(before);
+    const deleted = treeKey(repo);
+    expect(deleted).not.toBe(before);
+    git('add', '-A');
+    expect(treeKey(repo)).toBe(deleted);
   });
 
   it('keyed on paths, changes only for a file under them', () => {

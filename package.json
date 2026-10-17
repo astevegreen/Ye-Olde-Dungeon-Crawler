@@ -18,6 +18,7 @@
     "test:campaign": "playwright test e2e/campaign-flow.spec.ts --project=chromium",
     "soak": "node scripts/soak.mjs",
     "soak:report": "npx tsx scripts/soak-report.ts",
+    "ci:watch": "tsx scripts/watch-ci.ts",
     "lint": "tsc --noEmit && tsc --noEmit -p e2e/tsconfig.json && npm run check:engine-purity && npm run check:engine-encapsulation && npm run check:engine-creep && npm run check:ui-palette && npm run knip",
     "knip": "knip",
     "gate-stamp": "tsx scripts/gate-stamp.ts",

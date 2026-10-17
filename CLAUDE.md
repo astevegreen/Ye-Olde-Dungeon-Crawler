@@ -26,6 +26,7 @@
 - Push each finished task without asking, once all its commits are in: `git push`, run in the background (the pre-push hook runs the sim, the build and Playwright in three browsers).
 - A push deploys the Pages site, which other people play. The task's summary lists, one line each, what players will see change, or says "nothing player-visible".
 - Pre-push red: rerun once, since flakes are known. Red again: leave the commits unpushed and report the failure.
+- Push landed: run `npm run ci:watch` in the background. It waits for GitHub's deploy and browser runs, which run on Linux and can fail where the Windows hooks pass. Red: the site stays on the last green deploy, so read the failed log it names, fix, and push again.
 - Ask first for force-pushes, history rewrites, deleting a branch or tag, and skipping hooks. The ask is two lines: why it isn't automatic, and what you recommend. Pruning merged local branches and stale worktrees needs no ask.
 
 ## Working with the owner

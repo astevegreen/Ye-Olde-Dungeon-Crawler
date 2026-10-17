@@ -35,14 +35,22 @@ interface Run {
 
 function run(command: string, args: string[], cwd: string, input = ''): Promise<Run> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { cwd, env });
+    // A child that exits before reading its stdin breaks the pipe. On Linux that is an EPIPE
+    // on the write, uncaught unless handled (it failed the deploy at f36f4b7c); Windows never
+    // raises it. Only a child given input gets a pipe, and its exit code is what counts.
+    const child = spawn(command, args, { cwd, env, stdio: [input ? 'pipe' : 'ignore', 'pipe', 'pipe'] });
     let stdout = '';
     let stderr = '';
-    child.stdout.setEncoding('utf8').on('data', (d: string) => (stdout += d));
-    child.stderr.setEncoding('utf8').on('data', (d: string) => (stderr += d));
+    child.stdout!.setEncoding('utf8').on('data', (d: string) => (stdout += d));
+    child.stderr!.setEncoding('utf8').on('data', (d: string) => (stderr += d));
     child.on('error', reject);
     child.on('close', (code) => resolve({ code, stdout, stderr }));
-    child.stdin.end(input);
+    if (child.stdin) {
+      child.stdin.on('error', (err: NodeJS.ErrnoException) => {
+        if (err.code !== 'EPIPE') reject(err);
+      });
+      child.stdin.end(input);
+    }
   });
 }
 

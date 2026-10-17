@@ -1,5 +1,7 @@
 name: Deploy to GitHub Pages
 
+# The deploy waits for the browser tests, so players only get a build that passed in all three
+# browsers on Linux (docs/architecture/quality-gates.md, CI).
 on:
   push:
     branches: [main]
@@ -7,21 +9,15 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: 'pages'
-  cancel-in-progress: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build-and-deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  browsers:
+    uses: ./.github/workflows/playwright.yml
+
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -70,6 +66,35 @@ jobs:
         with:
           path: './dist'
 
+  deploy:
+    needs: [browsers, build]
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: 'pages'
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      # Browser runs finish out of order, so an older push could finish its tests last and
+      # deploy over a newer one. Only the branch tip deploys; a newer push deploys itself.
+      - name: Check this commit is still the tip of the branch
+        id: tip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tip=$(gh api "repos/${{ github.repository }}/commits/${{ github.ref_name }}" --jq .sha)
+          if [ "$tip" = "${{ github.sha }}" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Not deployed: ${{ github.ref_name }} has moved on to ${tip}, whose run deploys it."
+          fi
+
       - name: Deploy to GitHub Pages
         id: deployment
+        if: steps.tip.outputs.current == 'true'
         uses: actions/deploy-pages@v4

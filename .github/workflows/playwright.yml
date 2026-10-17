@@ -1,9 +1,9 @@
 name: Playwright Tests
+# A push to main runs these inside deploy.yml, which deploys only when they pass.
 on:
-  push:
-    branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_call:
 jobs:
   test:
     timeout-minutes: 60

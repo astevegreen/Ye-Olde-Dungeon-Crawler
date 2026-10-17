@@ -43,7 +43,9 @@ describe('cotw runic altars', () => {
   it('carries each retired spell over to a spell that exists, forged with an element that exists', () => {
     const ids = new Set(COTW_SPELLS.map((s) => s.id));
     const elements = (COTW_AFFINITY_MATRIX.elements ?? []).map((e) => e.id);
-    for (const [old, target] of Object.entries(COTW_MAGIC.grimoires?.retired?.spells ?? {})) {
+    const carried = Object.entries(COTW_MAGIC.grimoires?.retired?.spells ?? {});
+    expect(carried.some(([, target]) => target !== null)).toBe(true);
+    for (const [old, target] of carried) {
       if (target === null) continue;
       expect(ids.has(typeof target === 'string' ? target : target.spellId), old).toBe(true);
       if (typeof target !== 'string') expect(elements, old).toContain(target.addedElement);
@@ -53,6 +55,7 @@ describe('cotw runic altars', () => {
   it("lets Loki teach only spells that exist", () => {
     const ids = new Set(COTW_SPELLS.map((s) => s.id));
     const loki = altars.find((a) => a.rite === 'gamble')!;
+    expect(loki.gamble!.spellPool.length).toBeGreaterThan(0);
     for (const id of loki.gamble!.spellPool) expect(ids.has(id), id).toBe(true);
   });
 });

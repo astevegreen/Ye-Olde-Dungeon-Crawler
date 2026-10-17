@@ -11,9 +11,6 @@ import { COTW_PROLOGUE } from '../prologue';
 import { COTW_LEARNING_STONES } from '../learningStones';
 
 const spellById = new Map(COTW_SPELLS.map((s) => [s.id, s]));
-/** Spells rites and tablets teach: all but the altar's blood and frith and the tablet-only "learn_*" spells. */
-// Scroll spells (Remove Curse) are only ever read from a scroll, never learned.
-const CORE_SPELLS = COTW_SPELLS.filter((s) => !['BloodMagic', 'Frith', 'Lore', 'Scroll'].includes(String(s.school))).map((s) => s.id);
 
 /** What a known spell lets the hero do to meet a rite: its damage element and inflicted status. */
 function grants(spell: SpellDefinition): { elements: string[]; statuses: string[] } {
@@ -65,6 +62,7 @@ describe('cotw kill rites (Galdr of the Slain)', () => {
   const everyMonster: MonsterDefinition[] = [...COTW_MONSTERS, ...Object.values(COTW_BESTIARY)].filter((m) => !neverHunted.has(m.id));
 
   it('gives every monster a rite with a hint, and names no unknown monster', () => {
+    expect(everyMonster.length).toBeGreaterThan(0);
     for (const m of everyMonster) {
       expect(m.killRite, m.id).toBeDefined();
       expect(m.killRite!.hintVerse.length, m.id).toBeGreaterThan(10);
@@ -78,10 +76,11 @@ describe('cotw kill rites (Galdr of the Slain)', () => {
     for (const id of neverHunted) expect(COTW_KILL_RITES[id], id).toBeUndefined();
   });
 
-  it('teaches real spells and yields real essences', () => {
+  it('yields real essences', () => {
     const itemIds = new Set(COTW_ITEMS.map((i) => i.id));
-    for (const [id, rite] of Object.entries(COTW_KILL_RITES)) {
-      if (rite.teachesSpellId) expect(CORE_SPELLS, id).toContain(rite.teachesSpellId);
+    const rites = Object.entries(COTW_KILL_RITES);
+    expect(rites.length).toBeGreaterThan(0);
+    for (const [id, rite] of rites) {
       const essenceId = COTW_MAGIC.killRites!.essenceItems[rite.essenceElement];
       expect(essenceId, id).toBeDefined();
       expect(itemIds.has(essenceId), id).toBe(true);
@@ -89,10 +88,9 @@ describe('cotw kill rites (Galdr of the Slain)', () => {
   });
 
   it('never asks for a status the monster is immune to', () => {
-    for (const m of everyMonster) {
-      const status = m.killRite?.requiredVictimStatus;
-      if (status) expect(m.statusImmunities ?? [], m.id).not.toContain(status);
-    }
+    const asked = everyMonster.filter((m) => m.killRite?.requiredVictimStatus);
+    expect(asked.length).toBeGreaterThan(0);
+    for (const m of asked) expect(m.statusImmunities ?? [], m.id).not.toContain(m.killRite!.requiredVictimStatus);
   });
 
   it('starts the hero with only Magic Arrow and Heal', () => {

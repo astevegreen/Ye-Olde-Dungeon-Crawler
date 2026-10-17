@@ -31,6 +31,7 @@ describe('R-main-4 · command palette chips advertise the keys that do the thing
 
   it('every binding a command names is a real action', () => {
     const actions = new Set(ACTION_METADATA.map((a) => a.id));
+    expect(catalog.some((meta) => meta.binding)).toBe(true);
     for (const meta of catalog) {
       if (meta.binding) expect(actions, meta.id).toContain(meta.binding);
     }

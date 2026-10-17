@@ -66,6 +66,7 @@ describe('where loot is laid out (N22)', () => {
   });
 
   it('on real cotw floors, no loose loot on stairs, doors, water or passages', () => {
+    let checked = 0;
     for (const floor of [2, 7, 12, 20, 28, 38]) {
       const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Lay', { seed: floor });
       engine.changeFloor(floor);
@@ -74,8 +75,10 @@ describe('where loot is laid out (N22)', () => {
         if (items.some((i) => i.id.startsWith('cache-chest-') || i.id.startsWith('vault'))) continue;
         if (!items.some((i) => i.id.startsWith('loot-'))) continue;
         const tile = m.getTile(x, y)!;
+        checked++;
         expect(tile.isDoor || tile.isStairs || tile.type.includes('water') || tile.type.startsWith('stairs') || tile.type.startsWith('door'), `floor ${floor} ${x},${y} ${tile.type}`).toBeFalsy();
       }
     }
+    expect(checked).toBeGreaterThan(0);
   }, 30_000);
 });

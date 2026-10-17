@@ -357,14 +357,17 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
   it('no Norn option changes a stat, and everything they give exists in the pack', () => {
     const itemIds = new Set(cotwManifest.items.map((i) => i.id));
     const spellIds = new Set(cotwManifest.spells.map((sp) => sp.id));
+    let given = 0;
     for (const id of ['urdr_pool_choice', 'verdandi_loom_choice', 'ratatoskr_roost_choice', 'skuld_mirror_choice']) {
       for (const option of COTW_CHOICES[id].options) {
         for (const c of option.consequences) {
           expect(['modifyPermanentStat', 'modifyAttribute', 'grantPerk'], `${id}/${option.id}`).not.toContain(c.type);
           if (c.type === 'grantItem') expect(itemIds.has(c.itemId), c.itemId).toBe(true);
           if (c.type === 'learnSpell') expect(spellIds.has(c.spellId), c.spellId).toBe(true);
+          if (c.type === 'grantItem' || c.type === 'learnSpell') given++;
         }
       }
     }
+    expect(given).toBeGreaterThan(0);
   });
 });

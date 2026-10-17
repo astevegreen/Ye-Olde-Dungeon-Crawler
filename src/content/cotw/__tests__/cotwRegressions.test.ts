@@ -118,6 +118,7 @@ describe('R-cotw-9 · the Sage’s elemental advisories follow the zones and rec
     (m.hooks ?? []).some((h) => h.action?.gasType?.startsWith(element));
 
   it('each band ends at a zone’s end, and a monster that unlocks inside it deals its element', () => {
+    expect(COTW_FLOOR_HAZARDS.some((band) => band.maxFloor !== undefined)).toBe(true);
     for (const band of COTW_FLOOR_HAZARDS) {
       if (band.maxFloor !== undefined) expect(ZONE_STARTS, `${band.element} band ends at ${band.maxFloor}`).toContain(band.maxFloor + 1);
       const inBand = (cotwManifest.monsters as MonsterDef[]).filter((m) => (m.minFloor ?? 1) >= band.minFloor && (m.minFloor ?? 1) <= (band.maxFloor ?? 50));

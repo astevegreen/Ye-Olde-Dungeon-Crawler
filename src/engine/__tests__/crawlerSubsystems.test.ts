@@ -404,10 +404,9 @@ describe('Dungeon Exploration & Tactical Crawler Subsystems', () => {
       const goal = { x: 11, y: 11 };
 
       const path = findAStarPath(map, engine.fov, start, goal);
-      // If path exists, it cannot jump directly from (10, 10) to (11, 11) in 1 diagonal step
-      if (path.length > 0) {
-        expect(path[0]).not.toEqual({ x: 11, y: 11 });
-      }
+      // The path goes around the walls instead of jumping from (10, 10) to (11, 11) in one diagonal step
+      expect(path[path.length - 1]).toEqual(goal);
+      expect(path.length).toBeGreaterThan(1);
     });
   });
 });

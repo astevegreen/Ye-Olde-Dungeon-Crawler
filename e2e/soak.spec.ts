@@ -332,7 +332,7 @@ test.describe('soak @soak', () => {
     };
 
     // A deep start replays only with its floor (and level) named.
-    const startLevel = process.env.SOAK_START_LEVEL;
+    const startLevel = parseInt(process.env.SOAK_START_LEVEL ?? '0', 10) || 0;
     const deepRepro = startFloor > 0 ? ` SOAK_START_FLOOR=${startFloor}${startLevel ? ` SOAK_START_LEVEL=${startLevel}` : ''}` : '';
     const repro = (i: number) =>
       `SOAK=1 SOAK_SEED=${seed} SOAK_POLICY=${policy} SOAK_OPENING=${opening}${deepRepro} SOAK_ACTIONS=${i + 1} npx playwright test e2e/soak.spec.ts --project=chromium --workers=1`;

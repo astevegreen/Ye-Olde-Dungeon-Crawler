@@ -54,6 +54,8 @@ export interface PlayerBotState {
   unstickStepsRemaining: number;
   stuckEpisodes: number;
   floorEnteredTurn: number;
+  /** Steps out of a caster's sight on this floor (the tactic stops at 40). */
+  losBreaksHere: number;
   lastFloorSeen: number;
   lastRestAttemptTurn: number;
   lastPickupTurn: number;
@@ -122,6 +124,8 @@ export interface BotTelemetry {
   cornered: number;
   /** Steps off a hazard tile (fire, acid, a firestorm, a poison cloud) the hero stood on. */
   hazardSteps: number;
+  /** Steps through a found trap: the only way on from where the hero was walled in. */
+  trapCrossings: number;
   /** Shift+D pressed beside or on a revealed trap (each trap once). */
   disarmAttempts: number;
   /** Steps back into a corridor or doorway with two or more foes closing in. */
@@ -254,6 +258,7 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
       unstickStepsRemaining: 0,
       stuckEpisodes: 0,
       floorEnteredTurn: 0,
+      losBreaksHere: 0,
       lastFloorSeen: -1,
       lastRestAttemptTurn: -1,
       lastPickupTurn: -1,
@@ -288,6 +293,7 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
         dodges: 0,
         cornered: 0,
         hazardSteps: 0,
+        trapCrossings: 0,
         disarmAttempts: 0,
         corridorRetreats: 0,
         losBreaks: 0,
@@ -347,6 +353,7 @@ interface DecisionResult {
   telegraph?: 'dodge' | 'cornered' | 'stay';
   /** Stepped off a hazard tile. */
   hazardStep?: boolean;
+  trapCrossing?: boolean;
   /** A revealed trap ("floor:x,y") Shift+D was pressed for. */
   trapTried?: string;
   /** A C2 move: back into a corridor, or out of a caster's sight. */
@@ -437,6 +444,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
     (args: {
       inDialog: boolean;
       floorEnteredTurn: number;
+      losBreaksHere: number;
       lastRestAttemptTurn: number;
       lastPickupPos: string;
       lastPickupTurn: number;
@@ -1342,11 +1350,15 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         return best ? castAt(best.c, 'damage', best.t) : null;
       };
 
+      // `trapsOk`: the last resort, when only a found trap stands between the hero and the rest
+      // of the floor (a trap in the one doorway): cross it rather than search forever.
       const bfsStepToGoal = (
         start: { x: number; y: number },
         goal: { x: number; y: number },
-        isDungeonFloor: boolean
+        isDungeonFloor: boolean,
+        trapsOk = false
       ): { x: number; y: number } | null => {
+        const blocked = trapsOk ? onHazard : avoid;
         if (cheb(start, goal) === 1) return goal;
         const width = e.map.width;
         const height = e.map.height;
@@ -1390,7 +1402,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
             const isDest = nKey === goalKey;
 
             if (!isDest) {
-              if (avoid(nx, ny)) continue;
+              if (blocked(nx, ny)) continue;
               if (isDungeonFloor) {
                 const passable =
                   tile &&
@@ -1417,7 +1429,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         return null;
       };
 
-      const bfsStepToFrontier = (start: { x: number; y: number }): { x: number; y: number } | null => {
+      const bfsStepToFrontier = (start: { x: number; y: number }, trapsOk = false): { x: number; y: number } | null => {
+        const blocked = trapsOk ? onHazard : avoid;
         const width = e.map.width;
         const height = e.map.height;
         const key = (x: number, y: number) => y * width + x;
@@ -1434,7 +1447,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
 
         const isFrontier = (x: number, y: number): boolean => {
           if (e.fov.getVisibility(x, y) === 0) return false;
-          if (avoid(x, y)) return false;
+          if (blocked(x, y)) return false;
           const t = e.map.getTile(x, y);
           if (
             !t ||
@@ -1492,7 +1505,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
                 tile.type === 'door_closed' ||
                 tile.type === 'door_open');
             if (!passable) continue;
-            if (avoid(nx, ny)) continue;
+            if (blocked(nx, ny)) continue;
 
             cameFrom[nKey] = curKey;
             queue.push(nKey);
@@ -1787,7 +1800,9 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         const casters = visibleHostiles.filter(
           (m: any) => m.aiState !== 'sleeping' && cheb(m, p) >= 2 && (m.aiType === 'caster' || (m.spells?.length ?? 0) > 0)
         );
-        if (casters.length > 0 && p.hp < p.maxHp * 0.7) {
+        // A caster that never comes in leaves the hero hiding and peeking forever: after 40
+        // hiding steps on one floor, the hero fights instead.
+        if (casters.length > 0 && p.hp < p.maxHp * 0.7 && args.losBreaksHere < 40) {
           const cover = safeSteps().find((s) => casters.every((c: any) => !lineOfSight(c, { x: p.x + s.dx, y: p.y + s.dy })));
           if (cover) return { action: { type: 'key' as const, key: stepToKey(cover.dx, cover.dy) }, curPos, curTurn, curFloor, tactic: 'los' as const };
         }
@@ -2045,6 +2060,12 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           }
         }
 
+        // Walled in by found traps: cross one (the disarm rule above tries it first, once).
+        const past = seenStairsDown ? bfsStepToGoal(p, seenStairsDown, true, true) : bfsStepToFrontier(p, true);
+        if (past) {
+          return { action: { type: 'key' as const, key: stepToKey(past.x - p.x, past.y - p.y) }, curPos, curTurn, curFloor, trapCrossing: true };
+        }
+
         return { action: { type: 'key' as const, key: 'KeyS' }, curPos, curTurn, curFloor };
       }
 
@@ -2059,6 +2080,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
     {
       inDialog,
       floorEnteredTurn: state.floorEnteredTurn,
+      losBreaksHere: state.losBreaksHere,
       lastRestAttemptTurn: state.lastRestAttemptTurn,
       lastPickupPos: state.lastPickupPos,
       lastPickupTurn: state.lastPickupTurn,
@@ -2161,8 +2183,12 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
   if (evalResult.telegraph === 'dodge') tel.dodges++;
   if (evalResult.telegraph === 'cornered') tel.cornered++;
   if (evalResult.hazardStep) tel.hazardSteps++;
+  if (evalResult.trapCrossing) tel.trapCrossings++;
   if (evalResult.tactic === 'corridor') tel.corridorRetreats++;
-  if (evalResult.tactic === 'los') tel.losBreaks++;
+  if (evalResult.tactic === 'los') {
+    tel.losBreaks++;
+    state.losBreaksHere++;
+  }
   // A pack item to use: remembered from the decision that opens the inventory until the use
   // is over, or the menu closed without it.
   if (evalResult.useItem) {
@@ -2182,6 +2208,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
   if (curFloor !== state.lastFloorSeen) {
     state.lastFloorSeen = curFloor;
     state.floorEnteredTurn = curTurn;
+    state.losBreaksHere = 0;
     state.serviceTried = state.serviceTried.filter((k) => k !== 'inventory:consolidate');
     if (curFloor === 0) {
       // A new stay in town: every merchant and service again.

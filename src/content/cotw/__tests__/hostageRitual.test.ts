@@ -237,12 +237,15 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
       engine.handlePlayerAction(new MovementAction(player, 1, 0)); // 1 rescued by hand
 
       map.setTile(5, 8, getTileDefinition(SIPHON_ALTAR_TILE));
+      // The altar's choice is answered; the frith pick it opens straight after is left open.
+      const opened: string[] = [];
       engine.onChoiceInteract = (choice, onSelect) => {
-        expect(choice.id).toBe('blood_altar_ritual');
-        onSelect('balance_path');
+        opened.push(choice.id);
+        if (choice.id === 'blood_altar_ritual') onSelect('balance_path');
       };
       player.setPosition(5, 7);
       engine.handlePlayerAction(new MovementAction(player, 0, 1));
+      expect(opened).toEqual(['blood_altar_ritual', 'siphon_frith_gift']);
 
       // Ingrid, who offered herself, was cut loose by hand; of the 3 remaining, balance gives
       // the altar only Sigrid, the other willing one: 3 to 1, a frith pick owed.

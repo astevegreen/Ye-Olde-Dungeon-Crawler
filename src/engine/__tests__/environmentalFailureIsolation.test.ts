@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { allowIsolatedFailures } from '../../../tests/setup/isolatedFailures';
 import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
@@ -31,6 +32,7 @@ const envFailures = () =>
 
 describe('Environmental update failure isolation', () => {
   it('isolates a throwing surface tick and still runs later updates', () => {
+    allowIsolatedFailures();
     const { engine, player } = buildEngine();
     let spawnsChecked = false;
     let floorRespawnTicked = false;
@@ -62,6 +64,7 @@ describe('Environmental update failure isolation', () => {
   });
 
   it('isolates a throwing player status tick', () => {
+    allowIsolatedFailures();
     const { engine, player } = buildEngine({
       statusHandlers: {
         [FAULTY_STATUS]: {

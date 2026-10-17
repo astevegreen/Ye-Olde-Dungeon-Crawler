@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { allowIsolatedFailures } from '../../../tests/setup/isolatedFailures';
 import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
@@ -54,6 +55,7 @@ const orcAttacks = (engine: GameEngine) => engine.messages.filter((m) => m.start
 
 describe('R-pipe-3 · a floor whose generation throws leaves the hero where they stood', () => {
   it('the hero stays on the old map, in the scheduler, and can still move', () => {
+    allowIsolatedFailures();
     const base = build(50).engine;
     const map = new GameMap(14, 14, TILES.FLOOR);
     map.setTile(2, 2, TILES.STAIRS_DOWN);

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { allowIsolatedFailures } from '../../../tests/setup/isolatedFailures';
 import { Item } from '../items/item';
 import { Container } from '../items/container';
 import { WandItem, PotionItem } from '../items/consumables';
@@ -284,6 +285,7 @@ describe('Item Containment Scalar ID Normalization & Serialization Hardening', (
     });
 
     it('safely records errors containing circular metadata and generates reports cleanly', () => {
+      allowIsolatedFailures();
       const circularErrMeta: any = { action: 'attack' };
       circularErrMeta.loop = circularErrMeta;
 

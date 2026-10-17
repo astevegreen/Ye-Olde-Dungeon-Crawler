@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { allowIsolatedFailures } from '../../../tests/setup/isolatedFailures';
 import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
 import { Player } from '../entities/player';
@@ -31,6 +32,7 @@ const boom = () => {
 };
 
 describe('R-pipe-17 · presentation callbacks and the forced pass are isolated', () => {
+  beforeEach(() => allowIsolatedFailures());
   afterEach(() => vi.restoreAllMocks());
 
   it('a throwing entity_killed subscriber does not stop the death halfway', () => {

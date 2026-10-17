@@ -56,6 +56,8 @@ export class FlightRecorder {
   private buffer: FlightEvent[] = [];
   public readonly capacity: number;
   private nextId = 1;
+  /** Every error recorded in this process. Unlike the buffer it never drops one, and `clear()` keeps it. */
+  private errorsRecorded = 0;
 
   // Replay: a save taken at an action boundary, and every player action since.
   private trail: TrailEntry[] = [];
@@ -315,10 +317,15 @@ export class FlightRecorder {
     };
   }
 
+  public get errorCount(): number {
+    return this.errorsRecorded;
+  }
+
   public recordError(
     error: Error | string,
     context?: Record<string, unknown>
   ): FlightEvent {
+    this.errorsRecorded += 1;
     try {
       const message = error instanceof Error ? error.message : String(error);
       const stack = error instanceof Error ? error.stack : undefined;

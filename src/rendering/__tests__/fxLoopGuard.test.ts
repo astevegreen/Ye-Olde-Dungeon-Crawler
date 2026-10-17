@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { allowIsolatedFailures } from '../../../tests/setup/isolatedFailures';
 import { CanvasFXRunner } from '../fxRunner';
 import { GameEngine, GameMap, Player, MemoryStorage } from '../../engine';
 import { InputHandler } from '../input-handler';
@@ -11,6 +12,7 @@ describe('the effect loop survives a throwing frame', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('playEffects still settles when onFrame throws', async () => {
+    allowIsolatedFailures();
     let next: ((t: number) => void) | null = null;
     vi.stubGlobal('window', {});
     vi.stubGlobal('requestAnimationFrame', (cb: (t: number) => void) => {

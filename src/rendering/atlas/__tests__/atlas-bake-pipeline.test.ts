@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
+import { allowIsolatedFailures } from '../../../../tests/setup/isolatedFailures';
 import {
   SpriteAtlas,
   ATLAS_MAP,
@@ -113,6 +114,7 @@ describe('Atlas bake pipeline — supersampling, downsample, shading, outline/hi
     });
 
     it('records a failed pixel readback and keeps the pixels as drawn, so startup carries on', () => {
+      allowIsolatedFailures();
       // WebKit throws this from getImageData when its GPU process stalls past its 15 s timeout.
       createElementSpy.mockImplementation((tag: string) => {
         if (tag !== 'canvas') return {};

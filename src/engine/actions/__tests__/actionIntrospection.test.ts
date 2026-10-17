@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { allowIsolatedFailures } from '../../../../tests/setup/isolatedFailures';
 import { ActionPipeline, type ActionHook, type ActionHookContext } from '../actionPipeline';
 import type { Action } from '../action';
 import { GameEngine } from '../../engine';
@@ -55,6 +56,7 @@ describe('ActionPipeline action introspection', () => {
     });
 
     it('attributes a pipeline failure to the resolved actor id', () => {
+      allowIsolatedFailures();
       const failing: Action = { attacker: kobold, perform: () => { throw new Error('INTROSPECTION_ATTRIBUTION'); } };
       pipeline.executeWithHooks(failing, engine);
 

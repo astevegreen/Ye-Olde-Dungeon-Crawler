@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { allowIsolatedFailures } from '../../../tests/setup/isolatedFailures';
 import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
@@ -60,6 +61,7 @@ const chebyshev = (a: { x: number; y: number }, b: { x: number; y: number }) =>
 
 describe('Whole-turn failure isolation: monster turns', () => {
   it('isolates a throwing monster AI routine, surfaces it as pipelineError, and does not spin the scheduler', () => {
+    allowIsolatedFailures();
     const { engine, player } = buildEngine({
       aiStrategies: [
         {
@@ -96,6 +98,7 @@ describe('Whole-turn failure isolation: monster turns', () => {
   });
 
   it('isolates a throwing status handler ticking on a monster', () => {
+    allowIsolatedFailures();
     const { engine, player } = buildEngine({
       statusHandlers: {
         [FAULTY_STATUS]: {

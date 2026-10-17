@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect } from 'vitest';
+import { allowIsolatedFailures } from '../../../../tests/setup/isolatedFailures';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
@@ -42,6 +43,7 @@ function lastPipelineError() {
 }
 
 describe('ActionPipeline failure contract: executeWithHooks always returns a valid ActionResult', () => {
+  beforeEach(() => allowIsolatedFailures());
   it('isolates a pre-hook that short-circuits without an ActionResult instead of returning undefined', () => {
     const malformedPreHook: ActionHook = {
       id: 'malformed-pre-hook',

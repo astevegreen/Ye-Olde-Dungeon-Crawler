@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { allowIsolatedFailures } from '../../../../tests/setup/isolatedFailures';
 import { ActionPipeline, type ActionHook } from '../actionPipeline';
 import type { Action } from '../action';
 import type { ActionResult } from '../../types';
@@ -298,6 +299,7 @@ describe('Action Pipeline Hooks & Manifest Integration (Phase 3)', () => {
 
   describe('Failure Isolation Contract (Gap 2)', () => {
     it('isolates content-style pre-hook exception: returns success: false, logs error, and trips CI counter', () => {
+      allowIsolatedFailures();
       const explodingHook: ActionHook = {
         id: 'exploding-content-hook',
         phase: 'pre',
@@ -359,6 +361,7 @@ describe('Action Pipeline Hooks & Manifest Integration (Phase 3)', () => {
     });
 
     it('isolates action.perform() engine exception: returns success: false, cost: 0, and increments counter', () => {
+      allowIsolatedFailures();
       const { engine } = createTestEngine();
       const faultyAction: Action = {
         perform: () => {
@@ -384,6 +387,7 @@ describe('Action Pipeline Hooks & Manifest Integration (Phase 3)', () => {
     });
 
     it('isolates post-hook exception: the action stands, marked pipelineError, its turn passes, and the error is logged (R-pipe-24)', () => {
+      allowIsolatedFailures();
       const faultyPostHook: ActionHook = {
         id: 'faulty-post-hook',
         phase: 'post',

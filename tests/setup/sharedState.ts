@@ -3,8 +3,9 @@
  * imported. Without isolation a worker keeps one module graph across files, so whatever
  * process-level state a file leaves behind is what the next file starts from.
  */
-import { afterAll } from 'vitest';
+import { afterAll, afterEach, beforeEach } from 'vitest';
 import { flightRecorder } from '../../src/engine/debug/flightRecorder';
+import { takeIsolatedFailureAllowance } from './isolatedFailures';
 import {
   activateRegistries,
   processDefaultCompanionStore,
@@ -22,6 +23,27 @@ activateRegistries(null);
 // leaves events stamped ahead of the real clock, so the next file's would sort before them
 // (chaosSimulation checks the order). A file starts with it empty, as in a fresh process.
 flightRecorder.clear();
+
+// The engine catches an error at its boundaries and plays on (ARCHITECTURE.md §4), so a test
+// whose action threw would still pass. It fails here unless it called allowIsolatedFailures()
+// (tests/setup/isolatedFailures.ts). These hooks run first and last around a test.
+let errorsBefore = 0;
+beforeEach(() => {
+  errorsBefore = flightRecorder.errorCount;
+});
+afterEach(() => {
+  const caught = flightRecorder.errorCount - errorsBefore;
+  if (takeIsolatedFailureAllowance() || caught === 0) return;
+  const recent = flightRecorder
+    .getEvents()
+    .filter((e) => e.type === 'error')
+    .slice(-Math.min(caught, 3))
+    .map((e) => `  ${e.summary} (${String(e.details?.source ?? 'no source')})`);
+  throw new Error(
+    `The engine caught ${caught} error(s) during this test and played on:\n${recent.join('\n')}\n` +
+      'A test that causes them on purpose calls allowIsolatedFailures() first.'
+  );
+});
 
 // No engine module registers a monster, spell, companion or trap at import, so these
 // process defaults hold only what a test put there, and every engine built after it would

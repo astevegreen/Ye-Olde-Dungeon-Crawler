@@ -532,6 +532,13 @@ export class InputHandler {
       if (!this.modalStack.isEmpty()) {
         return this.modalStack.handleKeyDown(e);
       }
+      // A key still ends a rest: a caster hitting the resting hero turn after turn plays
+      // its effects back to back, and the lock would never let a key through.
+      if (this.autoRestRunner?.active) {
+        this.autoRestRunner.cancel('Rest interrupted by keypress.');
+        this.onActionProcessed();
+        return true;
+      }
       return false;
     }
 

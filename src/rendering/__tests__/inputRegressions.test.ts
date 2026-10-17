@@ -320,3 +320,25 @@ describe('R-rend-14 · a key bound to Smart Close Door closes the door, like C',
     expect(acted).toEqual(['CloseDoorAction']);
   });
 });
+
+describe('a keypress stops a rest even while effects hold input', () => {
+  it('cancels the rest instead of dropping the key', () => {
+    // P-36 soak, floor 14 seeds 3 and 9: an unseen Näcken cast at the resting hero over and
+    // over; each cast's projectile held input, back to back, so no key could end the rest.
+    const engine = new GameEngine({ map: new GameMap(20, 20), player: new Player({ position: { x: 10, y: 10 } }) });
+    const acted = vi.spyOn(engine, 'handlePlayerAction');
+    const ih = new InputHandler(engine, () => {}, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, new SettingsManager(new MemoryStorage()));
+    ih.enabled = true;
+    const cancel = vi.fn();
+    ih.autoRestRunner = { active: true, start: vi.fn(), cancel } as never;
+    const release = ih.holdInput();
+
+    const handled = ih.handleKeyDown(ev('ArrowUp'));
+    release();
+    ih.destroy();
+
+    expect(cancel).toHaveBeenCalledWith('Rest interrupted by keypress.');
+    expect(handled).toBe(true);
+    expect(acted).not.toHaveBeenCalled();
+  });
+});

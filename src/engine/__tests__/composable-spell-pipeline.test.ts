@@ -8,6 +8,7 @@ import { CastSpellAction } from '../actions/spell-actions';
 import { SpellRegistry } from '../magic/spellRegistry';
 import type { SpellDefinition } from '../magic/types';
 import { parseAndRollDice } from '../magic/spellPipeline';
+import { PRNG } from '../dungeon/prng';
 
 describe('Composable Spell Pipeline & Effect Primitives', () => {
   function createTestEngine() {
@@ -26,12 +27,14 @@ describe('Composable Spell Pipeline & Effect Primitives', () => {
   }
 
   it('correctly parses and evaluates dice notations and fixed numbers', () => {
-    expect(parseAndRollDice(25, Math.random)).toBe(25);
-    expect(parseAndRollDice('30', Math.random)).toBe(30);
+    const prng = new PRNG(7);
+    const rng = () => prng.next();
+    expect(parseAndRollDice(25, rng)).toBe(25);
+    expect(parseAndRollDice('30', rng)).toBe(30);
 
-    // Roll 100 iterations of 2d6+4 to verify range [6, 16]
+    // Roll 2d6+4 fifty times to verify range [6, 16]
     for (let i = 0; i < 50; i++) {
-      const rolled = parseAndRollDice('2d6+4', Math.random);
+      const rolled = parseAndRollDice('2d6+4', rng);
       expect(rolled).toBeGreaterThanOrEqual(6);
       expect(rolled).toBeLessThanOrEqual(16);
     }

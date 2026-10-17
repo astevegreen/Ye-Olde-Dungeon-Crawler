@@ -134,7 +134,7 @@ describe('Bug report package', () => {
 describe('Bug report replay', () => {
   it('reproduces the reported state from checkpoint + trail', () => {
     const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
-    const { engine, profile } = pm.createCharacter('Replayer', { manifest: cotwManifest });
+    const { engine, profile } = pm.createCharacter('Replayer', { manifest: cotwManifest, seed: 7 });
     engine.changeFloor(3);
     for (let i = 0; i < 60; i++) {
       const [dx, dy] = DIRS[(i * 7) % 8];
@@ -158,7 +158,7 @@ describe('Bug report replay', () => {
 
   it('loads replay data out of a copied Markdown report', () => {
     const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
-    const { engine, profile } = pm.createCharacter('Markdown', { manifest: cotwManifest });
+    const { engine, profile } = pm.createCharacter('Markdown', { manifest: cotwManifest, seed: 7 });
     engine.changeFloor(2);
     engine.handlePlayerAction(new WaitAction(engine.player));
     const markdown = flightRecorder.generateReport(engine, profile, { scope: 'map' });
@@ -170,7 +170,7 @@ describe('Bug report replay', () => {
 
   it('takes a new checkpoint after a triage change, since the trail cannot replay it', () => {
     const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
-    const { engine } = pm.createCharacter('Triage', { manifest: cotwManifest });
+    const { engine } = pm.createCharacter('Triage', { manifest: cotwManifest, seed: 7 });
     engine.changeFloor(1);
     engine.handlePlayerAction(new WaitAction(engine.player));
     engine.diagnostics.restoreVitals();
@@ -182,7 +182,7 @@ describe('Bug report replay', () => {
 
   it('reports what it cannot rebuild instead of replaying past it', () => {
     const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
-    const { engine } = pm.createCharacter('Stops', { manifest: cotwManifest });
+    const { engine } = pm.createCharacter('Stops', { manifest: cotwManifest, seed: 7 });
     const result = replayActionTrail(engine, [
       { seq: 1, turn: 0, floor: 0, action: 'WaitAction', params: {} },
       { seq: 2, turn: 1, floor: 0, action: 'SomePackAction', params: {} },

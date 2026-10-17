@@ -40,6 +40,7 @@ describe('Headless Chaos / Monkey Simulation (5,000 Actions)', () => {
     const session = pm.createCharacter('ChaosMonkey', {
       strength: 14,
       startInTown: true,
+      seed: 1337,
     });
     let engine = session.engine;
     let profile = session.profile;

@@ -6,7 +6,7 @@ import { TILES } from '../../grid/tile';
 
 function newGame() {
   const pm = new ProfileManager(new MemoryStorage(), cotwManifest);
-  return pm.createCharacter('Triage', { manifest: cotwManifest }).engine;
+  return pm.createCharacter('Triage', { manifest: cotwManifest, seed: 7 }).engine;
 }
 
 describe('engine.diagnostics triage operations', () => {

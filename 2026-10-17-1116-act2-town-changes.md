@@ -24,6 +24,8 @@ Easy tier: rearrange existing props, townsfolk arrive/leave (reuse villager art 
 Opus 5.5 at high thinking — the staged-patch hook and the passability rules decide the outcome. The art recipes can drop to Sonnet 5.5.
 
 ## Decisions
+- Looks only: no change affects play — owner: "Looks only (Recommended)"
+- At Herald only plain villagers leave; every shop and service stays — owner: "Only plain villagers (Recommended)"
 - Hard tier deferred: whole-town snowmelt (needs per-stage floor art switching, an engine capability), falling snow and chimney smoke (no weather rendering exists), new outfits for named townsfolk. Consider it later if time and resources allow. Owner: see Goal.
 - Endings can't show in town: both end the run on Floor 50 (`quest.ts:95-98`, `:138`).
 - No save-format change and no §8.1 files: the town is a stored floor-0 map whose edits and NPCs save as they are (`serializer.ts:830-855`).

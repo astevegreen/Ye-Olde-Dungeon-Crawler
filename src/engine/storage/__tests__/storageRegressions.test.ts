@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from 'vitest';
+import { describe, it, expect, afterAll, vi } from 'vitest';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
@@ -156,11 +156,13 @@ describe('R-stor-6 · loadAutosaveResult applies the version gate to a newer sch
     const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player: new Player({ id: 'h', name: 'H', position: { x: 5, y: 5 } }) });
     const data = serializeGame(engine);
     storage.setItem(autosaves.autosaveKey, JSON.stringify({ schemaVersion: 99, contentManifestId: 'x', timestamp: 1, profile: data.profile, data }));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const outcome = autosaves.loadAutosaveResult();
 
     expect(outcome.ok).toBe(false);
     expect(outcome.ok ? undefined : outcome.reason).toBe('newer-than-engine');
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('(newer-than-engine)'), expect.anything());
   });
 
   it.each([['a string', 'abc'], ['a missing', undefined]])('an autosave with %s version is refused', (_label, version) => {
@@ -169,8 +171,10 @@ describe('R-stor-6 · loadAutosaveResult applies the version gate to a newer sch
     const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player: new Player({ id: 'h', name: 'H', position: { x: 5, y: 5 } }) });
     const data = serializeGame(engine);
     storage.setItem(autosaves.autosaveKey, JSON.stringify({ schemaVersion: version, contentManifestId: 'x', timestamp: 1, profile: data.profile, data }));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     expect(autosaves.loadAutosaveResult().ok).toBe(false);
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('(corrupt)'), expect.anything());
   });
 });
 
@@ -311,10 +315,12 @@ describe('R-stor-17 · a foreign save is not trusted for sizes', () => {
     data.map.width = 100000;
     data.map.height = 100000;
     storage.setItem(autosaves.autosaveKey, JSON.stringify({ schemaVersion: CURRENT_SCHEMA_VERSION, contentManifestId: 'x', timestamp: 1, profile: data.profile, data }));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const outcome = autosaves.loadAutosaveResult();
 
     expect(outcome.ok ? undefined : outcome.reason).toBe('corrupt');
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('(corrupt)'), expect.anything());
   });
 
   it('FOV data longer than the map is read only as far as the map, quickly', () => {
@@ -354,10 +360,12 @@ describe('R-stor-17 · a foreign save is not trusted for how many stored floors 
     const autosaves = new AutosaveManager(storage);
     const data = saveWithStoredFloors(257);
     storage.setItem(autosaves.autosaveKey, JSON.stringify({ schemaVersion: CURRENT_SCHEMA_VERSION, contentManifestId: 'x', timestamp: 1, profile: data.profile, data }));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const outcome = autosaves.loadAutosaveResult();
 
     expect(outcome.ok ? undefined : outcome.reason).toBe('corrupt');
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('(corrupt)'), expect.anything());
   });
 
   it('a save holding 256 stored floors still loads', () => {

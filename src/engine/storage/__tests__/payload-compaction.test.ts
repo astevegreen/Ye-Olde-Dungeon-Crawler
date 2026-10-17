@@ -121,8 +121,6 @@ describe('Storage Payload Compaction & RLE Benchmarking', () => {
     const sizeInBytes = new TextEncoder().encode(jsonString).length;
     const sizeInKB = sizeInBytes / 1024;
 
-    console.log(`Campaign Save Payload Size (Town + 5 Floors): ${sizeInKB.toFixed(2)} KB (${sizeInBytes} bytes)`);
-
     // Must be well under 500 KB (and easily beat the 50 KB target!)
     expect(sizeInKB).toBeLessThan(500);
     expect(sizeInKB).toBeLessThan(50);

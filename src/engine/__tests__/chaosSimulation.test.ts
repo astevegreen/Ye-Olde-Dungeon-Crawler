@@ -78,10 +78,7 @@ describe('Headless Chaos / Monkey Simulation (5,000 Actions)', () => {
     let successfulActions = 0;
     let failedActions = 0;
     let saveReloadCount = 0;
-    let deathCount = 0;
     const saveSizesKb: number[] = [];
-
-    const startTime = Date.now();
 
     // 2. 5,000-Action Chaos Loop
     for (let tick = 1; tick <= TOTAL_ACTIONS; tick++) {
@@ -92,7 +89,6 @@ describe('Headless Chaos / Monkey Simulation (5,000 Actions)', () => {
 
       // Revive player if killed in previous combat so stress test continues
       if (!p.isAlive()) {
-        deathCount++;
         p.hp = p.maxHp;
         p.mana = p.maxMana;
       }
@@ -298,21 +294,7 @@ describe('Headless Chaos / Monkey Simulation (5,000 Actions)', () => {
       }
     }
 
-    const durationMs = Date.now() - startTime;
-    const avgMsPerTick = durationMs / TOTAL_ACTIONS;
-
-    console.log(`\n======================================================`);
-    console.log(`CHAOS SIMULATION COMPLETE`);
-    console.log(`Total Actions: ${TOTAL_ACTIONS}`);
-    console.log(`Successful: ${successfulActions} | Rejected/Invalid: ${failedActions}`);
-    console.log(`Save & Reload Cycles: ${saveReloadCount}`);
-    console.log(`Player Deaths Revived: ${deathCount}`);
-    console.log(`Total Duration: ${durationMs}ms`);
-    console.log(`Avg Tick Latency: ${avgMsPerTick.toFixed(3)}ms`);
     expect(saveSizesKb.length).toBe(saveReloadCount);
-    console.log(`Save Payload Sizes: ${saveSizesKb.join(' KB, ')} KB`);
-    console.log(`======================================================\n`);
-
     expect(successfulActions + failedActions).toBeGreaterThanOrEqual(TOTAL_ACTIONS - 100);
     // Wall-clock budgets live in `npm run sim` (scripts/headless-sim.ts), not in the correctness suite.
   }, 120_000);

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AutosaveManager } from '../autosaveManager';
 import { MemoryStorage } from '../profile-manager';
 import { GameEngine } from '../../engine';
@@ -188,10 +188,12 @@ describe('AutosaveManager Background Persistence', () => {
       length: 0,
     };
     const manager = new AutosaveManager(errorStorage);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     expect(manager.hasAutosave()).toBe(false);
     expect(manager.autosave(engine, profile)).toBe(false);
     expect(manager.loadAutosave()).toBeNull();
     expect(() => manager.clearAutosave()).not.toThrow();
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('(corrupt)'), expect.anything());
   });
 });

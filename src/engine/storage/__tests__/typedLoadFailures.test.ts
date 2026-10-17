@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ProfileManager } from '../profile-manager';
 import { AutosaveManager } from '../autosaveManager';
 import { CURRENT_SCHEMA_VERSION } from '../migrator';
@@ -39,9 +39,11 @@ describe('Typed load failures', () => {
   it('reports unparseable JSON as corrupt, and notifies', () => {
     const pm = new ProfileManager(storage as any);
     storage.setItem(`${pm.saveKeyPrefix}hero-1`, '{ this is not json');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const outcome = pm.loadCharacterResult('hero-1');
 
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('(corrupt)'), expect.anything());
     expect(outcome.ok).toBe(false);
     if (!outcome.ok) {
       expect(outcome.reason).toBe('corrupt');
@@ -57,9 +59,11 @@ describe('Typed load failures', () => {
       `${pm.saveKeyPrefix}hero-2`,
       JSON.stringify({ schemaVersion: CURRENT_SCHEMA_VERSION + 5, contentManifestId: 'cotw', timestamp: 1, data: {} })
     );
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const outcome = pm.loadCharacterResult('hero-2');
 
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('(newer-than-engine)'), expect.anything());
     expect(outcome.ok).toBe(false);
     if (!outcome.ok) {
       expect(outcome.reason).toBe('newer-than-engine');
@@ -76,7 +80,9 @@ describe('Typed load failures', () => {
     if (!missing.ok) expect(missing.reason).toBe('missing');
 
     storage.setItem(am.autosaveKey, '{ broken');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const corrupt = am.loadAutosaveResult();
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('(corrupt)'), expect.anything());
     expect(corrupt.ok).toBe(false);
     if (!corrupt.ok) {
       expect(corrupt.reason).toBe('corrupt');

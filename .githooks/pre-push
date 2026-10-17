@@ -9,7 +9,7 @@
 # run lint and the unit tests.)
 #
 # A push that updates only the `handoffs` branch carries handoff notes and no code
-# (.claude/skills/handoff/notes.sh), so it runs no gate.
+# (.claude/skills/handoff/notes.mjs), so it runs no gate.
 #
 # Set SKIP_HOOKS=1 to bypass deliberately, as with the other hooks.
 set -e

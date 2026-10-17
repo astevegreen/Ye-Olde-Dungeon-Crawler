@@ -1,3 +1,6 @@
+// SessionStart (startup, clear): tell the owner when an unclaimed handoff note is waiting, from the
+// local copy of origin/handoffs (no fetch: a session start never waits on the network or a login).
+// Shown to the owner only, never to Claude.
 // Stop hook, two checks, both held while background work is running (below). A reply that sends the owner to /clear or /handoff resume goes back to
 // Claude unless an unclaimed note is published (below). And once the conversation passes LIMIT tokens, send Claude back to write the handoff
 // before it finishes the turn. CLAUDE.md's "the session has run long" never fired on judgement
@@ -8,6 +11,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { openNotes } from '../skills/handoff/notes.mjs';
 
 const LIMIT = 200_000;
 
@@ -15,6 +19,22 @@ let input;
 try {
   input = JSON.parse(readFileSync(0, 'utf8'));
 } catch {
+  process.exit(0);
+}
+if (input?.hook_event_name === 'SessionStart') {
+  let notes = [];
+  try {
+    notes = openNotes(input.cwd || process.cwd());
+  } catch {
+    process.exit(0);
+  }
+  if (notes.length > 0) {
+    const systemMessage =
+      notes.length === 1
+        ? `Open handoff note: ${notes[0].name}. Type /handoff resume to continue it.`
+        : `${notes.length} open handoff notes, newest ${notes[0].name}. Type /handoff resume to pick one.`;
+    process.stdout.write(JSON.stringify({ systemMessage }));
+  }
   process.exit(0);
 }
 if (input?.stop_hook_active || !input?.transcript_path || !input?.session_id) process.exit(0);
@@ -67,9 +87,9 @@ if (running.length > 0) {
 if (sendsToClear.test(closing) && !publishedOpenNote(entries)) {
   process.stderr.write(
     `Your reply sends the owner to /clear or /handoff resume, but this session has published no ` +
-      `unclaimed note since its last commit, so the next session's \`notes.sh list\` finds nothing. ` +
+      `unclaimed note since its last commit, so the next session's \`notes.mjs list\` finds nothing. ` +
       `Run the handoff skill's write branch now (a new note; a note you resumed stays claimed), then ` +
-      `tell the owner. When the reply only explains the workflow, or \`notes.sh list\` already shows ` +
+      `tell the owner. When the reply only explains the workflow, or \`notes.mjs list\` already shows ` +
       `the note it points to, end the turn as it is.\n`,
   );
   process.exit(2);
@@ -103,7 +123,7 @@ const handedOff = toolUses.some(
     (part.name === 'Skill' &&
       String(part.input?.skill ?? '').endsWith('handoff') &&
       !String(part.input?.args ?? '').trim().startsWith('resume')) ||
-    /notes\.sh"?\s+publish/.test(String(part.input?.command ?? '')),
+    /notes\.mjs"?\s+publish\b/.test(String(part.input?.command ?? '')),
 );
 
 mkdirSync(join(tmpdir(), 'yodc-handoff-nudge'), { recursive: true });
@@ -175,7 +195,7 @@ function lastAssistantText(list) {
   return '';
 }
 
-// The latest `notes.sh publish` after the latest `git commit` printed `pushed` or `unchanged`
+// The latest `notes.mjs publish` after the latest `git commit` printed `pushed` or `unchanged`
 // for a note that, on the local copy of origin/handoffs, carries no Resumed: line.
 function publishedOpenNote(list) {
   const results = new Map();
@@ -192,7 +212,7 @@ function publishedOpenNote(list) {
     if (e.type !== 'assistant' || !Array.isArray(e.message?.content)) continue;
     for (const part of e.message.content) {
       const command = part?.type === 'tool_use' ? String(part.input?.command ?? '') : '';
-      if (/notes\.sh"?\s+publish/.test(command)) {
+      if (/notes\.mjs"?\s+publish\b/.test(command)) {
         const out = results.get(part.id) ?? '';
         const m = out.match(/pushed (\S+\.md) to origin|unchanged: (\S+\.md) is already/);
         if (m) name = m[1] ?? m[2];

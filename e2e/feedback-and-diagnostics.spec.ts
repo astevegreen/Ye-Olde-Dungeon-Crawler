@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -32,9 +33,6 @@ test.describe('Developer Diagnostics & Feedback Systems', () => {
     // timed out, each at a different step, with no stall in the page). Triple the budget.
     test.slow();
     expect(existsSync(BUNDLE), `${BUNDLE} is missing; run \`npm run build\` first`).toBe(true);
-
-    const pageErrors: string[] = [];
-    page.on('pageerror', (err) => pageErrors.push(err.message));
 
     await page.goto(pathToFileURL(BUNDLE).href);
 
@@ -142,8 +140,5 @@ test.describe('Developer Diagnostics & Feedback Systems', () => {
 
     await page.locator('#btn-diag-close').click();
     await expect(diagModal).toBeHidden();
-
-    // Verify 0 uncaught page errors
-    expect(pageErrors).toEqual([]);
   });
 });

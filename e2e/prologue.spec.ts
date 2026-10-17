@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -40,8 +41,6 @@ test.describe('the opening', () => {
 
   test('the controls note, the raid and its cues, a villager freed, struck down, Hallvard', async ({ page }) => {
     expect(existsSync(BUNDLE), `${BUNDLE} is missing; run \`npm run build\` first`).toBe(true);
-    const pageErrors: string[] = [];
-    page.on('pageerror', (err) => pageErrors.push(err.message));
     await page.goto(pathToFileURL(BUNDLE).href);
     await page.locator('#btn-menu-new-game').click();
     // No roll reaches an attribute milestone (cap 16, first tier 20), so none takes the keyboard.
@@ -113,7 +112,5 @@ test.describe('the opening', () => {
     await expect.poll(() => flag(page, 'cotw_prologue_gateward_heard')).toBe(true);
     expect(await page.evaluate(() => Boolean(window.__cotwEngine!.map.getEntityById('prologue-hallvard')))).toBe(false);
     await expect(page.locator('#console-objective')).toContainText('Gear up');
-
-    expect(pageErrors).toEqual([]);
   });
 });

@@ -57,10 +57,15 @@ export interface TriageAPI {
    * its neighbours lend. Changes nothing, so it records no checkpoint.
    */
   resolvedCasts(): readonly ResolvedCast[];
+  /**
+   * Read-only: how many errors the flight recorder has caught in this page (isolated failures,
+   * §4, which the player sees at most as a toast), and the summaries of those its log still holds.
+   */
+  recordedErrors(): { count: number; recent: string[] };
 }
 
 /** Members that only read; they skip the flight recorder (the HUD may call them every frame). */
-const READ_ONLY: ReadonlySet<string> = new Set<keyof TriageAPI>(['resolvedCasts']);
+const READ_ONLY: ReadonlySet<string> = new Set<keyof TriageAPI>(['resolvedCasts', 'recordedErrors']);
 
 /** Slots an outfit fills, and the slot its definitions name (both rings are `fingerLeft`). */
 const OUTFIT_SLOTS: Array<{ slot: EquipmentSlot; defSlot: string }> = [
@@ -204,6 +209,10 @@ function createTriageApi(engine: GameEngine): TriageAPI {
     },
 
     resolvedCasts: () => heroResolvedCasts(engine),
+    recordedErrors: () => ({
+      count: flightRecorder.errorCount,
+      recent: flightRecorder.getEvents().filter((e) => e.type === 'error').map((e) => e.summary),
+    }),
     outfitForFloor: (floor, targetLevel) => {
       const depth = Math.max(1, Math.floor(floor));
       const p = engine.player;

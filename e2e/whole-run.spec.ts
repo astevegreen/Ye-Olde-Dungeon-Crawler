@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -165,8 +166,6 @@ test.describe('a whole run', () => {
   test.setTimeout(240_000);
 
   test('town, stairs, level-up, spell, altar, save and continue, and the slain ending', async ({ page }) => {
-    const pageErrors: string[] = [];
-    page.on('pageerror', (err) => pageErrors.push(err.message));
     await embark(page);
     const start = await engineState(page);
     expect(start.floor).toBe(0);
@@ -324,13 +323,9 @@ test.describe('a whole run', () => {
     expect(slain.score).toMatch(/\d/);
     await page.locator('#btn-game-over-return').click();
     await expect(page.locator('#btn-menu-new-game')).toBeVisible();
-
-    expect(pageErrors).toEqual([]);
   });
 
   test('the driven-off ending through the portal home', async ({ page }) => {
-    const pageErrors: string[] = [];
-    page.on('pageerror', (err) => pageErrors.push(err.message));
     await embark(page);
     await arriveAtTheLastFloor(page);
 
@@ -355,12 +350,9 @@ test.describe('a whole run', () => {
     const home = await takeThePortal(page, 'gateway_home');
     expect(home.ending.length).toBeGreaterThan(40);
     expect(home.score).toMatch(/\d/);
-    expect(pageErrors).toEqual([]);
   });
 
   test('a death, and the fallen hero in the hall', async ({ page }) => {
-    const pageErrors: string[] = [];
-    page.on('pageerror', (err) => pageErrors.push(err.message));
     await embark(page);
     const name = await page.evaluate(() => window.__cotwEngine!.player.name);
     await triage(page, 'jumpToFloor', 3);
@@ -388,6 +380,5 @@ test.describe('a whole run', () => {
 
     await page.locator('#btn-menu-valhalla').click();
     await expect(page.locator('#valhalla-list')).toContainText(name);
-    expect(pageErrors).toEqual([]);
   });
 });

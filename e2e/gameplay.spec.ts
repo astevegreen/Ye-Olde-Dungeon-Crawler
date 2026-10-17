@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -41,8 +42,6 @@ async function embarkNewHero(page: Page): Promise<void> {
 }
 
 test('a new hero moves, the map owns the keyboard, and save & continue restores the run', async ({ page }) => {
-  const pageErrors: string[] = [];
-  page.on('pageerror', (err) => pageErrors.push(err.message));
   await embarkNewHero(page);
 
   // Moving spends a turn, and the pipeline sees the real class name (esbuild keepNames).
@@ -69,8 +68,6 @@ test('a new hero moves, the map owns the keyboard, and save & continue restores 
   await page.locator('#btn-menu-continue').click();
   await expect.poll(async () => (await state(page)).turn).toBe(moved.turn);
   expect(await state(page)).toMatchObject({ x: moved.x, y: moved.y });
-
-  expect(pageErrors).toEqual([]);
 });
 
 // A full spell belt stays inside its column: at 1366x768 seven spells ran over the
@@ -389,8 +386,6 @@ test('stepping onto a scroll picks it up, and junk stays where it lies', async (
 // second window listener delivered every key twice, and the choice's stack entry let
 // Escape dismiss a choice that cannot be cancelled.
 test('save & quit and choices take each key once, through one modal-stack entry', async ({ page }) => {
-  const pageErrors: string[] = [];
-  page.on('pageerror', (err) => pageErrors.push(err.message));
   await embarkNewHero(page);
   const start = await state(page);
 
@@ -457,14 +452,11 @@ test('save & quit and choices take each key once, through one modal-stack entry'
   expect(await stackIds(page)).toEqual([]);
 
   expect(await state(page)).toMatchObject({ turn: start.turn, x: start.x, y: start.y });
-  expect(pageErrors).toEqual([]);
 });
 
 // The soak's chaos runs found keyboard focus left on a HUD button behind an open dialog, and
 // Tab walking out of the dialog onto the HUD (ARCHITECTURE.md §6, the modal stack).
 test('an open dialog holds keyboard focus, keeps Tab inside, and gives focus back on close', async ({ page }) => {
-  const pageErrors: string[] = [];
-  page.on('pageerror', (err) => pageErrors.push(err.message));
   await embarkNewHero(page);
 
   /** Where focus is: inside `selector`, on body, or the focused element's id or tag. */
@@ -524,14 +516,11 @@ test('an open dialog holds keyboard focus, keeps Tab inside, and gives focus bac
   await expect(page.locator('#choice-modal-overlay')).toBeHidden();
 
   expect(await stackIds(page)).toEqual([]);
-  expect(pageErrors).toEqual([]);
 });
 
 // Save & quit's Settings, Help, and Save Code buttons open windows that must each take the
 // one modal-stack entry save & quit gives up; with none, the game took their keys.
 test('windows opened from save & quit each hold one stack entry and keep keys from the game', async ({ page }) => {
-  const pageErrors: string[] = [];
-  page.on('pageerror', (err) => pageErrors.push(err.message));
   await embarkNewHero(page);
   const start = await state(page);
   const heldBack = async () => {
@@ -582,15 +571,11 @@ test('windows opened from save & quit each hold one stack entry and keep keys fr
   await page.keyboard.press('Escape');
   await expect(saveCode).toBeHidden();
   expect(await stackIds(page)).toEqual([]);
-
-  expect(pageErrors).toEqual([]);
 });
 
 // A save from another pack dropped onto the game in play asks first; until it is
 // answered, the warning holds the keyboard, so the hero doesn't move behind it.
 test('the other-pack save warning holds the keys until answered', async ({ page }) => {
-  const pageErrors: string[] = [];
-  page.on('pageerror', (err) => pageErrors.push(err.message));
   await embarkNewHero(page);
   const start = await state(page);
 
@@ -647,16 +632,12 @@ test('the other-pack save warning holds the keys until answered', async ({ page 
   await page.keyboard.press('Escape');
   await expect(saveCode).toBeHidden();
   expect(await stackIds(page)).toEqual([]);
-
-  expect(pageErrors).toEqual([]);
 });
 
 // On the main menu InputHandler is disabled, so settings takes keys only through its own
 // focus-holding overlay: rebinding by keyboard and Escape must work with no game running.
 test('settings on the main menu rebinds and closes by keyboard', async ({ page }) => {
   expect(existsSync(BUNDLE), `${BUNDLE} is missing; run \`npm run build\` first`).toBe(true);
-  const pageErrors: string[] = [];
-  page.on('pageerror', (err) => pageErrors.push(err.message));
   await page.goto(pathToFileURL(BUNDLE).href);
 
   const settings = page.locator('#settings-keybind-modal');
@@ -670,16 +651,12 @@ test('settings on the main menu rebinds and closes by keyboard', async ({ page }
   await expect(page.locator('#settings-status')).toContainText('Bound ; to "Move North"');
   await page.keyboard.press('Escape');
   await expect(settings).toBeHidden();
-
-  expect(pageErrors).toEqual([]);
 });
 
 // No game runs on the menus, so the hall of fame and the saga exchange take their own
 // keys: Escape closes the saga exchange over the hall, then the hall.
 test('the hall of fame and the saga exchange close on Escape from the menu', async ({ page }) => {
   expect(existsSync(BUNDLE), `${BUNDLE} is missing; run \`npm run build\` first`).toBe(true);
-  const pageErrors: string[] = [];
-  page.on('pageerror', (err) => pageErrors.push(err.message));
   await page.goto(pathToFileURL(BUNDLE).href);
 
   const hall = page.locator('#valhalla-modal');
@@ -694,16 +671,12 @@ test('the hall of fame and the saga exchange close on Escape from the menu', asy
   await expect(hall).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(hall).toBeHidden();
-
-  expect(pageErrors).toEqual([]);
 });
 
 // Load a saved game opens from the main menu, with InputHandler off: it takes its own keys,
 // and deleting a save asks in the dialog frame, never with the browser's confirm().
 test('load a saved game closes on Escape, and its delete asks in the dialog frame', async ({ page }) => {
-  const pageErrors: string[] = [];
   const alerts: string[] = [];
-  page.on('pageerror', (err) => pageErrors.push(err.message));
   page.on('dialog', (d) => {
     alerts.push(d.message());
     void d.dismiss();
@@ -741,7 +714,6 @@ test('load a saved game closes on Escape, and its delete asks in the dialog fram
   await expect(slots).toBeHidden();
 
   expect(alerts).toEqual([]);
-  expect(pageErrors).toEqual([]);
 });
 
 // The log's history (tracker 1.2, Q31): Shift+M or the strip's label opens every line the
@@ -774,8 +746,6 @@ test("the log's history opens by key or label and spends no turn", async ({ page
 // Every way into the help card and the diagnostics registers it on the modal stack and
 // every way out takes it off (§6): the HUD Help button, F2, the card's X.
 test('the HUD Help button, F2 and the help card X keep the modal stack honest', async ({ page }) => {
-  const pageErrors: string[] = [];
-  page.on('pageerror', (err) => pageErrors.push(err.message));
   await embarkNewHero(page);
   const start = await state(page);
   const helpCard = page.locator('#context-help-overlay');
@@ -808,16 +778,12 @@ test('the HUD Help button, F2 and the help card X keep the modal stack honest', 
   await page.keyboard.press('Escape');
   await expect(page.locator('#diagnostic-modal')).toBeHidden();
   expect(await stackIds(page)).toEqual([]);
-
-  expect(pageErrors).toEqual([]);
 });
 
 // A click-to-travel ends as a key press does: auto-pickup takes the coins at the end of the
 // walk without another key (R-main-1). And a HUD action button takes no turn while a dialog
 // that leaves the HUD clickable (the F1 card) has paused the world (R-ui-3).
 test('a click-to-travel auto-picks up where it ends; HUD Wait does nothing under the help card', async ({ page }) => {
-  const pageErrors: string[] = [];
-  page.on('pageerror', (err) => pageErrors.push(err.message));
   await embarkNewHero(page);
 
   const target = await page.evaluate(() => {
@@ -860,15 +826,11 @@ test('a click-to-travel auto-picks up where it ends; HUD Wait does nothing under
   await page.waitForTimeout(150);
   expect((await state(page)).turn).toBe(turn);
   await page.keyboard.press('Escape');
-
-  expect(pageErrors).toEqual([]);
 });
 
 // Closing the aim any way but its own keys (here the HUD Look button and the minimap) takes its
 // stack entry with it, so the world isn't left paused behind a dead entry (R-rend-7).
 test('closing the aim with the HUD Look button or the minimap leaves no targeting entry behind', async ({ page }) => {
-  const pageErrors: string[] = [];
-  page.on('pageerror', (err) => pageErrors.push(err.message));
   await embarkNewHero(page);
   const aiming = () => page.evaluate(() => window.__cotwRenderer!.targetingOverlay.isOpen);
 
@@ -887,7 +849,6 @@ test('closing the aim with the HUD Look button or the minimap leaves no targetin
     });
   }
   expect(await page.evaluate(() => window.__cotwEngine!.isPaused)).toBe(false);
-  expect(pageErrors).toEqual([]);
 });
 
 // Pointing at a monster shows its card with the default settings (mouse vectoring off):

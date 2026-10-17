@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -70,8 +71,6 @@ async function stepAndAwaitModal(page: Page, key: string, modalId: string): Prom
 test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems', () => {
   test('full end-to-end playtest across all recent updates', async ({ page }) => {
     test.setTimeout(120000);
-    const pageErrors: string[] = [];
-    page.on('pageerror', (err) => pageErrors.push(err.message));
 
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 1: EMBARK & PARADIGM B GOTHIC ACTION CONSOLE HUD VERIFICATION
@@ -861,8 +860,5 @@ test.describe('Exhaustive Playtest: All Recent Features, Narrative, UI & Systems
     expect(restoreCheck.isAlive, 'Restored hero must be alive').toBe(true);
     expect(restoreCheck.hasVidnirFlag, 'Saved flags must survive restore').toBe(true);
     expect(restoreCheck.hasRunestoneFlag, 'Saved milestones must survive restore').toBe(true);
-
-    // Verify 0 runtime page errors occurred throughout the entire playtest
-    expect(pageErrors, `No runtime page errors allowed: ${pageErrors.join(', ')}`).toEqual([]);
   });
 });

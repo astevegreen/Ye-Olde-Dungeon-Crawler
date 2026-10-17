@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -28,9 +28,6 @@ test('continuous active gameplay loop for visual verification', { tag: '@record'
   test.setTimeout(RECORD_DURATION_MS + 15000);
 
   expect(existsSync(BUNDLE), `${BUNDLE} is missing; run \`npm run build\` first`).toBe(true);
-
-  const pageErrors: string[] = [];
-  page.on('pageerror', (err) => pageErrors.push(err.message));
 
   // 1. Boot the game
   await page.goto(pathToFileURL(BUNDLE).href);
@@ -115,7 +112,6 @@ test('continuous active gameplay loop for visual verification', { tag: '@record'
   await page.waitForTimeout(500);
 
   console.log(`✓ Completed ${actionCount} gameplay actions across ${RECORD_DURATION_MS / 1000}s.`);
-  expect(pageErrors, 'Expected zero uncaught page errors during sustained gameplay').toEqual([]);
 
   // Close page to ensure video is completely finalized and flushed to disk
   const video = page.video();

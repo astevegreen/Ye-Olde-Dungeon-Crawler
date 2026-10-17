@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -99,9 +99,6 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
   test.setTimeout(60000);
 
   expect(existsSync(BUNDLE), `${BUNDLE} is missing; run \`npm run build\` first`).toBe(true);
-
-  const pageErrors: string[] = [];
-  page.on('pageerror', (err) => pageErrors.push(err.message));
 
   const actionLog: LogEntry[] = [];
   let currentStage = 0;
@@ -596,7 +593,6 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
     // Hard Assertions Summary
     expect(finalFloorIndex > initialFloorIndex, 'finalFloorIndex > initialFloorIndex').toBe(true);
     expect(npcInteractionOccurred, 'npcInteractionOccurred === true').toBe(true);
-    expect(pageErrors, 'Expected zero uncaught page errors or circular JSON exceptions').toEqual([]);
 
     logAction(
       'Suite Complete',
@@ -615,7 +611,6 @@ test('objective-driven multi-floor progression and NPC interaction', { tag: '@ca
       error: (error as Error).message,
       stack: (error as Error).stack,
       stage: currentStage,
-      pageErrors,
       last20Actions: actionLog.slice(-20),
       fullActionLog: actionLog,
     };

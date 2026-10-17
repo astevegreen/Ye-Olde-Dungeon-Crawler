@@ -18,6 +18,7 @@ The owner's test-suite audit ("Audit the test suite and how it works…", then "
 2. One commit per chosen cleanup, each with its own `Requested:` trailer.
 
 ## Decisions
+- Do the recommended set: `if`-guarded tests, unseeded randomness, the `review-2026-10-06-*` renames and the retired-P-ID describe titles; skip the coverage report and the soak-bot test — owner: "Do it here now"
 - The Pages deploy waits for the browser tests: `.github/workflows/deploy.yml` calls `playwright.yml` as a job and deploys after both it and the build pass. playwright.yml no longer runs on its own for a push — owner: "approve your recommendations"
 - Only the tip of `main` deploys, so an older push whose browser run finishes last can't replace a newer one (chosen because browser runs finish out of order).
 - `check:engine-purity` stays strict for UI and rendering tests, and ARCHITECTURE.md §2 now says so — owner: "approve your recommendations"

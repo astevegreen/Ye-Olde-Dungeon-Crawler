@@ -205,6 +205,16 @@ describe('Modal stack focus', () => {
     expect(doc.activeElement).toBe(root);
   });
 
+  it('focuses a dialog whose element is only built after the push (first shop visit)', async () => {
+    // The soak's player seed 1 walked into the bank: the shop builds its scrim the first
+    // time it opens, after it pushes itself, and focus stayed on the HUD's "Esc Menu".
+    let built: FakeEl | null = null;
+    stack.push({ ...dialog('shop', null), focusRoot: () => built as unknown as HTMLElement });
+    built = makeRoot('shop-dialog', 'leave').root; // what open() does right after the push
+    await Promise.resolve();
+    expect(doc.activeElement).toBe(built);
+  });
+
   it('keeps Tab and Shift+Tab inside the dialog, wrapping at either end', () => {
     const { root, rows } = makeRoot('shop', 'buy', 'sell', 'leave');
     stack.push(dialog('shop', root));

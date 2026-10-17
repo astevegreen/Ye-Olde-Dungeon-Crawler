@@ -91,9 +91,9 @@ export class ModalStackManager {
   }
 
   /**
-   * Moves focus into the modal's root. Some callers push before they draw the dialog
-   * (`push` then `open`), so a root not shown yet is tried again once the caller's code
-   * has run.
+   * Moves focus into the modal's root. Some callers push before they build or draw the
+   * dialog (`push` then `open`; the shop builds its scrim on first open), so a root not
+   * there or not shown yet is tried again once the caller's code has run.
    */
   private claimFocus(modal: UIModal): void {
     if (this.focusInto(modal)) return;
@@ -102,10 +102,11 @@ export class ModalStackManager {
     });
   }
 
-  /** False only when the root exists but isn't drawn yet. */
+  /** False only when the modal has a root that isn't built or drawn yet. */
   private focusInto(modal: UIModal): boolean {
-    const root = modal.focusRoot?.();
-    if (!root) return true;
+    if (!modal.focusRoot) return true;
+    const root = modal.focusRoot();
+    if (!root) return false;
     const active = activeElement();
     if (active && root.contains(active)) return true;
     if (!isShown(root)) return false;

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GameEngine, GameMap, Player, TILES, MovementAction } from '../src/engine';
-import { NPC } from '../src/engine/entities/npc';
+import { GameEngine, GameMap, Player, TILES, MovementAction } from '../..';
+import { NPC } from '../../entities/npc';
 
 describe('Door Interaction & Bump Resolution', () => {
   let engine: GameEngine;

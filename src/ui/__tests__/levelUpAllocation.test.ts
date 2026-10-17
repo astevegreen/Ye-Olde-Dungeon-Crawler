@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GameEngine, GameMap, Player, TILES, serializeGame, deserializeGame, type GameEvent, isGameEvent, type CharacterProfile } from '../src/engine';
-import { DeathResolver } from '../src/engine/combat/deathResolver';
-import { Monster } from '../src/engine/entities/monster';
-import { CharacterTab } from '../src/ui/characterMenu/characterTab';
+import { GameEngine, GameMap, Player, TILES, serializeGame, deserializeGame, type GameEvent, isGameEvent, type CharacterProfile, DeathResolver, Monster } from '../../engine';
+import { CharacterTab } from '../characterMenu/characterTab';
 
 describe('Level-Up Attribute / Skill Allocation System', () => {
   let engine: GameEngine;

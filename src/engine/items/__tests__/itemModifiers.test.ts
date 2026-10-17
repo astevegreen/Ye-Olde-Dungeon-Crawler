@@ -1,30 +1,32 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { GameEngine } from '../src/engine/engine';
-import { GameMap } from '../src/engine/grid/map';
-import { Player } from '../src/engine/entities/player';
-import { Monster } from '../src/engine/entities/monster';
-import { Item } from '../src/engine/items/item';
-import { familyModifier } from '../src/engine/items/modifierRoller';
-import type { ItemModifier, ModifierCategory } from '../src/engine/items/modifiers';
-import { COTW_ITEM_FAMILIES } from '../src/content/cotw/itemFamilies';
-import { MeleeAttackAction } from '../src/engine/actions/combat';
-import { CastSpellAction } from '../src/engine/actions/spell-actions';
-import { breakCurses } from '../src/engine/items/breakCurses';
-import { EquipAction } from '../src/engine/actions/inventory-actions';
-import { MovementAction } from '../src/engine/actions/movement';
-import { TILES } from '../src/engine/grid/tile';
-import { AutoRestManager, RestTurnAction } from '../src/engine/actions/autoRest';
-import { ManaOverflowManager } from '../src/engine/magic/manaOverflow';
-import { cotwManifest } from '../src/content/cotw';
-import { TempleService } from '../src/engine/economy/services';
-import { ItemFactory } from '../src/engine/items/factory';
-import { addCurrencyToPlayer } from '../src/engine/economy/currency';
-import { serializeItem, deserializeItem, itemDefinitionLookup } from '../src/engine/storage/serializer';
-import type { GameEvent, UncurseEvent } from '../src/engine/events';
-import type { SpellDefinition } from '../src/engine/magic/types';
+import { GameEngine } from '../../engine';
+import { GameMap } from '../../grid/map';
+import { Player } from '../../entities/player';
+import { Monster } from '../../entities/monster';
+import { Item } from '../item';
+import { familyModifier } from '../modifierRoller';
+import type { ItemModifier, ModifierCategory } from '../modifiers';
+import { COTW_ITEM_FAMILIES } from '../../../content/cotw/itemFamilies';
+import { MeleeAttackAction } from '../../actions/combat';
+import { CastSpellAction } from '../../actions/spell-actions';
+import { breakCurses } from '../breakCurses';
+import { EquipAction } from '../../actions/inventory-actions';
+import { MovementAction } from '../../actions/movement';
+import { TILES } from '../../grid/tile';
+import { AutoRestManager, RestTurnAction } from '../../actions/autoRest';
+import { ManaOverflowManager } from '../../magic/manaOverflow';
+import { cotwManifest } from '../../../content/cotw';
+import { TempleService } from '../../economy/services';
+import { ItemFactory } from '../factory';
+import { addCurrencyToPlayer } from '../../economy/currency';
+import { serializeItem, deserializeItem, itemDefinitionLookup } from '../../storage/serializer';
+import type { GameEvent, UncurseEvent } from '../../events';
+import type { SpellDefinition } from '../../magic/types';
 
 /** The cotw family's modifier for an item found on `floor` (tier 1 on floor 1, tier 2 on floor 10/15, tier 3 on 25). */
 const mod = (category: ModifierCategory, floor: number) => familyModifier(COTW_ITEM_FAMILIES, category, floor, 'test')!;
+/** A modifier the test owns, so a mechanism test does not break when cotw retunes a family. */
+const owned = (category: ModifierCategory, fields: Partial<ItemModifier>): ItemModifier => ({ id: `t-${category}`, name: category, alignment: 'positive', category, ...fields });
 
 describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System', () => {
   let engine: GameEngine;
@@ -130,7 +132,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         bulk: 2000,
         identified: true,
       });
-      blessedSword.addModifier(mod('blessed', 1)); // +15% melee, +1 flat, +2 ATK
+      blessedSword.addModifier(owned('blessed', { statDeltas: { attackBonus: 2 }, meleeDamageMultiplier: 1.5, meleeDamageFlatBonus: 1 }));
 
       player.inventory.paperdoll.equip(blessedSword, 'mainHand');
 
@@ -145,8 +147,8 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       player.attack = 10;
       const attack = new MeleeAttackAction(player, target);
       attack.perform(engine);
-      // Base attack 10 + 2 (from ATK delta) = 12. 12 * 1.15 = 13.8 -> 14 + 1 flat = 15.
-      expect(target.hp).toBeLessThan(86);
+      // Base attack 10 + 2 (from ATK delta) = 12. 12 * 1.5 = 18 + 1 flat = 19.
+      expect(100 - target.hp).toBe(19);
 
       // 2. Spell cast check: blessed item should NOT discount mana cost
       const testSpell: SpellDefinition = {
@@ -181,7 +183,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         bulk: 1800,
         identified: true,
       });
-      enchantedStaff.addModifier(mod('enchanted', 1)); // +20% spell damage, -2 mana discount
+      enchantedStaff.addModifier(owned('enchanted', { spellDamageMultiplier: 1.5, manaCostDiscount: 3 }));
 
       player.inventory.paperdoll.equip(enchantedStaff, 'mainHand');
 
@@ -199,7 +201,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       attack.perform(engine);
       expect(target.hp).toBe(90);
 
-      // 2. Spell casting: spell cost 10 -> discounted by 2 to 8 MP
+      // 2. Spell casting: spell cost 10 -> discounted by 3 to 7 MP
       const spell: SpellDefinition = {
         id: 'arcane_blast',
         name: 'Arcane Blast',
@@ -220,10 +222,10 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       const cast = new CastSpellAction(player, 'arcane_blast', target.x, target.y);
       cast.perform(engine);
 
-      // Mana discounted: 20 - (10 - 2) = 12
-      expect(player.mana).toBe(12);
-      // Target damage: 20 * 1.20 = 24 damage dealt. 90 - 24 = 66 HP remaining
-      expect(target.hp).toBe(66);
+      // Mana discounted: 20 - (10 - 3) = 13
+      expect(player.mana).toBe(13);
+      // Target damage: 20 * 1.5 = 30 damage dealt. 90 - 30 = 60 HP remaining
+      expect(target.hp).toBe(60);
     });
   });
 
@@ -242,6 +244,8 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
   });
 
   describe('Holy Radiant Scaling vs Undead/Demon', () => {
+    const holyOwned = owned('holy', { tagBonuses: [{ tag: 'undead', multiplier: 1.5, flatBonus: 2 }] });
+
     it('applies radiant damage multiplier and flat bonus against undead', () => {
       const holyMace = new Item({
         id: 'mace1',
@@ -252,7 +256,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         bulk: 2200,
         identified: true,
       });
-      holyMace.addModifier(mod('holy', 1)); // +30% dmg, +2 flat vs Undead/Demon
+      holyMace.addModifier(holyOwned);
       player.inventory.paperdoll.equip(holyMace, 'mainHand');
 
       const skeleton = new Monster({
@@ -268,8 +272,8 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       const attack = new MeleeAttackAction(player, skeleton);
       attack.perform(engine);
 
-      // 10 base * 1.3 = 13 + 2 = 15 damage
-      expect(skeleton.hp).toBe(85);
+      // 10 base * 1.5 = 15 + 2 = 17 damage
+      expect(skeleton.hp).toBe(83);
     });
 
     it('does not apply holy radiant bonus against non-undead/demon entities', () => {
@@ -282,7 +286,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         bulk: 2200,
         identified: true,
       });
-      holyMace.addModifier(mod('holy', 1));
+      holyMace.addModifier(holyOwned);
       player.inventory.paperdoll.equip(holyMace, 'mainHand');
 
       const beast = new Monster({
@@ -393,7 +397,7 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
         weight: 50,
         bulk: 50,
       });
-      hexedRing.addModifier(mod('hexed', 1)); // takes +25% + 2 flat damage
+      hexedRing.addModifier(owned('hexed', { alignment: 'negative', damageTakenMultiplier: 1.5, damageTakenFlatBonus: 2 }));
       target.inventory.paperdoll.equip(hexedRing, 'fingerLeft');
       map.addEntity(target);
 
@@ -401,8 +405,8 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       const attack = new MeleeAttackAction(player, target);
       attack.perform(engine);
 
-      // 20 * 1.25 = 25 + 2 = 27 damage taken. 100 - 27 = 73 HP
-      expect(target.hp).toBe(73);
+      // 20 * 1.5 = 30 + 2 = 32 damage taken. 100 - 32 = 68 HP
+      expect(target.hp).toBe(68);
     });
   });
 
@@ -730,11 +734,9 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       expect(serialized.modifiers!.length).toBe(1);
 
       const restored = deserializeItem(serialized);
-      expect(restored.modifiers.length).toBe(1);
-      expect(restored.modifiers[0].name).toBe('Sanctified');
-      expect(restored.modifiers[0].meleeDamageMultiplier).toBe(1.25);
-      expect(restored.effectiveStats.attackBonus).toBe(8); // 4 base + 4 Sanctified
-      expect(restored.displayName).toBe('Blessed Warhammer');
+      expect(restored.modifiers).toEqual(weapon.modifiers);
+      expect(restored.effectiveStats).toEqual(weapon.effectiveStats);
+      expect(restored.displayName).toBe(weapon.displayName);
     });
 
     it('a save from before the alignment word names its item by the word on load', () => {

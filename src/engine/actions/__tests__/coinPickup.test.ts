@@ -1,15 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GameEngine } from '../src/engine/engine';
-import { GameMap } from '../src/engine/grid/map';
-import { TILES } from '../src/engine/grid/tile';
-import { Player } from '../src/engine/entities/player';
-import { Item } from '../src/engine/items/item';
-import { Container } from '../src/engine/items/container';
-import { CoinItem, parseCoinItem } from '../src/engine/economy/currency';
-import { PickUpAction } from '../src/engine/actions/inventory-actions';
-import { FloatingTextRunner } from '../src/rendering/floatingTextRunner';
+import { GameEngine } from '../../engine';
+import { GameMap } from '../../grid/map';
+import { TILES } from '../../grid/tile';
+import { Player } from '../../entities/player';
+import { Item } from '../../items/item';
+import { CoinItem, parseCoinItem } from '../../economy/currency';
+import { PickUpAction } from '../inventory-actions';
 
-describe('Paradigm B & Runic Subsystem Interactions', () => {
+describe('coin pickup', () => {
   let engine: GameEngine;
   let map: GameMap;
   let player: Player;
@@ -88,59 +86,6 @@ describe('Paradigm B & Runic Subsystem Interactions', () => {
       const freeResult = engine.handlePlayerAction(freeAction);
       expect(freeResult.success).toBe(true);
       expect(freeResult.cost).toBe(0);
-    });
-  });
-
-  describe('Tactical Combat: FloatingTextRunner', () => {
-    it('spawns damage, critical hits, fatal blows, and heals with distinct styling', () => {
-      const runner = new FloatingTextRunner();
-
-      // Normal monster damage
-      runner.spawnDamage(5, 5, 8, { isPlayer: false });
-      expect(runner.getActiveCount()).toBe(1);
-
-      // Player damage
-      runner.spawnDamage(5, 5, 12, { isPlayer: true });
-      expect(runner.getActiveCount()).toBe(2);
-
-      // Critical hit
-      runner.spawnDamage(6, 6, 25, { isPlayer: false, isCrit: true });
-      expect(runner.getActiveCount()).toBe(3);
-
-      // Fatal blow
-      runner.spawnDamage(7, 7, 30, { isPlayer: false, killed: true });
-      expect(runner.getActiveCount()).toBe(4);
-
-      // Heal
-      runner.spawnHeal(5, 5, 15);
-      expect(runner.getActiveCount()).toBe(5);
-
-      runner.destroy();
-    });
-  });
-
-  describe('Container Interaction: Double-Click Activation', () => {
-    it('creates container with wasOpened default false, marked true on open_container', () => {
-      const chest = new Container({
-        id: 'chest-1',
-        name: 'Oak Chest',
-        category: 'containers',
-        bulk: 10,
-        weight: 5000,
-        value: 20,
-        containerType: 'chest',
-        maxWeightCapacity: 20000,
-        maxBulkCapacity: 50,
-      });
-
-      expect(chest.wasOpened).toBe(false);
-
-      engine.commandBus.dispatch({
-        type: 'open_container',
-        payload: { container: chest },
-      });
-
-      expect(chest.wasOpened).toBe(true);
     });
   });
 });

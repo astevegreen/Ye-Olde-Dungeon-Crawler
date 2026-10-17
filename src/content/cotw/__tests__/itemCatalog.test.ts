@@ -43,21 +43,6 @@ describe('CotW item catalog', () => {
     expect(COTW_RINGS).toHaveLength(7);
     expect(COTW_CONTAINERS).toHaveLength(5);
     expect(COTW_CONSUMABLES).toHaveLength(14);
-
-    const sum =
-      COTW_WEAPONS.length +
-      COTW_OFFHAND.length +
-      COTW_HEAD.length +
-      COTW_TORSO.length +
-      COTW_CLOAKS.length +
-      COTW_HANDS.length +
-      COTW_FEET.length +
-      COTW_BELTS.length +
-      COTW_NECK.length +
-      COTW_RINGS.length +
-      COTW_CONTAINERS.length +
-      COTW_CONSUMABLES.length;
-    expect(sum).toBe(81);
   });
 
   it('ensures every item has a unique ID', () => {

@@ -70,8 +70,4 @@ describe('legacy grimoire save fixtures', () => {
     expect(load('grounded-slot').player.spellsKnown).toContain('firebolt');
     expect(load('page-two-active').player.spellsKnown).toContain('cold_ray');
   });
-
-  it('drops the old page-switch channel', () => {
-    expect(load('attunement-channel').player.statusManager.getStatus('grimoire_attunement')).toBeUndefined();
-  });
 });

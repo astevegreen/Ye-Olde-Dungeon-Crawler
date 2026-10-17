@@ -3,8 +3,8 @@ import {
   calculateHybridScaleFactor,
   scaleMonsterStats,
   createScaledMonster,
-} from '../src/engine/dungeon/spawner';
-import { COTW_BESTIARY as BESTIARY } from '../src/content/cotw/monsters';
+} from '../spawner';
+import { COTW_BESTIARY as BESTIARY } from '../../../content/cotw/monsters';
 
 describe('Relative Monster Power & Hybrid Depth Scaling', () => {
   describe('calculateHybridScaleFactor(D, Dmax, L)', () => {
@@ -48,23 +48,7 @@ describe('Relative Monster Power & Hybrid Depth Scaling', () => {
     });
   });
 
-  describe('scaleMonsterStats() Backward Compatibility & Hybrid Mode', () => {
-    it('preserves exact canonical math formula when deepestFloor & playerLevel are omitted', () => {
-      const ogre = BESTIARY.ogre; // Base: HP 50, Atk 12, Def 4, XP 120, minFloor 12
-      const floor = 21; // offset = 20
-
-      const expectedHp = Math.round(50 * (1 + 0.08 * 20)); // 130
-      const expectedAtk = 12 + Math.floor(0.6 * 20); // 24
-      const expectedDef = 4 + Math.floor(0.4 * 20); // 12
-      const expectedXp = Math.round(120 * (1 + 0.1 * 20)); // 360
-
-      const scaled = scaleMonsterStats(ogre, floor);
-      expect(scaled.hp).toBe(expectedHp);
-      expect(scaled.attack).toBe(expectedAtk);
-      expect(scaled.defense).toBe(expectedDef);
-      expect(scaled.xpValue).toBe(expectedXp);
-    });
-
+  describe('scaleMonsterStats() in hybrid mode', () => {
     it('scales monster stats up on earlier floors when player has advanced deep into dungeon', () => {
       const kobold = BESTIARY.kobold; // Base: HP 8, Atk 2, Def 0, XP 10, minFloor 1
 

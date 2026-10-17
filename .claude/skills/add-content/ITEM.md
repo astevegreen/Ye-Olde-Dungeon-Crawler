@@ -24,7 +24,7 @@ An item is an `ItemDefinition` (`src/engine/types/manifest.ts`) in `COTW_ITEMS`.
   1. Add the field to `ItemModifier` (`src/engine/items/modifiers.ts`) with a doc comment naming its one reader; perks and family tiers inherit it.
   2. Read it in one place, through `wornModifiers.ts` (`sumWorn`, `productWorn`, `lowestWorn`, `highestWorn`, `wearsFlag`), which already merges worn modifiers, `wornEffects` and perks; or a `Player` getter. A reader in `engine.ts` or `actionPipeline.ts` needs `§8.1 exception 5: <why>` in the commit.
   3. A family tier that carries it adds it to `SerializedItemModifier` (`storage/types.ts`), since family modifiers are saved whole; optional, so no schema bump.
-  4. Test it in `tests/itemModifiers.test.ts`, `src/engine/items/__tests__/wornEffects.test.ts` or `src/engine/__tests__/perkEffects.test.ts`, and pin the cotw item on a real hero as `itemDescriptions.test.ts` does. Name the new capability in `content-extensibility.md`'s "Items and Item Families".
+  4. Test it in `src/engine/items/__tests__/itemModifiers.test.ts`, `src/engine/items/__tests__/wornEffects.test.ts` or `src/engine/__tests__/perkEffects.test.ts`, and pin the cotw item on a real hero as `itemDescriptions.test.ts` does. Name the new capability in `content-extensibility.md`'s "Items and Item Families".
 - **A new potion effect:** a `ConsumableEffectDescriptor` member and its case in `DrinkPotionAction` (`spell-actions.ts`). A new scroll or wand effect is a spell effect (`SPELL.md`).
 
 ## Finish

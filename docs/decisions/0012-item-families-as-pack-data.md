@@ -23,7 +23,7 @@ Tier names and numbers are campaign flavor and balance, which §3 puts in `src/c
 - **A chance per item instead of counts per game.** Rejected: the owner decided in counts ("60 Positive / 45 Negative / 10 Chaotic"), the balance report measures counts, and a loot-volume change (tracker 2.4) is then one `itemsPerGame` re-measure rather than seven re-derived fractions.
 
 ## Consequences
-- The pack's data lives in `src/content/cotw/itemFamilies.ts`; `tests/itemModifiers.test.ts` reads it rather than an engine table.
+- The pack's data lives in `src/content/cotw/itemFamilies.ts`; `src/engine/items/__tests__/itemModifiers.test.ts` reads it rather than an engine table.
 - Loot generation consumes one more `rng()` per eligible item, so floors generated from a given seed differ from before this change.
 - Modifier ids are derived from the item's id (`<itemId>:<category>`), so a reroll from the same seed is the same modifier; the old module counter was not.
 - Saves: no shipped save held a modifier; `ItemModifier.cursed` became `binds` in `SerializedItemModifier` with no migration.

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { MainMenu } from '../src/ui/menus/mainMenu';
-import { SaveSlotModal } from '../src/ui/saveSlotModal';
-import type { CharacterProfile } from '../src/engine/storage/types';
+import { MainMenu } from '../menus/mainMenu';
+import { SaveSlotModal } from '../saveSlotModal';
+import type { CharacterProfile } from '../../engine';
 
 class MockElement {
   public id: string = '';

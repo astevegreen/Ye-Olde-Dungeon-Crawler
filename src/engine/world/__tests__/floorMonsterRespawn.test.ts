@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GameEngine } from '../src/engine/engine';
-import { GameMap } from '../src/engine/grid/map';
-import { TILES } from '../src/engine/grid/tile';
-import { Player } from '../src/engine/entities/player';
-import { Monster } from '../src/engine/entities/monster';
-import { FloorManager } from '../src/engine/world/floorManager';
-import { WaitAction } from '../src/engine/actions/wait';
-import { DeathResolver } from '../src/engine/combat/deathResolver';
-import { cotwManifest } from '../src/content/cotw';
+import { GameEngine } from '../../engine';
+import { GameMap } from '../../grid/map';
+import { TILES } from '../../grid/tile';
+import { Player } from '../../entities/player';
+import { Monster } from '../../entities/monster';
+import { FloorManager } from '../floorManager';
+import { WaitAction } from '../../actions/wait';
+import { DeathResolver } from '../../combat/deathResolver';
+import { cotwManifest } from '../../../content/cotw';
 
 describe('Time-Based Floor Monster Respawning & Turn Tracking', () => {
   let engine: GameEngine;

@@ -8,6 +8,7 @@ import {
   CloseDoorAction,
   SmartCloseDoorAction,
   BashDoorAction,
+  getAdjacentOpenDoors,
 } from '../door';
 import { BASE_ACTION_COST } from '../../types';
 
@@ -138,15 +139,46 @@ describe('Door Actions & BashDoorAction Resolution', () => {
       expect(closeResult.success).toBe(true);
       expect(map.getTile(5, 4)?.type).toBe('door_closed');
     });
+  });
 
-    it('smart-closes a single adjacent open door', () => {
-      map.setTile(5, 4, TILES.DOOR_OPEN);
+  describe('SmartCloseDoorAction', () => {
+    it('fails at no cost when no open door is adjacent', () => {
+      const initialEnergy = player.energy;
+      const res = new SmartCloseDoorAction(player).perform(engine);
 
-      const smartClose = new SmartCloseDoorAction(player);
-      const result = smartClose.perform(engine);
+      expect(res.success).toBe(false);
+      expect(res.cost).toBe(0);
+      expect(res.message).toBe('No open door nearby.');
+      expect(player.energy).toBe(initialEnergy);
+    });
 
-      expect(result.success).toBe(true);
-      expect(map.getTile(5, 4)?.type).toBe('door_closed');
+    it('closes the one adjacent open door at once', () => {
+      map.setTile(6, 5, TILES.DOOR_OPEN);
+      expect(getAdjacentOpenDoors(map, player.x, player.y)).toHaveLength(1);
+
+      const res = new SmartCloseDoorAction(player).perform(engine);
+
+      expect(res.success).toBe(true);
+      expect(res.cost).toBeGreaterThan(0);
+      expect(map.getTile(6, 5)?.isClosedDoor).toBe(true);
+      expect(map.getTile(6, 5)?.isOpenDoor).toBe(false);
+    });
+
+    it('asks for a direction when two open doors are adjacent, then closes only that one', () => {
+      map.setTile(6, 5, TILES.DOOR_OPEN); // east
+      map.setTile(5, 6, TILES.DOOR_OPEN); // south
+      expect(getAdjacentOpenDoors(map, player.x, player.y)).toHaveLength(2);
+
+      const promptRes = new SmartCloseDoorAction(player).perform(engine);
+      expect(promptRes.success).toBe(false);
+      expect(promptRes.cost).toBe(0);
+      expect(promptRes.message).toBe('Close which door? [Direction]');
+
+      const dirRes = new SmartCloseDoorAction(player, { dx: 0, dy: 1 }).perform(engine);
+      expect(dirRes.success).toBe(true);
+      expect(dirRes.cost).toBeGreaterThan(0);
+      expect(map.getTile(5, 6)?.isClosedDoor).toBe(true);
+      expect(map.getTile(6, 5)?.isOpenDoor).toBe(true);
     });
   });
 });

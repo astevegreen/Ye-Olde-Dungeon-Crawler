@@ -5,7 +5,6 @@ import { TILES, getTileDefinition } from '../grid/tile';
 import { Player } from '../entities/player';
 import { PotionItem } from '../items/consumables';
 import { DrinkPotionAction } from '../actions/spell-actions';
-import { SmartCloseDoorAction, getAdjacentOpenDoors } from '../actions/door';
 import { MovementAction } from '../actions/movement';
 import { SpellPipeline } from '../magic/spellPipeline';
 import { cotwManifest } from '../../content/cotw';
@@ -194,57 +193,6 @@ describe('Pre-Freeze Architectural Refactor Verification', () => {
 
       expect(res.success).toBe(true);
       expect(player.statusManager.hasStatus('haste')).toBe(true);
-    });
-  });
-
-  describe('4. Smart-Close Door Targeting', () => {
-    it('returns 0-cost failure when no open doors are adjacent', () => {
-      const initialEnergy = player.energy;
-      const action = new SmartCloseDoorAction(player);
-      const res = action.perform(engine);
-
-      expect(res.success).toBe(false);
-      expect(res.cost).toBe(0);
-      expect(res.message).toBe('No open door nearby.');
-      expect(player.energy).toBe(initialEnergy);
-    });
-
-    it('instantly closes when exactly 1 open door is adjacent', () => {
-      map.setTile(11, 10, TILES.DOOR_OPEN);
-      expect(getAdjacentOpenDoors(map, player.x, player.y)).toHaveLength(1);
-
-      const action = new SmartCloseDoorAction(player);
-      const res = action.perform(engine);
-
-      expect(res.success).toBe(true);
-      expect(res.cost).toBeGreaterThan(0);
-
-      // Tile at (11, 10) must now be DOOR_CLOSED
-      const targetTile = map.getTile(11, 10);
-      expect(targetTile?.isClosedDoor).toBe(true);
-      expect(targetTile?.isOpenDoor).toBe(false);
-    });
-
-    it('signals direction prompt required when multiple open doors are adjacent', () => {
-      map.setTile(11, 10, TILES.DOOR_OPEN); // East
-      map.setTile(10, 11, TILES.DOOR_OPEN); // South
-      expect(getAdjacentOpenDoors(map, player.x, player.y)).toHaveLength(2);
-
-      const promptAction = new SmartCloseDoorAction(player);
-      const promptRes = promptAction.perform(engine);
-      expect(promptRes.success).toBe(false);
-      expect(promptRes.cost).toBe(0);
-      expect(promptRes.message).toBe('Close which door? [Direction]');
-
-      // Targeted close with direction on South door (0, 1)
-      const dirAction = new SmartCloseDoorAction(player, { dx: 0, dy: 1 });
-      const dirRes = dirAction.perform(engine);
-      expect(dirRes.success).toBe(true);
-      expect(dirRes.cost).toBeGreaterThan(0);
-
-      // South door is closed, East door is still open
-      expect(map.getTile(10, 11)?.isClosedDoor).toBe(true);
-      expect(map.getTile(11, 10)?.isOpenDoor).toBe(true);
     });
   });
 });

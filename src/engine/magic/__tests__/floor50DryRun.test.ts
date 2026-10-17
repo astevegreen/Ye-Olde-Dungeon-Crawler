@@ -128,7 +128,7 @@ function statsLine(c: ResolvedCast): string {
 
 const lendsLine = (c: ResolvedCast) => c.lends.map((l) => (l.doubled ? `${l.name}*` : l.name)).join(', ') || '—';
 
-describe('the floor-50 grimoire, resolved (P-30 dry run)', () => {
+describe('the floor-50 grimoire, resolved (dry run)', () => {
   const casts = floor50();
   const of = (id: string) => casts.find((c) => c.spellId === id)!;
 

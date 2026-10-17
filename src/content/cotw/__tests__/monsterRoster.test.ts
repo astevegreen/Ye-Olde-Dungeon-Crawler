@@ -172,7 +172,7 @@ describe('Castle of the Winds Monster Roster (37 entries)', () => {
   });
 });
 
-describe('bosses resist Grið and Draugr-call (P-31)', () => {
+describe('bosses resist Grið and Draugr-call', () => {
   it('every boss-tagged monster is immune to being pacified or cursed to rise', () => {
     const bosses = Object.values(COTW_BESTIARY).filter((m) => m.tags?.includes('boss'));
     expect(bosses.length).toBeGreaterThanOrEqual(7);

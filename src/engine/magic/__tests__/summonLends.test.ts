@@ -58,7 +58,7 @@ function struckFoe(engine: GameEngine, raider: Monster): Monster {
 
 const has = (m: Monster, status: string) => m.statusManager.hasStatus(status as StatusType);
 
-describe("a summon's hits carry what its cast borrowed (P-31)", () => {
+describe("a summon's hits carry what its cast borrowed", () => {
   it('a fire neighbour sets each blow burning', () => {
     const { engine, raider } = summon('forge_bolt');
     expect(raider.lentHits?.spellId).toBe('call_raider');

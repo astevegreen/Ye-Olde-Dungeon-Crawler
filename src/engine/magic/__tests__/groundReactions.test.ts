@@ -28,7 +28,7 @@ function build() {
   return { engine, map, cast, foe, linesFrom };
 }
 
-describe('ground reactions (P-32)', () => {
+describe('ground reactions', () => {
   it('fire melts ice into water', () => {
     const { engine } = build();
     engine.surfaces.setSurface(14, 10, 'ice_sheet', 6);

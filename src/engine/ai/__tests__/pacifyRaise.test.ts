@@ -30,7 +30,7 @@ const cast = (engine: GameEngine, target: Monster, statusId: string, duration: n
 
 const living = (engine: GameEngine) => engine.map.getAllEntities().filter((e) => e instanceof Monster) as Monster[];
 
-describe('pacify: a foe lays down its arms (P-31)', () => {
+describe('pacify: a foe lays down its arms', () => {
   it('a pacified foe beside the hero holds, and never strikes', () => {
     const { engine, hero } = scene();
     const raider = spawn(engine, 'raider', 6, 5);
@@ -88,7 +88,7 @@ describe('pacify: a foe lays down its arms (P-31)', () => {
   });
 });
 
-describe('raising the slain: a cursed foe rises on the hero\'s side (P-31)', () => {
+describe('raising the slain: a cursed foe rises on the hero\'s side', () => {
   it('a foe slain under the curse rises where it fell, for the curse\'s turns', () => {
     const { engine, hero } = scene();
     const raider = spawn(engine, 'raider', 6, 5);

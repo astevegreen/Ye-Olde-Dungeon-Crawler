@@ -35,7 +35,7 @@ function build() {
   return { engine, map, hero, foe, cast, wait, marked };
 }
 
-describe('delayed blast (P-33)', () => {
+describe('delayed blast', () => {
   it('marks its tiles at the cast and strikes them after the caster’s next action', () => {
     const { foe, cast, wait, marked } = build();
     const inside = foe(15, 10);

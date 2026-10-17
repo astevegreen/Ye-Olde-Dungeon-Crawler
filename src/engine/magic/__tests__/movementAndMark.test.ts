@@ -28,7 +28,7 @@ function build() {
   return { engine, map, player, foe, cast };
 }
 
-describe('spell building blocks: moving creatures and marks (P-28)', () => {
+describe('spell building blocks: moving creatures and marks', () => {
   describe('push', () => {
     it('shoves a foe its distance away from the caster', () => {
       const { foe, cast } = build();
@@ -133,7 +133,7 @@ describe('spell building blocks: moving creatures and marks (P-28)', () => {
     });
   });
 
-  describe('landing on a surface (P-32)', () => {
+  describe('landing on a surface', () => {
     it('a shoved foe burns on the fire it ends on', () => {
       const { engine, foe, cast } = build();
       const f = foe(11, 10);

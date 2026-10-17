@@ -41,7 +41,7 @@ function pickAll(p: Player, picks: Array<[string, 'x' | 'y', string]>): void {
   for (const [g, axis, stat] of picks) expect(p.assignGrimoireStat(g, axis, stat)).toBe('ok');
 }
 
-describe('three grimoires (P-29)', () => {
+describe('three grimoires', () => {
   it("the fixture pack's declaration is sound", () => {
     expect(validateGrimoireSystem(FIXTURE_GRIMOIRES)).toEqual([]);
     expect(fixtureManifest.magic?.grimoires).toBe(FIXTURE_GRIMOIRES);

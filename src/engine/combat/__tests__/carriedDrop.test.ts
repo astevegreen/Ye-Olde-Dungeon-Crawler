@@ -20,7 +20,7 @@ import { useTestSpells } from '../../__fixtures__/testHelpers';
  * by poison, fire, chasm and trap pass no killer), is saved with it, and a deep sleeper wakes
  * only when struck or alarmed.
  */
-describe('A carried item and a deep sleep (P-34)', () => {
+describe('A carried item and a deep sleep', () => {
   useTestSpells([
     { id: 'firebolt', name: 'Firebolt', school: 'Combat', manaCost: 5, element: 'fire', range: 7, basePower: 12, areaOfEffect: 0, reflects: false, targetType: 'ray', targetingMode: 'ray', description: '', effects: [{ type: 'damage', amount: 12, element: 'fire' }] },
   ]);

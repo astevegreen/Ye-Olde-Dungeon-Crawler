@@ -33,7 +33,7 @@ function foe(engine: GameEngine, x: number, y: number): Monster {
 
 const onMap = (engine: GameEngine, e: Monster) => engine.map.getEntityById(e.id) === e;
 
-describe('a summon leaves when its lease runs out (P-31)', () => {
+describe('a summon leaves when its lease runs out', () => {
   it('even when the pack words its leaving', () => {
     const { engine } = scene();
     const ally = summon(engine, 8, 5, 1);
@@ -45,7 +45,7 @@ describe('a summon leaves when its lease runs out (P-31)', () => {
   });
 });
 
-describe('endings: a status that goes off as it ends (P-31)', () => {
+describe('endings: a status that goes off as it ends', () => {
   it('a summon shatters on its foes as its lease runs out, sparing the hero', () => {
     const { engine, hero } = scene();
     const ally = summon(engine, 6, 5, 1, ['frost_shatter']);

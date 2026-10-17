@@ -33,7 +33,7 @@ function build() {
 
 const hurt = (m: Monster) => m.hp < 50;
 
-describe('spell shapes (P-33)', () => {
+describe('spell shapes', () => {
   describe('cone', () => {
     it('fans out from the caster toward the aim, as long as its area', () => {
       const { foe, cast } = build();

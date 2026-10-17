@@ -39,7 +39,7 @@ function hitFor(effect: DamageEffect, resistances: Record<string, ElementalAffin
   return target.maxHp - target.hp;
 }
 
-describe('spell building blocks: damage (P-28)', () => {
+describe('spell building blocks: damage', () => {
   const fire = (extra: Partial<DamageEffect> = {}): DamageEffect => ({ type: 'damage', amount: 20, element: 'fire', ...extra });
 
   it('pierce lands a resisted hit as neutral, and leaves immunity and absorbing alone', () => {
@@ -74,7 +74,7 @@ describe('spell building blocks: damage (P-28)', () => {
   });
 });
 
-describe('spell building blocks: statuses (P-28)', () => {
+describe('spell building blocks: statuses', () => {
   it('cleanse lifts the longest-lasting affliction, or with all every one, never a boon', () => {
     const { engine, hero } = setup(['cleansing_word']);
     const statuses = hero.statusManager;
@@ -108,7 +108,7 @@ describe('spell building blocks: statuses (P-28)', () => {
   });
 });
 
-describe('spell building blocks: costs and cast time (P-28)', () => {
+describe('spell building blocks: costs and cast time', () => {
   it('a blood spell costs current HP, never the last of it, and max HP stays', () => {
     const { engine, hero } = setup(['blood_bolt']);
     foe(engine, 'target', 6);

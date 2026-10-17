@@ -78,7 +78,7 @@ function boltDamage(cells: Cell[] = [], extra?: (s: GrimoireState) => void): num
   return target.maxHp - target.hp;
 }
 
-describe('casting through the grimoires (P-30)', () => {
+describe('casting through the grimoires', () => {
   it('the slot’s Power scales the spell’s own hit', () => {
     const plain = boltDamage();
     const powered = boltDamage([], (s) => s.statPicks.push({ grimoireId: 'row', axis: 'x', statId: 'power' }));

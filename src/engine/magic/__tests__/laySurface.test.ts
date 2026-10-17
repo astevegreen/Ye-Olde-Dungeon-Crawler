@@ -24,7 +24,7 @@ function build() {
 
 const square = (cx: number, cy: number) => [-1, 0, 1].flatMap((dy) => [-1, 0, 1].map((dx) => ({ x: cx + dx, y: cy + dy })));
 
-describe('a spell that lays ground or gas on its tiles (P-32)', () => {
+describe('a spell that lays ground or gas on its tiles', () => {
   it('covers every tile of its burst with the surface, for its duration', () => {
     const { engine, cast } = build();
     expect(cast('rime_patch', 14, 10).success).toBe(true);

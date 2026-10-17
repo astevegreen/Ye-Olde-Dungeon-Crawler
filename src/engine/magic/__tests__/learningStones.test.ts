@@ -88,7 +88,7 @@ const manifest = {
   },
 };
 
-describe('Shard and stone (P-34)', () => {
+describe('Shard and stone', () => {
   let engine: GameEngine;
   let player: Player;
 
@@ -329,7 +329,7 @@ describe('Shard and stone (P-34)', () => {
   });
 });
 
-describe('Placing a stone on a generated floor (P-34)', () => {
+describe('Placing a stone on a generated floor', () => {
   const withStones = {
     ...cotwManifest,
     tiles: [...(cotwManifest.tiles ?? []), STONE],

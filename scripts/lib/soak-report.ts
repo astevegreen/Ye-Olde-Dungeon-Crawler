@@ -16,6 +16,7 @@ interface FloorTally {
   kills: Record<Source, number>;
   spellDamage: Record<string, number>;
   spellKills?: Record<string, number>;
+  lent?: Record<string, Record<string, number>>;
 }
 
 export interface ReportSummary {
@@ -33,7 +34,7 @@ export interface ReportSummary {
     spellsKnown: string[];
     stones?: Record<string, string>;
     altars?: Record<string, string>;
-    catalog?: Record<string, { type: string; stoneFrom: number | null }>;
+    catalog?: Record<string, { type: string; stoneFrom: number | null; ownDamage?: boolean }>;
   };
   pace?: Record<string, { turns: number; actions: number; wallMs: number; visits: number; firstTurn: number; spellsOnEntry: number }>;
   belowTurns?: number;
@@ -165,8 +166,10 @@ export function soakReport(all: ReportSummary[], opts: ReportOptions): string {
   }
   out.push(table(['spells learned', 'runs', 'median deepest'], [...learnedBuckets].sort().map(([k, d]) => [k, d.length, median(d)])));
 
-  out.push('\nEvery spell in the pack: who knew it, cast it, and what it did. `stone from`: the first floor a stone teaches it.');
-  const catalog: Record<string, { type: string; stoneFrom: number | null }> = {};
+  out.push(
+    "\nEvery spell in the pack: who knew it, cast it, and what it did. `stone from`: the first floor a stone teaches it; `borrowed`: casts by what grimoire neighbours lent them, whose damage counts as the cast's."
+  );
+  const catalog: Record<string, { type: string; stoneFrom: number | null; ownDamage?: boolean }> = {};
   for (const s of runs) Object.assign(catalog, s.magic?.catalog ?? {});
   const spellRows: Array<Array<string | number>> = [];
   const byType: Record<string, { casts: number; kills: number; damage: number }> = {};
@@ -177,6 +180,7 @@ export function soakReport(all: ReportSummary[], opts: ReportOptions): string {
     let kills = 0;
     let known = 0;
     let learned = 0;
+    const lent: Record<string, number> = {};
     for (const s of runs) {
       if (s.magic?.spellsKnown.includes(id)) known++;
       if (s.magic?.learned.some((l) => l.spellId === id)) learned++;
@@ -185,16 +189,19 @@ export function soakReport(all: ReportSummary[], opts: ReportOptions): string {
         failed += t.failed?.[id] ?? 0;
         damage += t.spellDamage[id] ?? 0;
         kills += t.spellKills?.[id] ?? 0;
+        for (const [name, n] of Object.entries(t.lent?.[id] ?? {})) add(lent, name, n);
       }
     }
     const t = (byType[info.type] ??= { casts: 0, kills: 0, damage: 0 });
     t.casts += casts;
     t.kills += kills;
     t.damage += damage;
-    const note = known === 0 ? 'never known' : casts === 0 ? 'never cast' : '';
-    spellRows.push([id, info.type, info.stoneFrom ?? '-', known, learned, casts, failed, damage, kills, note]);
+    // A summary from before `ownDamage` (17 Oct 2026) leaves it unknown: no note.
+    const note =
+      known === 0 ? 'never known' : casts === 0 ? 'never cast' : damage > 0 && info.ownDamage === false ? 'all its damage borrowed' : '';
+    spellRows.push([id, info.type, info.stoneFrom ?? '-', known, learned, casts, failed, damage, kills, tally(lent), note]);
   }
-  out.push(table(['spell', 'type', 'stone from', 'runs knowing', 'runs learning', 'casts', 'failed', 'damage', 'kills', ''], spellRows));
+  out.push(table(['spell', 'type', 'stone from', 'runs knowing', 'runs learning', 'casts', 'failed', 'damage', 'kills', 'borrowed', ''], spellRows));
   out.push('\nBy spell type.');
   out.push(table(['type', 'casts', 'damage', 'kills'], Object.entries(byType).map(([k, v]) => [k, v.casts, v.damage, v.kills])));
 

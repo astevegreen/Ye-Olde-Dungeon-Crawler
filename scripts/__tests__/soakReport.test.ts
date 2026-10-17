@@ -60,6 +60,25 @@ describe('soak report', () => {
     expect(report).toMatch(/\| slow \| control \| 1 \| 2 \| 2 \| 0 \| 4 \|.*never cast \|/);
   });
 
+  it("puts a harmless spell's damage down to what its neighbours lent it", () => {
+    const slowFloor = {
+      ...floor({ slow: 3 }, 12, 0),
+      spellDamage: { slow: 12 },
+      spellKills: {},
+      lent: { slow: { Knockback: 3, Chill: 2 } },
+    };
+    const lentRun = run(4, 'caster', 'first', {
+      magic: {
+        ...run(4, 'caster', 'first').magic!,
+        floors: { '1': slowFloor },
+        catalog: { slow: { type: 'control', stoneFrom: 1, ownDamage: false } },
+      },
+    });
+    expect(soakReport([lentRun], { coldStages: [300] })).toMatch(
+      /\| slow \| control \| 1 \| 1 \| 1 \| 3 \| 1 \| 12 \| 0 \| Knockback 3, Chill 2 \| all its damage borrowed \|/
+    );
+  });
+
   it('shows the learning routes, and stones and altars never used', () => {
     expect(report).toContain('Spells learned, by route: stone 2.');
     expect(report).toContain('| 4 | 0 | 0 | 2 |');

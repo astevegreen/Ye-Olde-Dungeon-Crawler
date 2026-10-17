@@ -7,7 +7,9 @@ import type { MagicTelemetry } from './types';
  *   (`spell`), a step or blow (`melee`), or anything else the hero did (`other`: a wand, a
  *   thrown item, a scroll). Damage outside the hero's action is `world`: allies and summons,
  *   ground that burns, monsters hurting each other, poison ticking;
- * - a cast counts when it spends the turn, and fails when it spends nothing;
+ * - a cast counts when it spends the turn, and fails when it spends nothing; each cast notes
+ *   the flavours its grimoire neighbours lent it, since a spell that cannot hurt on its own
+ *   (Slow) still deals the damage of a borrowed Knockback;
  * - each spell that joins the book is put down to the event that came with it: a stone read
  *   (`stone`, `shortcut`), an altar rite (`altar`), a kill rite (`rite`); anything else (a
  *   tablet, a spell offer) is `other`;
@@ -40,9 +42,10 @@ export async function tapMagic(page: Page): Promise<void> {
         (e.manifest?.spells ?? [])
           .filter((sp: any) => !(sp.effects?.length && sp.effects.every((f: any) => f.type === 'learn_spell')))
           .map((sp: any) => {
-          const zones = (stoneDefs?.zones ?? []).filter((z: any) => (z.spellIds ?? []).includes(sp.id));
-          const from = zones.length ? Math.min(...zones.map((z: any) => z.minFloor)) : null;
-            return [sp.id, { type: sp.spellType ?? 'none', stoneFrom: from }];
+            const zones = (stoneDefs?.zones ?? []).filter((z: any) => (z.spellIds ?? []).includes(sp.id));
+            const from = zones.length ? Math.min(...zones.map((z: any) => z.minFloor)) : null;
+            const ownDamage = (sp.effects ?? []).some((f: any) => f.type === 'damage' || f.type === 'push');
+            return [sp.id, { type: sp.spellType ?? 'none', stoneFrom: from, ownDamage }];
           })
       ),
       // Events since the last time new spells were put down to a route.
@@ -145,8 +148,15 @@ export async function tapMagic(page: Page): Promise<void> {
       const result = handle(action);
       if (spellId && action.caster === e.player) {
         const cost = result?.cost ?? 0;
-        if (cost > 0) bucket.casts[spellId] = (bucket.casts[spellId] ?? 0) + 1;
-        else bucket.failed[spellId] = (bucket.failed[spellId] ?? 0) + 1;
+        if (cost > 0) {
+          bucket.casts[spellId] = (bucket.casts[spellId] ?? 0) + 1;
+          // What the slot's neighbours lent this cast: its damage may be theirs (a Knockback's wall splat).
+          const lends = (e.diagnostics?.resolvedCasts?.() ?? []).find((c: any) => c.spellId === spellId)?.lends ?? [];
+          for (const lend of lends) {
+            const by = ((bucket.lent ??= {})[spellId] ??= {});
+            by[lend.name] = (by[lend.name] ?? 0) + 1;
+          }
+        } else bucket.failed[spellId] = (bucket.failed[spellId] ?? 0) + 1;
         const sp = (e.manifest?.spells ?? []).find((d: any) => d.id === spellId);
         if (result?.success && cost <= 0) m.anomalies.push(`cast of ${spellId} succeeded without spending its turn`);
         // Blood magic pays in HP; a cast that raises mana (a drain) is not a missing payment.

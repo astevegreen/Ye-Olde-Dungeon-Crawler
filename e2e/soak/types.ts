@@ -102,6 +102,8 @@ interface MagicFloorTally {
   /** The `spell` damage and kills, by spell id. */
   spellDamage: Record<string, number>;
   spellKills: Record<string, number>;
+  /** Casts by spell id, then by each flavour its grimoire neighbours lent it (Knockback, Chill). */
+  lent?: Record<string, Record<string, number>>;
 }
 
 export interface MagicTelemetry {
@@ -121,8 +123,12 @@ export interface MagicTelemetry {
   stones: Record<string, 'read' | 'reached' | 'missed'>;
   /** Each spell altar on a floor the hero entered, by "floor:altarId": performed, reached or missed. */
   altars: Record<string, 'performed' | 'reached' | 'missed'>;
-  /** Every spell in the pack: its type, and the first floor whose stone teaches it (null: no stone does). */
-  catalog: Record<string, { type: string; stoneFrom: number | null }>;
+  /**
+   * Every spell in the pack: its type, the first floor whose stone teaches it (null: no stone
+   * does), and whether its own effects hurt (a damage or push effect); damage a cast of one
+   * that doesn't deals comes from what its neighbours lent it.
+   */
+  catalog: Record<string, { type: string; stoneFrom: number | null; ownDamage?: boolean }>;
 }
 
 /** One floor's pace (P-36): what the hero spent there, over every visit. */

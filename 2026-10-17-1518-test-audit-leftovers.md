@@ -31,3 +31,4 @@ The owner's test-suite audit ("Audit the test suite and how it works…", then "
 - lint, unit (425 files, 3262 tests), tooling (6 files, 45 tests): green on 3cb72143
 - pre-push: sim, schema, build, Playwright in three browsers (90 passed, 12 skipped as designed): green on 3cb72143
 - CI: deploy.yml run 39043847101 on 3cb72143 succeeded and deployed; the deploy job started at 15:16:56, after the browser tests ended at 15:16:53
+Resumed: 2026-10-17 15:20 UTC

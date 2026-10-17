@@ -160,7 +160,14 @@ export async function tapMagic(page: Page): Promise<void> {
         const sp = (e.manifest?.spells ?? []).find((d: any) => d.id === spellId);
         if (result?.success && cost <= 0) m.anomalies.push(`cast of ${spellId} succeeded without spending its turn`);
         // Blood magic pays in HP; a cast that raises mana (a drain) is not a missing payment.
-        if (cost > 0 && result?.success && (sp?.manaCost ?? 0) > 0 && sp?.school !== 'BloodMagic' && e.player.mana === manaBefore) {
+        // Worn flat discounts (Archmage's −6) stack down to a free cast (`effectiveManaCost`).
+        const mods = [
+          ...e.player.inventory.paperdoll.getEquippedItems().flatMap((it: any) => [...(it.modifiers ?? []), it.wornEffects ?? {}]),
+          ...(e.player.perkModifiers ?? []),
+        ];
+        const discount = mods.reduce((sum: number, mod: any) => sum + (mod.manaCostDiscount ?? 0), 0);
+        const free = discount >= (sp?.manaCost ?? 0);
+        if (cost > 0 && result?.success && (sp?.manaCost ?? 0) > 0 && !free && sp?.school !== 'BloodMagic' && e.player.mana === manaBefore) {
           m.anomalies.push(`cast of ${spellId} spent its turn and no mana`);
         }
       }

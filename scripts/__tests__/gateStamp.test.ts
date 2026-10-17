@@ -99,6 +99,22 @@ describe('treeKey', SLOW, () => {
     expect(treeKey(repo)).not.toBe(before);
   });
 
+  it('keyed on paths, changes only for a file under them', () => {
+    write('tools/run.ts', 'one\n');
+    const scope = ['tools/', '.gitignore'];
+    const before = treeKey(repo, scope);
+    expect(before).not.toBe(treeKey(repo));
+    write('src/a.ts', 'export const a = 2;\n');
+    expect(treeKey(repo, scope)).toBe(before);
+    write('tools/run.ts', 'two\n');
+    expect(treeKey(repo, scope)).not.toBe(before);
+  });
+
+  it('throws for a path that names no file, so a rename cannot shrink the key unseen', () => {
+    expect(() => treeKey(repo, ['tools/'])).toThrow(/'tools\/' names no file/);
+    expect(() => treeKey(repo, ['src'])).toThrow(/names no file/); // a directory needs its slash
+  });
+
   it('ignores gitignored files, and stamps stored under .git', () => {
     const before = treeKey(repo);
     write('ignored.txt', 'noise\n');
@@ -173,6 +189,27 @@ describe('runStamped', SLOW, () => {
     write('src/a.ts', 'export const a = 3;\n');
     runStamped({ root: repo, gates: ['lint'], commands, ...quiet });
     expect(readRan()).toEqual(['lint', 'lint']);
+  });
+
+  it('skips a gate keyed on paths after an edit elsewhere, and runs it after one inside them', () => {
+    write('tools/run.ts', 'one\n');
+    const commands = { lint: fakeGate('lint'), tooling: { ...fakeGate('tooling'), paths: ['tools/'] } };
+    runStamped({ root: repo, gates: ['lint', 'tooling'], commands, ...quiet });
+    write('src/a.ts', 'export const a = 3;\n');
+    const elsewhere = runStamped({ root: repo, gates: ['lint', 'tooling'], commands, ...quiet });
+    expect(elsewhere).toMatchObject({ skipped: ['tooling'], stamped: ['lint'] });
+    write('tools/run.ts', 'two\n');
+    const inside = runStamped({ root: repo, gates: ['lint', 'tooling'], commands, ...quiet });
+    expect(inside).toMatchObject({ skipped: [], stamped: ['lint', 'tooling'] });
+    expect(readRan()).toEqual(['lint', 'tooling', 'lint', 'lint', 'tooling']);
+  });
+
+  it('runs a gate whose paths name no file, unstamped, beside the others', () => {
+    const commands = { lint: fakeGate('lint'), tooling: { ...fakeGate('tooling'), paths: ['tools/'] } };
+    const lines: string[] = [];
+    const result = runStamped({ root: repo, gates: ['lint', 'tooling'], commands, log: (line) => lines.push(line) });
+    expect(result).toMatchObject({ status: 0, stamped: ['lint'] });
+    expect(lines.join('\n')).toContain("cannot fingerprint the tree for tooling ('tools/' names no file)");
   });
 
   it('runs only the gates not yet stamped', () => {

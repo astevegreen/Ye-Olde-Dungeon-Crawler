@@ -17,6 +17,8 @@ import * as path from 'node:path';
  *    runs every gate and writes no stamp;
  *  - a stamp is written only if the tree is byte-identical before and after the gates ran;
  *  - any edit, added file or deletion changes the key, so the old stamp simply never matches.
+ * A gate that names its `paths` is keyed on those files alone, so an edit elsewhere leaves its
+ * stamp standing; a path that names no file throws, so a renamed one can't drop out unseen.
  * Stamps live in `<git-dir>/gate-stamps/`, per clone and never committed.
  */
 
@@ -29,6 +31,8 @@ export interface GateCommand {
   file: string;
   args: string[];
   shell: boolean;
+  /** The only files its result depends on, when not the whole tree; a trailing `/` names a directory. */
+  paths?: string[];
 }
 
 /** Gate name -> ISO time it passed on the stamped tree. */
@@ -51,14 +55,22 @@ const firstLine = (err: unknown): string => (err instanceof Error ? err.message 
 
 /**
  * Fingerprint of the working tree: path and content hash of every tracked and untracked,
- * not-ignored file. Raw bytes, so a line-ending flip also changes it (the gates do read
- * line endings). Throws when it cannot be sure, which the caller treats as "no stamp".
+ * not-ignored file, or of those under `paths`. Raw bytes, so a line-ending flip also changes
+ * it (the gates do read line endings). Throws when it cannot be sure, which the caller
+ * treats as "no stamp".
  */
-export function treeKey(root: string): string {
+export function treeKey(root: string, paths?: readonly string[]): string {
   const listed = git(root, ['ls-files', '-z', '--cached', '--others', '--exclude-standard']).split('\0');
-  const files = [...new Set(listed.filter(Boolean))].sort();
+  let files = [...new Set(listed.filter(Boolean))].sort();
   const key = createHash('sha256');
   key.update(`gate-stamp v${STAMP_VERSION}\0node ${process.version}\0`);
+  if (paths) {
+    const under = (file: string, scope: string): boolean => (scope.endsWith('/') ? file.startsWith(scope) : file === scope);
+    const empty = paths.find((scope) => !files.some((file) => under(file, scope)));
+    if (empty !== undefined) throw new Error(`'${empty}' names no file`);
+    files = files.filter((file) => paths.some((scope) => under(file, scope)));
+    key.update(`paths ${[...paths].sort().join('\0')}\0`);
+  }
   for (const file of files) {
     key.update(`${file}\0`);
     try {
@@ -129,25 +141,38 @@ export interface RunResult {
 }
 
 /**
- * Run `gates` in order, skipping each one already stamped for this exact tree, stopping at
- * the first failure. After a full pass, stamp the gates that ran, provided the tree did not
- * change underneath them.
+ * Run `gates` in order, skipping each one already stamped for this exact tree (or its own
+ * `paths`), stopping at the first failure. After a full pass, stamp the gates that ran,
+ * provided what they are keyed on did not change underneath them.
  */
 export function runStamped(opts: RunOptions): RunResult {
   const { root, gates, commands } = opts;
   const log = opts.log ?? ((line: string) => console.log(line));
   for (const gate of gates) if (!commands[gate]) throw new Error(`gate-stamp: unknown gate '${gate}'`);
 
-  let key: string | null = null;
+  // Gates naming the same paths share one key; one that can't be computed leaves them unstamped.
+  const scopeOf = (gate: string): string => JSON.stringify(commands[gate]!.paths ?? null);
+  const keyOf = (gate: string): string => treeKey(root, commands[gate]!.paths);
+  const keys = new Map<string, string | null>();
   if (opts.useStamps !== false) {
-    try {
-      key = treeKey(root);
-    } catch (err) {
-      log(`gate-stamp: cannot fingerprint the tree (${firstLine(err)}); running every gate, no stamp`);
+    for (const gate of gates) {
+      if (keys.has(scopeOf(gate))) continue;
+      try {
+        keys.set(scopeOf(gate), keyOf(gate));
+      } catch (err) {
+        keys.set(scopeOf(gate), null);
+        log(`gate-stamp: cannot fingerprint the tree for ${gate} (${firstLine(err)}); running it unstamped`);
+      }
     }
   }
+  const keyFor = (gate: string): string | null => keys.get(scopeOf(gate)) ?? null;
 
-  const known = key && !opts.force ? readStamps(root, key) : {};
+  const known: Stamps = {};
+  for (const gate of gates) {
+    const key = keyFor(gate);
+    const when = key && !opts.force ? readStamps(root, key)[gate] : undefined;
+    if (when) known[gate] = when;
+  }
   const skipped = gates.filter((gate) => known[gate]);
   if (skipped.length > 0) {
     const when = skipped.map((gate) => `${gate} ${known[gate]}`).join(', ');
@@ -162,24 +187,28 @@ export function runStamped(opts: RunOptions): RunResult {
     if (result.status !== 0) return { status: result.status ?? 1, skipped, stamped: [] };
   }
 
-  const stamped: string[] = [];
-  if (key && todo.length > 0) {
+  const stamped = new Set<string>();
+  let changed = false;
+  for (const [scope, key] of keys) {
+    const ran = todo.filter((gate) => scopeOf(gate) === scope);
+    if (!key || ran.length === 0) continue;
     let after: string | null = null;
     try {
-      after = treeKey(root);
+      after = keyOf(ran[0]!);
     } catch {
       // Unverifiable, so unstamped.
     }
     if (after !== key) {
-      log('gate-stamp: the tree changed while the gates ran, so no stamp was written');
-    } else {
-      try {
-        writeStamps(root, key, todo);
-        stamped.push(...todo);
-      } catch (err) {
-        log(`gate-stamp: could not write the stamp (${firstLine(err)}); the gates passed regardless`);
-      }
+      changed = true;
+      continue;
+    }
+    try {
+      writeStamps(root, key, ran);
+      for (const gate of ran) stamped.add(gate);
+    } catch (err) {
+      log(`gate-stamp: could not write the stamp (${firstLine(err)}); the gates passed regardless`);
     }
   }
-  return { status: 0, skipped, stamped };
+  if (changed) log('gate-stamp: the tree changed while the gates ran, so no stamp was written');
+  return { status: 0, skipped, stamped: gates.filter((gate) => stamped.has(gate)) };
 }

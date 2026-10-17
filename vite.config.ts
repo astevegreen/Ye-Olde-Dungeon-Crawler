@@ -7,6 +7,12 @@ import { availableParallelism } from 'node:os';
 
 declare const process: any;
 
+// The tests that spawn processes to try the repo's own tooling: the gate scripts, gate stamps
+// and handoff notes. About half the suite's time, for code most commits never touch.
+const TOOLING_TESTS = [
+  'scripts/__tests__/{encapsulationGateWidening,engineCreepGate,gateStamp,handoffNotes,mainScopeGateWidening,purityGatePatterns}.test.ts',
+];
+
 // Shown on the title screens (src/ui/branding.ts), so the UI never claims a version the build isn't.
 const APP_VERSION: string = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')).version;
 
@@ -109,6 +115,12 @@ export default defineConfig(({ mode }) => {
       // Spies and stubbed globals go back before each test, even when a test fails first.
       restoreMocks: true,
       unstubGlobals: true,
+      // `npm test` runs both; the pre-commit hook runs `unit` on every commit and `tooling` only
+      // when the tooling changed (scripts/gate-stamp.ts).
+      projects: [
+        { extends: true, test: { name: 'unit', exclude: TOOLING_TESTS } },
+        { extends: true, test: { name: 'tooling', include: TOOLING_TESTS } },
+      ],
     },
   };
 });

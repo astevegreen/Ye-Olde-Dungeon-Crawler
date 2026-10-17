@@ -1,7 +1,7 @@
 import { readStamps, runStamped, treeKey, type GateCommand } from './lib/gate-stamp';
 
 /**
- * `npm run gate-stamp -- run [--force] lint test` runs the named gates, skipping any already
+ * `npm run gate-stamp -- run [--force] lint test tooling` runs the named gates, skipping any already
  * stamped for this exact working tree, and stamps them after a full pass. The pre-commit hook
  * calls it without `--force`; `npm run gates` calls it with `--force`, because its job is to
  * produce real output, and stamps what it ran.
@@ -16,7 +16,22 @@ import { readStamps, runStamped, treeKey, type GateCommand } from './lib/gate-st
 const npm = (...args: string[]): GateCommand => ({ file: 'npm', args, shell: true });
 const COMMANDS: Record<string, GateCommand> = {
   lint: npm('run', 'lint'),
-  test: npm('test'),
+  test: npm('run', 'test:unit'),
+  // The tests that spawn processes to try the repo's own tooling (the `tooling` project in
+  // vite.config.ts), about half the suite's time, keyed on what they exercise: a commit that
+  // leaves it alone skips them. The pre-push hook and CI run them on every push, since a game
+  // change can break one too (the engine-creep test plants a real spell id).
+  tooling: {
+    ...npm('run', 'test:tooling'),
+    paths: [
+      'scripts/',
+      '.claude/skills/handoff/notes.mjs',
+      '.claude/hooks/handoff-nudge.mjs',
+      'package.json',
+      'tsconfig.json',
+      'vite.config.ts',
+    ],
+  },
 };
 
 const [command, ...rest] = process.argv.slice(2);
@@ -42,8 +57,10 @@ if (command === 'run') {
 }
 
 const gates = names.length > 0 ? names : Object.keys(COMMANDS);
-const key = treeKey(root);
-const stamps = readStamps(root, key);
-console.log(`tree ${key.slice(0, 12)}`);
-for (const gate of gates) console.log(`  ${gate}: ${stamps[gate] ? `passed ${stamps[gate]}` : 'not stamped'}`);
-process.exit(gates.every((gate) => stamps[gate]) ? 0 : 1);
+const passed = gates.map((gate) => {
+  const key = treeKey(root, COMMANDS[gate]!.paths);
+  const when = readStamps(root, key)[gate];
+  console.log(`${gate} (tree ${key.slice(0, 12)}): ${when ? `passed ${when}` : 'not stamped'}`);
+  return Boolean(when);
+});
+process.exit(passed.every(Boolean) ? 0 : 1);

@@ -3,10 +3,10 @@
 #
 # Commits land directly on main, and CI's full gate run (.github/workflows/)
 # happens only after a push, so the gates that pre-commit skips for speed run
-# here, before anything reaches origin: the headless sim, schema validation,
-# the cotw bundle, and the Playwright smoke suite against the built bundle.
-# (About 70 s, see docs/architecture/quality-gates.md; pre-commit has already
-# run lint and the unit tests.)
+# here, before anything reaches origin: the tooling tests, the headless sim,
+# schema validation, the cotw bundle, and the Playwright suite against the built
+# bundle. (About two minutes, see docs/architecture/quality-gates.md; pre-commit
+# has already run lint and the unit tests.)
 #
 # A push that updates only the `handoffs` branch carries handoff notes and no code
 # (.claude/skills/handoff/notes.mjs), so it runs no gate.
@@ -29,6 +29,10 @@ if [ "$handoff_refs" = 1 ] && [ "$other_refs" = 0 ]; then
   echo "pre-push: handoff notes only, no gates"
   exit 0
 fi
+
+# Pre-commit skips these when the tooling is unchanged, but a game change can break one too.
+echo "pre-push: npm run test:tooling"
+npm run test:tooling
 
 echo "pre-push: npm run sim"
 npm run sim

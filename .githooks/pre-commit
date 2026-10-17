@@ -2,9 +2,10 @@
 # Pre-commit gate (ARCHITECTURE.md §7.2).
 #
 # Runs the fast gates only: `npm run lint` (tsc, engine purity, engine
-# encapsulation, engine creep, UI palette, knip) and `npm test`. The slower gates —
-# `npm run sim`, `npm run validate:schema`, `npm run build`, and the
-# Playwright smoke suite — run in .githooks/pre-push and in CI.
+# encapsulation, engine creep, UI palette, knip), the unit tests, and the tooling
+# tests when the tooling changed (scripts/gate-stamp.ts names its paths). The slower
+# gates (`npm run sim`, `npm run validate:schema`, `npm run build`, and the
+# Playwright suite) and the tooling tests run in .githooks/pre-push and in CI.
 #
 # A gate that already passed on this exact working tree is not run again: the second
 # and later commits cut from one tree would otherwise rerun lint and the unit tests on
@@ -24,7 +25,7 @@ if [ "$SKIP_HOOKS" = "1" ]; then
   exit 0
 fi
 
-echo "pre-commit: lint + test"
-npm run --silent gate-stamp -- run lint test
+echo "pre-commit: lint + test + tooling"
+npm run --silent gate-stamp -- run lint test tooling
 
 echo "pre-commit: passed"

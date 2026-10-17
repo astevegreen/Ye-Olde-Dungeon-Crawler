@@ -11,7 +11,7 @@
 
 ## Verification
 - While iterating, run only the relevant tests: `npx vitest run <file>`.
-- Before committing, run `npm run gate-stamp -- run lint test`: lint (`tsc` over `src/` and `e2e/`, the `check:*` scripts, `knip`) and the full suite. The pre-commit hook then skips both on the identical tree; a bare `npm run lint` or `npm test` writes no stamp.
+- Before committing, run `npm run gate-stamp -- run lint test tooling`: lint (`tsc` over `src/` and `e2e/`, the `check:*` scripts, `knip`), the unit tests, and the tooling tests unless the tooling is unchanged since they last passed. The pre-commit hook then skips all three on the identical tree; a bare `npm run lint` or `npm test` writes no stamp.
 - Run `npm run sim`, `npm run validate:schema` and `npm run build` when the change reaches them.
 - A commit that touches presentation runs `npm run gates` first: all of the above, then Playwright in Chromium. The push runs all three browsers, but Chromium before the commit has caught regressions the unit tests missed.
 - CSS or layout changed: `visual-check` captures the HUD before and after (`scripts/capture/menus.mjs 1366 g00`); menu screenshots hide the HUD behind the scrim.

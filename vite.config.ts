@@ -3,6 +3,7 @@ import { configDefaults } from 'vitest/config';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
+import { availableParallelism } from 'node:os';
 
 declare const process: any;
 
@@ -100,6 +101,14 @@ export default defineConfig(({ mode }) => {
       setupFiles: ['./tests/setup/sharedState.ts'],
       // Transformed modules persist under node_modules/.vitest-cache and are reused by later runs.
       fsModuleCache: true,
+      // Each worker builds its own module graph, so past about eight the extra graphs cost more
+      // than they save: on 16 cores the default 15 ran the suite in 24-28 s, eight in 22 s.
+      maxWorkers: Math.max(1, Math.min(8, availableParallelism() - 1)),
+      // A stray `.only` would pass the gate on a fraction of the suite.
+      allowOnly: false,
+      // Spies and stubbed globals go back before each test, even when a test fails first.
+      restoreMocks: true,
+      unstubGlobals: true,
     },
   };
 });

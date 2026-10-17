@@ -8,8 +8,7 @@ Stages, each applied once, in order, stacking (a hero who skips visits gets all 
 - **Roots** (deepest floor counter >= 34, as `homecoming.ts` stage `roots`): tremor cracks, toppled cart, black sap seeps, roots through the road, darker fountain.
 - **Herald** (`vidnir_slain`): carts packed by the gate, crowd at the temple, some villagers gone; `vidnir_warning_heeded` → Torvald's wards/rune-stones round the plaza, `vidnir_warning_defied` → weapon racks, war muster.
 - **Choice extras:** memorial stones in the temple yard for each `<captive>_sacrificed` (`hostageRitual.ts:315-386`); `oath_broken` → Sól brazier, `oath_honored` → frost shrine to Thrym (`oath.ts:22-23`).
-Easy tier: rearrange existing props, townsfolk arrive/leave (reuse villager art via `spriteKey`), shop stock by stage (stock predicates, `town.ts:77`). Moderate tier: new prop tiles + code-drawn art for all of the above.
-Done when every stage shows in town, tested, gated, pushed. The summary lists player-visible changes.
+Easy tier: rearrange existing props, townsfolk arrive/leave (reuse villager art via `spriteKey`), shop stock by stage (stock predicates, `town.ts:77`). Moderate tier: new prop tiles + code-drawn art for all of the above. Done when every stage shows in town, tested, gated, pushed. The summary lists player-visible changes.
 
 ## Decide first
 - Looks only, or do some changes affect play (a working well heals, a closed stall)? — recommend: looks only, because the frost stages were talk-only by the owner's choice (`hearthCold.ts:8`).

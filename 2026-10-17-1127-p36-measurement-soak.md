@@ -35,3 +35,4 @@ Sonnet 5.5 at medium thinking — running and reading a specified soak; Opus onl
 ## Verification
 - gate-stamp lint test: green on 608428b8 (429 files, 3296 tests); pre-push (sim, build, Playwright 3 browsers): green, pushed
 - Open findings, not fixed: shop focus slips to "Esc Menu" (player/1, S3, town action 65); input locked 5 s after rest on floor 16 (player-floor8/4, likely six browsers' load); Slow (0 power) credited 750 damage, maybe a ray-through-water reaction at src/engine/magic/spellPipeline.ts:1155
+Resumed: 2026-10-17 17:20 UTC

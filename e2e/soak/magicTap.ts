@@ -8,8 +8,13 @@ import type { MagicTelemetry } from './types';
  *   thrown item, a scroll). Damage outside the hero's action is `world`: allies and summons,
  *   ground that burns, monsters hurting each other, poison ticking;
  * - a cast counts when it spends the turn, and fails when it spends nothing;
- * - learning comes from the stone events (`learning_stone_read`, shortcut or not), and any
- *   other new spell in the book (an altar, a tablet) is `other`.
+ * - each spell that joins the book is put down to the event that came with it: a stone read
+ *   (`stone`, `shortcut`), an altar rite (`altar`), a kill rite (`rite`); anything else (a
+ *   tablet, a spell offer) is `other`;
+ * - each learning stone and spell altar on a floor the hero entered is marked by how far the
+ *   hero got with it, so one never reached stands out;
+ * - a cast that succeeds without spending its turn, or spends the turn and no mana, and Void
+ *   Debt that is not a number or below zero, are queued as anomalies for the spec's findings.
  * Re-installed on each new engine, like the log tap; the tally lives on `window` for the run.
  */
 export async function tapMagic(page: Page): Promise<void> {
@@ -17,6 +22,8 @@ export async function tapMagic(page: Page): Promise<void> {
     const w = window as any;
     const e = w.__cotwEngine;
     if (!e?.player) return;
+    const stoneDefs: any = e.manifest?.magic?.learningStones;
+    const altarIds = new Set<string>((e.manifest?.magic?.altars ?? []).map((a: any) => a.id));
     const m = (w.__soakMagic ??= {
       floors: {},
       learned: [],
@@ -26,15 +33,56 @@ export async function tapMagic(page: Page): Promise<void> {
       rites: 0,
       altarRites: 0,
       known: [...(e.player.spellsKnown ?? [])],
+      stones: {},
+      altars: {},
+      // A tablet's own spell (its one effect teaches another) is the item, not a spell to cast.
+      catalog: Object.fromEntries(
+        (e.manifest?.spells ?? [])
+          .filter((sp: any) => !(sp.effects?.length && sp.effects.every((f: any) => f.type === 'learn_spell')))
+          .map((sp: any) => {
+          const zones = (stoneDefs?.zones ?? []).filter((z: any) => (z.spellIds ?? []).includes(sp.id));
+          const from = zones.length ? Math.min(...zones.map((z: any) => z.minFloor)) : null;
+            return [sp.id, { type: sp.spellType ?? 'none', stoneFrom: from }];
+          })
+      ),
+      // Events since the last time new spells were put down to a route.
+      recent: [] as string[],
+      anomalies: [] as string[],
     });
-    // Spells that joined the book some other way since the last action.
+
+    // A floor entered for the first time: its stone and altars start as `missed`.
+    const floorNow = e.currentFloor ?? 0;
+    if (floorNow > 0 && m.lastFloor !== floorNow) {
+      m.lastFloor = floorNow;
+      if (stoneDefs?.stones?.some((st: any) => st.floor === floorNow) && !m.stones[floorNow]) m.stones[floorNow] = 'missed';
+      for (let y = 0; y < e.map.height; y++) {
+        for (let x = 0; x < e.map.width; x++) {
+          const id = e.map.getTile(x, y)?.interactionHandlerId;
+          if (altarIds.has(id) && !m.altars[`${floorNow}:${id}`]) m.altars[`${floorNow}:${id}`] = 'missed';
+        }
+      }
+    }
+    // An altar the hero stands on is reached, rite or not.
+    const standing = e.map.getTile(e.player.x, e.player.y)?.interactionHandlerId;
+    if (altarIds.has(standing) && m.altars[`${floorNow}:${standing}`] === 'missed') m.altars[`${floorNow}:${standing}`] = 'reached';
+
+    // New spells in the book, put down to the events seen since they were last checked.
+    const route = (): string => {
+      if (m.recent.includes('shortcut')) return 'shortcut';
+      if (m.recent.includes('stone')) return 'stone';
+      if (m.recent.includes('altar')) return 'altar';
+      if (m.recent.includes('rite')) return 'rite';
+      return 'other';
+    };
     for (const id of e.player.spellsKnown ?? []) {
       if (m.known.includes(id)) continue;
       m.known.push(id);
-      if (!m.learned.some((l: any) => l.spellId === id)) {
-        m.learned.push({ spellId: id, via: 'other', floor: e.currentFloor ?? 0, turn: e.turnCount ?? 0 });
-      }
+      if (!m.learned.some((l: any) => l.spellId === id)) m.learned.push({ spellId: id, via: route(), floor: floorNow, turn: e.turnCount ?? 0 });
     }
+    m.recent = [];
+    const debt = e.player.voidDebt ?? 0;
+    if (typeof debt !== 'number' || Number.isNaN(debt) || debt < 0) m.anomalies.push(`Void Debt is ${debt}`);
+
     if (e.__soakMagicTapped) return;
     w.__soakMagicSource = null;
 
@@ -42,16 +90,12 @@ export async function tapMagic(page: Page): Promise<void> {
       const f = String(w.__cotwEngine?.currentFloor ?? 0);
       return (m.floors[f] ??= {
         casts: {},
-        failedCasts: 0,
+        failed: {},
         damage: { spell: 0, melee: 0, other: 0, world: 0 },
         kills: { spell: 0, melee: 0, other: 0, world: 0 },
         spellDamage: {},
+        spellKills: {},
       });
-    };
-    const learn = (spellId: string, via: string): void => {
-      if (m.learned.some((l: any) => l.spellId === spellId)) return;
-      const eng = w.__cotwEngine;
-      m.learned.push({ spellId, via, floor: eng?.currentFloor ?? 0, turn: eng?.turnCount ?? 0 });
     };
 
     // Damage to the hero's foes, whoever deals it: one wrap on the class every entity shares.
@@ -69,7 +113,10 @@ export async function tapMagic(page: Page): Promise<void> {
           bucket.damage[source] += dealt;
           if (result.killed) bucket.kills[source]++;
           const spellId = w.__soakMagicSource?.spellId;
-          if (source === 'spell' && spellId) bucket.spellDamage[spellId] = (bucket.spellDamage[spellId] ?? 0) + dealt;
+          if (source === 'spell' && spellId) {
+            bucket.spellDamage[spellId] = (bucket.spellDamage[spellId] ?? 0) + dealt;
+            if (result.killed) bucket.spellKills[spellId] = (bucket.spellKills[spellId] ?? 0) + 1;
+          }
         }
         return result;
       };
@@ -94,10 +141,18 @@ export async function tapMagic(page: Page): Promise<void> {
         };
       }
       const bucket = floorOf();
+      const manaBefore = e.player.mana;
       const result = handle(action);
       if (spellId && action.caster === e.player) {
-        if ((result?.cost ?? 0) > 0) bucket.casts[spellId] = (bucket.casts[spellId] ?? 0) + 1;
-        else bucket.failedCasts++;
+        const cost = result?.cost ?? 0;
+        if (cost > 0) bucket.casts[spellId] = (bucket.casts[spellId] ?? 0) + 1;
+        else bucket.failed[spellId] = (bucket.failed[spellId] ?? 0) + 1;
+        const sp = (e.manifest?.spells ?? []).find((d: any) => d.id === spellId);
+        if (result?.success && cost <= 0) m.anomalies.push(`cast of ${spellId} succeeded without spending its turn`);
+        // Blood magic pays in HP; a cast that raises mana (a drain) is not a missing payment.
+        if (cost > 0 && result?.success && (sp?.manaCost ?? 0) > 0 && sp?.school !== 'BloodMagic' && e.player.mana === manaBefore) {
+          m.anomalies.push(`cast of ${spellId} spent its turn and no mana`);
+        }
       }
       return result;
     };
@@ -105,19 +160,25 @@ export async function tapMagic(page: Page): Promise<void> {
     // Stones, rites and altars, from the game's own events.
     const notify = e.onGameEvent;
     e.onGameEvent = (event: any) => {
-      if (event?.type === 'learning_stone_read') {
-        const id = event.data?.spellId;
-        if (id) {
+      const floor = w.__cotwEngine?.currentFloor ?? 0;
+      if (event?.type === 'learning_stone_reached') {
+        if (m.stones[floor] === 'missed') m.stones[floor] = 'reached';
+      } else if (event?.type === 'learning_stone_read') {
+        m.stones[floor] = 'read';
+        if (event.data?.spellId) {
           m.stonesRead++;
           if (event.data?.shortcut) m.shortcuts++;
-          learn(id, event.data?.shortcut ? 'shortcut' : 'stone');
+          m.recent.push(event.data?.shortcut ? 'shortcut' : 'stone');
         } else {
           m.runesFromStones++;
         }
       } else if (event?.type === 'kill_rite_performed') {
         m.rites++;
+        m.recent.push('rite');
       } else if (event?.type === 'altar_rite_performed') {
         m.altarRites++;
+        m.recent.push('altar');
+        if (event.data?.altarId) m.altars[`${floor}:${event.data.altarId}`] = 'performed';
       }
       return notify?.(event);
     };
@@ -131,8 +192,18 @@ export async function readMagic(page: Page): Promise<MagicTelemetry | null> {
     .evaluate(() => {
       const m = (window as any).__soakMagic;
       if (!m) return null;
-      const { known, ...rest } = m;
+      const { known, recent: _recent, anomalies: _anomalies, lastFloor: _lastFloor, ...rest } = m;
       return { ...rest, spellsKnown: [...known] };
     })
     .catch(() => null);
+}
+
+/** Magic anomalies queued since the last call (the spec turns each into a finding). */
+export async function drainMagicAnomalies(page: Page): Promise<string[]> {
+  return page
+    .evaluate(() => {
+      const m = (window as any).__soakMagic;
+      return m ? (m.anomalies.splice(0) as string[]) : [];
+    })
+    .catch(() => []);
 }

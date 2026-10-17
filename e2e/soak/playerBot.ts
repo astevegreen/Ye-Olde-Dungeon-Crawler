@@ -6,6 +6,43 @@ import type { BoundKeys } from './oracles';
 import type { DispatchedAction } from './policies';
 
 /**
+ * The player bot's builds (P-36), so a soak compares play styles instead of one: the level-up
+ * rotation on the Character tab, and the points moved at creation (from Strength to
+ * Intelligence for a caster). Seed n plays BUILDS[n % 3] unless SOAK_BUILD names one.
+ */
+export const BUILDS = {
+  warrior: { rotation: ['KeyS', 'KeyC', 'KeyD'], strToInt: 0 },
+  caster: { rotation: ['KeyI', 'KeyI', 'KeyC'], strToInt: 4 },
+  hybrid: { rotation: ['KeyS', 'KeyI', 'KeyC', 'KeyD'], strToInt: 2 },
+} as const;
+export type BuildName = keyof typeof BUILDS;
+
+export function buildFor(seed: number): BuildName {
+  const named = process.env.SOAK_BUILD as BuildName | undefined;
+  if (named && named in BUILDS) return named;
+  const names = Object.keys(BUILDS) as BuildName[];
+  return names[seed % names.length];
+}
+
+/**
+ * What the bot does at a Skaldic Runestone (P-37's question: do the free gifts matter?): take
+ * its first gift (mostly a stat), its second (mostly an item), or leave it untouched. Seed n
+ * plays RUNESTONE_POLICIES[floor(n / 3) % 3], so nine seeds in a row cover every build with
+ * every policy, unless SOAK_RUNESTONES names one.
+ */
+export const RUNESTONE_POLICIES = ['first', 'second', 'leave'] as const;
+export type RunestonePolicy = (typeof RUNESTONE_POLICIES)[number];
+
+export function runestonePolicyFor(seed: number): RunestonePolicy {
+  const named = process.env.SOAK_RUNESTONES as RunestonePolicy | undefined;
+  if (named && RUNESTONE_POLICIES.includes(named)) return named;
+  return RUNESTONE_POLICIES[Math.floor(seed / 3) % RUNESTONE_POLICIES.length];
+}
+
+/** A Skaldic Runestone's choice (`src/content/cotw/runestones.ts`). */
+export const isRunestoneChoice = (id: string | undefined): boolean => Boolean(id?.startsWith('skaldic_runestone_'));
+
+/**
  * State of the player bot across action decisions.
  * Maintained hermetically on page.__playerBotState.
  */
@@ -47,7 +84,7 @@ export interface PlayerBotState {
   lastService: { key: string; fp: string } | null;
   /** Decisions spent in the character menu since it opened (a cap against loops). */
   charMenuDecisions: number;
-  /** Attribute keys pressed so far: picks the next one in the fixed build's rotation. */
+  /** Attribute keys pressed so far: picks the next one in the build's rotation (BUILDS). */
   statPresses: number;
   /** Unspent points when the bot last pressed an attribute key, and how many presses changed nothing. */
   lastUnspent: number;
@@ -117,6 +154,8 @@ export interface BotTelemetry {
   spellOffers: Record<string, number>;
   /** Free-forge cards answered: `forged`, or `declined` (no spell the forge takes). */
   forgeOffers: Record<string, number>;
+  /** Skaldic Runestones answered, by choice id: the option taken, or `left` (P-37). */
+  runestones: Record<string, string>;
   /** Mastery perks are `perksTaken`; these are the Saga and milestone perks held at the end. */
   heldPerks: Record<string, number>;
   /** The hero's state at the last decision: what the death cause is read from. */
@@ -266,6 +305,7 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
         altars: {},
         spellOffers: {},
         forgeOffers: {},
+        runestones: {},
         last: null,
       },
     };
@@ -337,6 +377,8 @@ interface DecisionResult {
   forgeOffer?: string;
   /** A step onto a spell altar ("floor:x:y"). */
   altarStep?: { key: string; altarId: string };
+  /** A Runestone answered: its choice id and the option, or `left`. */
+  runestone?: { id: string; option: string };
 }
 
 export interface PlayerDecisionContext {
@@ -362,7 +404,7 @@ export interface PlayerDecisionContext {
  * things on, so it never puts on a piece of a negative family. Every move is a real key press.
  *
  * The soak-bot plan (Notion, "Soak bot · the measuring instrument"), steps 1-3: it spends
- * each level's point (U, then S / C / D in turn, the one fixed build for balance runs),
+ * each level's point (U, then the build's rotation, BUILDS),
  * takes a family's mastery perk, loots chests, and steps out of a telegraphed attack onto
  * open floor. In town it stops only where there's something to do: the Sage to identify,
  * the temple to cleanse, offer, take a blessing and heal, Olaf for a bigger purse once
@@ -378,6 +420,7 @@ export interface PlayerDecisionContext {
  * forge onto its hardest-hitting spell, and answers a spell offer by learning it where it fits
  * or swapping out a spell of a crowded type. Tablets wait: it never reaches town past floor
  * 10, where Astrid sells them. What the casts did is the summary's `magic` (magicTap.ts).
+ * At a Skaldic Runestone it takes the gift its run's policy names, or leaves it (P-37).
  */
 export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<DispatchedAction> {
   const { page, prng, actionIndex, inDialog } = ctx;
@@ -408,6 +451,9 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       shopFloor: number;
       serviceTried: string[];
       statPresses: number;
+      rotation: readonly string[];
+      runestonePolicy: string;
+      runestonesAnswered: string[];
       statGiveUp: boolean;
       charMenuDecisions: number;
       castPlan: CastPlan | null;
@@ -681,6 +727,18 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       if (stack.includes('choice')) {
         const choiceOverlay = document.getElementById('choice-modal-overlay');
         const focused = choiceOverlay?.querySelector('.ui-option.is-focused');
+        // A Runestone (opened from the tile the hero stands on): the run's policy says which gift.
+        const tileChoice: string | undefined = e.map.getTile(p.x, p.y)?.interactionHandlerId;
+        if (tileChoice?.startsWith('skaldic_runestone_')) {
+          if (args.runestonePolicy === 'leave') {
+            return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor, runestone: { id: tileChoice, option: 'left' } };
+          }
+          const want = args.runestonePolicy === 'second' ? 1 : 0;
+          const at = focused ? Number((focused as HTMLElement).dataset.index ?? -1) : -1;
+          if (at !== want) return { action: { type: 'key' as const, key: at < want ? 'ArrowDown' : 'ArrowUp' }, curPos, curTurn, curFloor };
+          const option = (focused as HTMLElement).id.replace(/^choice-opt-/, '');
+          return { action: { type: 'key' as const, key: 'Enter' }, curPos, curTurn, curFloor, runestone: { id: tileChoice, option } };
+        }
         if (!focused) {
           return { action: { type: 'key' as const, key: 'ArrowDown', secondaryKey: 'Enter' }, curPos, curTurn, curFloor };
         }
@@ -894,11 +952,10 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           return { action: { type: 'key' as const, key: 'Enter' }, curPos, curTurn, curFloor, useDone: true, used: args.useKind ?? undefined };
         }
 
-        // Spend level points on the Character tab, one a decision. The fixed build for balance
-        // runs: Strength, Constitution, Dexterity in turn (melee damage, health, hit chance).
+        // Spend level points on the Character tab, one a decision, in the build's rotation
+        // (BUILDS: the warrior's Strength, Constitution, Dexterity; the caster's Intelligence).
         if (modal?.activeTabId === 'character' && unspent > 0 && !args.statGiveUp) {
-          const ROTATION = ['KeyS', 'KeyC', 'KeyD'];
-          const key = ROTATION[args.statPresses % ROTATION.length];
+          const key = args.rotation[args.statPresses % args.rotation.length];
           return { action: { type: 'key' as const, key, secondaryKey: 'Enter' }, curPos, curTurn, curFloor, statPress: true };
         }
 
@@ -1903,6 +1960,22 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           }
         }
 
+        // A Skaldic Runestone seen on this floor (P-37): walk onto it without the shard (with it,
+        // the stone's learning card opens instead), and its choice opens there.
+        const shardHeld = p.inventory.getAllCarriedItems().some((it: any) => it?.definitionId === stones?.shardItemId);
+        if (!shardHeld && curTurn - args.floorEnteredTurn < 1000) {
+          for (let y = 0; y < e.map.height; y++) {
+            for (let x = 0; x < e.map.width; x++) {
+              const id: string | undefined = e.map.getTile(x, y)?.interactionHandlerId;
+              if (!id?.startsWith('skaldic_runestone_') || !e.fov.isExplored(x, y)) continue;
+              if (args.runestonesAnswered.includes(id) || e.getWorldFlag(`${id}_resolved`)) continue;
+              if (x === p.x && y === p.y) continue;
+              const step = bfsStepToGoal(p, { x, y }, true);
+              if (step) return { action: { type: 'key' as const, key: stepToKey(step.x - p.x, step.y - p.y) }, curPos, curTurn, curFloor };
+            }
+          }
+        }
+
         // A spell altar seen on this floor (P-36): walk onto it, and its rite card opens there.
         const altarIds = new Set((e.manifest?.magic?.altars ?? []).map((a: any) => a.id));
         if (altarIds.size > 0 && curTurn - args.floorEnteredTurn < 1000) {
@@ -1929,7 +2002,19 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         const seenStairsDown = findStairs('down');
 
         const turnsOnFloor = curTurn - args.floorEnteredTurn;
-        const timeout = turnsOnFloor >= 400;
+        // A Runestone not yet answered keeps the bot exploring longer: a stone read through its
+        // kill rite never brings the hero near it.
+        let runestoneUnanswered = false;
+        for (let y = 0; y < e.map.height && !runestoneUnanswered; y++) {
+          for (let x = 0; x < e.map.width; x++) {
+            const id: string | undefined = e.map.getTile(x, y)?.interactionHandlerId;
+            if (id?.startsWith('skaldic_runestone_') && !args.runestonesAnswered.includes(id) && !e.getWorldFlag(`${id}_resolved`)) {
+              runestoneUnanswered = true;
+              break;
+            }
+          }
+        }
+        const timeout = turnsOnFloor >= (runestoneUnanswered ? 1000 : 400);
         const frontierStep = bfsStepToFrontier(p);
 
         if ((!frontierStep || timeout) && seenStairsDown) {
@@ -1988,6 +2073,9 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       shopFloor: Number(process.env.SOAK_SHOP_FLOOR ?? 4),
       serviceTried: state.serviceTried,
       statPresses: state.statPresses,
+      rotation: BUILDS[buildFor(Number(process.env.SOAK_SEED ?? 42))].rotation,
+      runestonePolicy: runestonePolicyFor(Number(process.env.SOAK_SEED ?? 42)),
+      runestonesAnswered: Object.keys(state.telemetry.runestones),
       statGiveUp: state.statFailures >= 6,
       charMenuDecisions: state.charMenuDecisions,
       castPlan: state.castPlan,
@@ -2048,6 +2136,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
     state.castPlan = null;
   }
   if (evalResult.stoneFace) tel.stoneFacesRead++;
+  if (evalResult.runestone) tel.runestones[evalResult.runestone.id] = evalResult.runestone.option;
   if (evalResult.spellOffer) tel.spellOffers[evalResult.spellOffer] = (tel.spellOffers[evalResult.spellOffer] ?? 0) + 1;
   if (evalResult.forgeOffer) tel.forgeOffers[evalResult.forgeOffer] = (tel.forgeOffers[evalResult.forgeOffer] ?? 0) + 1;
   // An altar answered on its card, or stood on with no card: it waits (altarWaitReason).

@@ -17,6 +17,7 @@
     "test:record": "playwright test e2e/gameplay-record.spec.ts --project=chromium",
     "test:campaign": "playwright test e2e/campaign-flow.spec.ts --project=chromium",
     "soak": "node scripts/soak.mjs",
+    "soak:report": "npx tsx scripts/soak-report.ts",
     "lint": "tsc --noEmit && tsc --noEmit -p e2e/tsconfig.json && npm run check:engine-purity && npm run check:engine-encapsulation && npm run check:engine-creep && npm run check:ui-palette && npm run knip",
     "knip": "knip",
     "gate-stamp": "tsx scripts/gate-stamp.ts",

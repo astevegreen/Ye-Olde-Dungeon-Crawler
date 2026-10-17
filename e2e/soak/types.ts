@@ -82,6 +82,11 @@ export interface SoakSummary {
   bot?: BotTelemetry;
   /** Magic in play (P-36, `magicTap.ts`), for every lens. */
   magic?: MagicTelemetry;
+  /** Per floor, by floor number as a string; "0" is town and the raid (P-36). */
+  pace?: Record<string, FloorPace>;
+  /** Turns spent below town, as the Hearth-Tear cold counts them (`hearthCold.ts`). */
+  belowTurns?: number;
+  hero?: HeroOutcome;
 }
 
 /** Who dealt damage to the hero's foes: a cast, a step or blow, another hero action, or the world. */
@@ -90,19 +95,20 @@ type DamageSource = 'spell' | 'melee' | 'other' | 'world';
 interface MagicFloorTally {
   /** Casts that spent the turn, by spell id. */
   casts: Record<string, number>;
-  /** Casts that spent nothing (no target, out of range, refused). */
-  failedCasts: number;
+  /** Casts that spent nothing (no target, out of range, refused), by spell id. */
+  failed: Record<string, number>;
   damage: Record<DamageSource, number>;
   kills: Record<DamageSource, number>;
-  /** The `spell` damage, by spell id. */
+  /** The `spell` damage and kills, by spell id. */
   spellDamage: Record<string, number>;
+  spellKills: Record<string, number>;
 }
 
 export interface MagicTelemetry {
   /** By floor number as a string; "0" is town and the raid. */
   floors: Record<string, MagicFloorTally>;
-  /** Each spell that joined the book after the start, in order. */
-  learned: Array<{ spellId: string; via: 'stone' | 'shortcut' | 'other'; floor: number; turn: number }>;
+  /** Each spell that joined the book after the start, in order, and the route it came by. */
+  learned: Array<{ spellId: string; via: 'stone' | 'shortcut' | 'altar' | 'rite' | 'other'; floor: number; turn: number }>;
   stonesRead: number;
   /** Stones read through a carrier's rite. */
   shortcuts: number;
@@ -111,5 +117,37 @@ export interface MagicTelemetry {
   rites: number;
   altarRites: number;
   spellsKnown: string[];
+  /** Each learning stone on a floor the hero entered, by floor: read, reached (stood at, not read) or missed. */
+  stones: Record<string, 'read' | 'reached' | 'missed'>;
+  /** Each spell altar on a floor the hero entered, by "floor:altarId": performed, reached or missed. */
+  altars: Record<string, 'performed' | 'reached' | 'missed'>;
+  /** Every spell in the pack: its type, and the first floor whose stone teaches it (null: no stone does). */
+  catalog: Record<string, { type: string; stoneFrom: number | null }>;
 }
 
+/** One floor's pace (P-36): what the hero spent there, over every visit. */
+export interface FloorPace {
+  /** Game turns (each spends the hero's energy: a step, a blow, a rest step). */
+  turns: number;
+  /** Bot actions: key presses and clicks, dialogs included. */
+  actions: number;
+  wallMs: number;
+  visits: number;
+  /** The turn the hero first set foot on the floor, and how many spells it knew then. */
+  firstTurn: number;
+  spellsOnEntry: number;
+}
+
+/** Who the hero was when the run ended: joins magic and pace to the outcome. */
+export interface HeroOutcome {
+  /** The bot's build (`playerBot.ts` BUILDS); `chaos` for the chaos lens. */
+  build: string;
+  /** The bot's Runestone policy: first gift, second gift, or leave untouched. */
+  runestonePolicy: string;
+  level: number;
+  stats: { str: number; int: number; con: number; dex: number };
+  maxHp: number;
+  maxMana: number;
+  /** Runestones answered, by choice id: the option taken, `left`, or `granted:<option>` by a deep start. */
+  runestones: Record<string, string>;
+}

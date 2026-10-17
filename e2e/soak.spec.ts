@@ -6,8 +6,8 @@ import { execSync } from 'node:child_process';
 import { pastTheOpening } from './newHero';
 import { SoakPrng } from './soak/prng';
 import { decideChaosAction, decidePlayerAction, type DispatchedAction } from './soak/policies';
-import { classifyDeath } from './soak/playerBot';
-import { readMagic, tapMagic } from './soak/magicTap';
+import { BUILDS, buildFor, classifyDeath, isRunestoneChoice, runestonePolicyFor } from './soak/playerBot';
+import { drainMagicAnomalies, readMagic, tapMagic } from './soak/magicTap';
 import {
   createInitialOracleState,
   openModes,
@@ -17,7 +17,7 @@ import {
   normalizeSignature,
   type ActionContext,
 } from './soak/oracles';
-import type { Finding, FindingCategory, FindingSeverity, ActionLogEntry, SoakSummary, SoakPolicy, SoakOpening } from './soak/types';
+import type { Finding, FindingCategory, FindingSeverity, ActionLogEntry, FloorPace, SoakSummary, SoakPolicy, SoakOpening } from './soak/types';
 
 /**
  * One overnight soak run (`SOAK=1`; kept out of the gate suite by playwright.config.ts).
@@ -31,6 +31,11 @@ const URL = process.env.WHOLE_RUN_URL ?? pathToFileURL(BUNDLE).href;
 
 /** Screenshots and traces per run, at most: one per signature new to the lens's findings.jsonl. */
 const MAX_ARTIFACTS = 25;
+
+/** Actions on one visit to a dungeon floor before the run gives up as stalled (a floor takes
+ *  500-850 turns, fewer actions: a rest is one action for many turns). A bot that searches or
+ *  paces on a floor spends turns, so the no-progress check never sees it. */
+const FLOOR_STALL_ACTIONS = 1500;
 
 let gitSha = 'unknown';
 try {
@@ -139,7 +144,10 @@ test.describe('soak @soak', () => {
   test('overnight soak playtest run', async ({ page, context }) => {
     const seed = parseInt(process.env.SOAK_SEED ?? '42', 10);
     const policy = (process.env.SOAK_POLICY ?? 'chaos') as SoakPolicy;
-    const maxActions = parseInt(process.env.SOAK_ACTIONS ?? '1500', 10);
+    // The player lens plays until death in most runs; 1500 actions ended it on floor 2-4.
+    const maxActions = parseInt(process.env.SOAK_ACTIONS ?? (policy === 'player' ? '10000' : '1500'), 10);
+    const build = policy === 'player' ? buildFor(seed) : 'chaos';
+    const runestonePolicy = policy === 'player' ? runestonePolicyFor(seed) : 'chaos';
     const outBase = process.env.SOAK_OUT ?? resolve(process.cwd(), '.prompts', 'soak', policy);
     // A deep-floor start (SOAK_START_FLOOR=N, off by default): the floors the bot never
     // reaches on foot. It skips the opening, since the raid is no part of a deep run.
@@ -200,6 +208,15 @@ test.describe('soak @soak', () => {
         for (let i = 0; i < 6; i++) await page.locator(`#btn-dec-${attr}`).click();
       }
     }
+    // The build's points moved from Strength to Intelligence (a caster's), as far as the roll allows.
+    if (policy === 'player') {
+      for (let i = 0; i < BUILDS[build as keyof typeof BUILDS].strToInt; i++) {
+        if (await page.locator('#btn-dec-str').isDisabled()) break;
+        await page.locator('#btn-dec-str').click();
+        if (await page.locator('#btn-inc-int').isDisabled()) break;
+        await page.locator('#btn-inc-int').click();
+      }
+    }
     await page.locator('#btn-create-embark').click();
     await expect.poll(() => page.evaluate(() => Boolean(window.__cotwEngine?.player))).toBe(true);
     await page.evaluate(() => (window as any).__soakReleaseClock());
@@ -221,12 +238,13 @@ test.describe('soak @soak', () => {
       await pastTheOpening(page);
     }
 
+    const runestonesGranted: Record<string, string> = {};
     // Deep start: the hero is outfitted as one who reached the floor might be, and dropped
     // onto it, through engine.diagnostics alone (triage `outfitForFloor`, `jumpToFloor`).
     // SOAK_START_LEVEL overrides the level the outfit aims at.
     if (startFloor > 0) {
       const outfit = await page.evaluate(
-        ({ floor, level }) => {
+        ({ floor, level, policy }) => {
           const e = window.__cotwEngine!;
           const res = e.diagnostics.outfitForFloor(floor, level > 0 ? level : undefined);
           // The outfit ignores the rolled Strength: a weak hero leaves its heaviest pieces behind
@@ -256,13 +274,28 @@ test.describe('soak @soak', () => {
           }
           const m = (window as any).__soakMagic;
           if (m) m.known = [...new Set([...m.known, ...p.spellsKnown])];
+          // The Runestones above the floor, answered by the run's policy: their stat gifts, as the
+          // choice applies them (choiceAction.ts); an item gift is not given.
+          const granted: Record<string, string> = {};
+          for (const stone of stones?.stones ?? []) {
+            const choice = stone.floor < floor && stone.tileId ? (e.manifest as any).choices?.[stone.tileId] : undefined;
+            if (!choice || policy === 'leave') continue;
+            const option = choice.options[policy === 'second' ? 1 : 0];
+            for (const c of option?.consequences ?? []) {
+              if (c.type !== 'modifyPermanentStat') continue;
+              if (c.stat === 'attack') p.attack = p.baseAttackValue + c.delta;
+              else if (c.stat === 'defense') p.defense = p.baseDefenseValue + c.delta;
+            }
+            if (option) granted[choice.id] = `granted:${option.id}`;
+          }
           e.diagnostics.jumpToFloor(floor);
           e.diagnostics.restoreVitals();
           window.__cotwRenderer?.render();
-          return res;
+          return { ...res, granted };
         },
-        { floor: startFloor, level: parseInt(process.env.SOAK_START_LEVEL ?? '0', 10) || 0 }
+        { floor: startFloor, level: parseInt(process.env.SOAK_START_LEVEL ?? '0', 10) || 0, policy: runestonePolicy }
       );
+      Object.assign(runestonesGranted, outfit.granted);
       console.log(`[soak] Deep start on floor ${startFloor} at level ${outfit.level}, wearing ${outfit.worn.join(', ')}`);
     }
 
@@ -280,9 +313,29 @@ test.describe('soak @soak', () => {
     let stillStreak = 0;
     let lastTop: string | null = null;
     let topStreak = 0;
+    // Pace per floor (P-36), and the current visit's actions for the stall check.
+    const pace: Record<string, FloorPace> = {};
+    let paceFloor = -1;
+    let paceTurn = 0;
+    let paceAt = Date.now();
+    let visitActions = 0;
+    const spellsKnownNow = () => page.evaluate(() => (window.__cotwEngine as any)?.player?.spellsKnown?.length ?? 0).catch(() => 0);
+    /** Charges the turns and time since the last call to the floor they were spent on. */
+    const chargePace = (turn: number) => {
+      const f = pace[String(paceFloor)];
+      if (f) {
+        f.turns += Math.max(0, turn - paceTurn);
+        f.wallMs += Date.now() - paceAt;
+      }
+      paceTurn = turn;
+      paceAt = Date.now();
+    };
 
+    // A deep start replays only with its floor (and level) named.
+    const startLevel = process.env.SOAK_START_LEVEL;
+    const deepRepro = startFloor > 0 ? ` SOAK_START_FLOOR=${startFloor}${startLevel ? ` SOAK_START_LEVEL=${startLevel}` : ''}` : '';
     const repro = (i: number) =>
-      `SOAK=1 SOAK_SEED=${seed} SOAK_POLICY=${policy} SOAK_OPENING=${opening} SOAK_ACTIONS=${i + 1} npx playwright test e2e/soak.spec.ts --project=chromium --workers=1`;
+      `SOAK=1 SOAK_SEED=${seed} SOAK_POLICY=${policy} SOAK_OPENING=${opening}${deepRepro} SOAK_ACTIONS=${i + 1} npx playwright test e2e/soak.spec.ts --project=chromium --workers=1`;
     const harnessFinding = (i: number, turn: number, floor: number, category: FindingCategory, severity: FindingSeverity, detail: string, frame?: string): Finding => ({
       sig: normalizeSignature(category, detail, frame),
       category,
@@ -341,9 +394,21 @@ test.describe('soak @soak', () => {
       const state = await page
         .evaluate(() => {
           const e = window.__cotwEngine as any;
-          return { turn: e?.turnCount ?? 0, floor: e?.currentFloor ?? 0, attack: e?.player?.attack ?? 0, defense: e?.player?.defense ?? 0 };
+          const p = e?.player;
+          return {
+            turn: e?.turnCount ?? 0,
+            floor: e?.currentFloor ?? 0,
+            attack: p?.attack ?? 0,
+            defense: p?.defense ?? 0,
+            level: p?.level ?? 0,
+            stats: { str: p?.strength ?? 0, int: p?.intelligence ?? 0, con: p?.constitution ?? 0, dex: p?.dexterity ?? 0 },
+            maxHp: p?.maxHp ?? 0,
+            maxMana: p?.maxMana ?? 0,
+            // The Hearth-Tear cold's own count of turns below town (hearthCold.ts).
+            belowTurns: (e?.getWorldCounter?.('cotw_hearth_cold_turns') ?? null) as number | null,
+          };
         })
-        .catch(() => ({ turn: -1, floor: -1, attack: 0, defense: 0 }));
+        .catch(() => ({ turn: -1, floor: -1, attack: 0, defense: 0, level: 0, stats: { str: 0, int: 0, con: 0, dex: 0 }, maxHp: 0, maxMana: 0, belowTurns: null }));
       const magic = await readMagic(page);
       const findingCounts = { bug: 0, softlock: 0, text: 0, ux: 0 };
       for (const s of runSigs.values()) findingCounts[s.category]++;
@@ -389,6 +454,22 @@ test.describe('soak @soak', () => {
             }
           : {}),
         ...(magic ? { magic } : {}),
+        pace,
+        ...(state.belowTurns !== null ? { belowTurns: state.belowTurns } : {}),
+        hero: {
+          build,
+          runestonePolicy,
+          level: state.level,
+          stats: state.stats,
+          maxHp: state.maxHp,
+          maxMana: state.maxMana,
+          runestones: {
+            ...runestonesGranted,
+            ...Object.fromEntries(
+              Object.entries(((page as any).__playerTelemetry?.runestones ?? {}) as Record<string, string>).filter(([id]) => isRunestoneChoice(id))
+            ),
+          },
+        },
       };
       writeFileSync(join(seedDir, 'summary.json'), JSON.stringify(summary, null, 2));
     };
@@ -438,6 +519,21 @@ test.describe('soak @soak', () => {
         if (!pre) {
           await record(harnessFinding(i, -1, oracleState.currentFloor, 'bug', 'S1', 'the engine or its player disappeared'));
           endedBy = 'crash';
+          break;
+        }
+        // Pace: the turns since the last action go to the floor they were spent on.
+        chargePace(pre.turn);
+        if (pre.floor !== paceFloor) {
+          paceFloor = pre.floor;
+          visitActions = 0;
+          const f = (pace[String(pre.floor)] ??= { turns: 0, actions: 0, wallMs: 0, visits: 0, firstTurn: pre.turn, spellsOnEntry: await spellsKnownNow() });
+          f.visits++;
+        }
+        pace[String(pre.floor)].actions++;
+        visitActions++;
+        if (pre.floor > 0 && visitActions > FLOOR_STALL_ACTIONS && pre.stack.length === 0) {
+          await record(harnessFinding(i, pre.turn, pre.floor, 'softlock', 'S3', `${FLOOR_STALL_ACTIONS} actions on one visit to floor ${pre.floor} without leaving it`));
+          endedBy = 'floor stall';
           break;
         }
         // A dialog the bot can't leave in 100 tries (Escape and Enter are a third of its keys).
@@ -548,6 +644,9 @@ test.describe('soak @soak', () => {
         const findings = await runOracles(page, actionCtx, oracleState, consoleErrors.splice(0), pageErrors.splice(0));
         messagesSeen = await page.evaluate(() => (window as any).__soakLogTotal ?? 0);
         for (const f of findings) await record(f);
+        for (const anomaly of await drainMagicAnomalies(page)) {
+          await record(harnessFinding(i, pre.turn, pre.floor, 'bug', 'S2', `magic: ${anomaly}`, 'spellPipeline.ts'));
+        }
 
         if (i > 0 && i % 100 === 0) {
           writeFileSync(join(seedDir, `save-${i}.txt`), await exportSaveCode(page));

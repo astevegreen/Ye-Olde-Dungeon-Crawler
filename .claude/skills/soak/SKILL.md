@@ -13,20 +13,25 @@ A soak is `e2e/soak.spec.ts` played once per seed by a seeded bot through real i
    - `chaos`: random keys and clicks, for robustness (crashes, softlocks, focus escapes). Even seeds play the opening, odd seeds skip it.
    - `player`: a bot that plays to win, for balance (deepest floor, death causes, gear).
    - `ui-sweep`: runs as `chaos` until its own policy exists.
-3. `--start-floor N` soaks floors the bot never reaches on foot: `engine.diagnostics.outfitForFloor(N)` levels and dresses the hero for floor N (`--start-level` overrides the level), then `jumpToFloor(N)`.
+3. `--start-floor N` soaks floors the bot never reaches on foot: `engine.diagnostics.outfitForFloor(N)` levels and dresses the hero for floor N (`--start-level` overrides the level), teaches a spell per learning stone above N, grants the stat gifts of the Runestones above N by the run's policy (never their items), then `jumpToFloor(N)`.
 4. `--until HH:MM` stops an overnight loop at a wall-clock time; `--count` bounds it by seeds.
+5. `--workers N` runs N seeds at once, each in its own browser, its console in `<seed>/console.txt`. `--actions` defaults to 10000 for `player` (most runs end in death first) and 1500 otherwise. A run that spends 1500 actions on one visit to a floor ends as `floor stall`.
+6. The player bot varies by seed, so one soak compares play styles: seed n plays build `warrior`, `caster` or `hybrid` (n % 3: the level-up rotation, and Strength moved to Intelligence at creation) and Runestone policy `first`, `second` or `leave` (floor(n / 3) % 3). The bot leaves a floor after 400 turns once it has seen the stairs down, or after 1000 while the floor's Runestone is unanswered, so those floors pace longer. Nine seeds in a row cover every pair; `--build` and `--runestones` fix one for every seed.
 
 Done when each seed's `summary.json` reads `partial: false`: a summary is rewritten with `partial: true` every 100 actions while the run is live.
 
 ## Output
 Everything lands in `.prompts/soak/<lens>/` (gitignored), or `<lens>-floor<N>/` for a deep start:
-- `runs.jsonl`: one line per seed from the runner: `status`, `endedBy`, `turnsPlayed`, `deepestFloor`, `causeOfDeath`, `deathCause`, `findingCounts`, `sha` (`deathCause` and `sha` only from 1cb68d5, 5 Oct; older runs keep their sha in `summary.json`).
+- `runs.jsonl`: one line per seed from the runner: `status`, `endedBy`, `turnsPlayed`, `deepestFloor`, `causeOfDeath`, `deathCause`, `build`, `findingCounts`, `sha` (`deathCause` and `sha` only from 1cb68d5, 5 Oct; older runs keep their sha in `summary.json`).
 - `findings.jsonl`: one line per signature new to a run, across the lens: `sig`, `category` (`bug`, `softlock`, `text`, `ux`), `severity`, `seed`, `action`, `turn`, `floor`, `detail`, and `repro`, the command that replays that seed to that action.
 - `<seed>/summary.json` (`SoakSummary`, `e2e/soak/types.ts`): the run's totals, every signature with its count, latency, the raid, interruptions, and for `player` the gear and bot telemetry (`bot.castsChosen`: casts by purpose).
-  - `magic` (every lens, `e2e/soak/magicTap.ts`): per floor, casts by spell, failed casts, and damage and kills by source (`spell`, `melee`, `other` hero actions, `world`: allies, ground, monsters); spells learned and how; stones read, shortcuts, rites.
+  - `magic` (every lens, `e2e/soak/magicTap.ts`): per floor, casts and failed casts by spell, damage and kills by source (`spell`, `melee`, `other` hero actions, `world`: allies and summons, ground, monsters, and a spell's later blow such as Rockfall's fall) and by spell; spells learned and the route (`stone`, `shortcut`, `altar`, `rite`, `other`: a tablet or an offer); each stone and altar on a floor entered, as read/performed, reached or missed; the pack's spell `catalog` (type, first stone floor). A cast that succeeds without its turn or spends no mana, or Void Debt below zero, is a `bug` finding `magic: …`.
+  - `pace` (P-36): per floor, turns, actions, wall time, visits, the turn first entered and the spells known then; `belowTurns`, the Hearth-Tear cold's own counter.
+  - `hero`: build, Runestone policy, level, stats, max HP and mana, and each Runestone answered (`left`, an option id, or `granted:` by a deep start).
 - `<seed>/actions.jsonl` (a finding's `lastActions` points into it), `f<action>.png`/`.zip` evidence for the first sighting of a signature, `save-<n>.txt` save codes every 100 actions and `save-first-finding.txt`.
 
 ## Read
+- `npm run soak:report -- <folder> [<folder> ...] [--sha <sha>]` prints the P-36 tables from the finished summaries: damage and kills by source per floor, depth by build, every spell's casts, failures and kills, learning routes, stones and altars missed, pace per floor and turns below town against the cold stages, outcome by Runestone policy, and findings by family. Read it first; hand the logs to the agent below only for what it doesn't answer.
 - Hand the counting to the `log-analyst` agent: the logs run to megabytes. Ask for counts per signature and seed, the top findings by seeds affected, death causes, and anomalies against the last soak, with file paths; the main session opens a screenshot or save code only for a finding it will act on.
 - A signature is one defect however often it fires; rank by seeds affected, not by count.
 - Reproduce with the finding's `repro` line, or load its save code; evidence from soaks before 7 Oct 2026 lost its traces and periodic snapshots (deleted to save space), so plan no work that replays them.
@@ -34,6 +39,7 @@ Everything lands in `.prompts/soak/<lens>/` (gitignored), or `<lens>-floor<N>/` 
 ## Compare arms
 A soak is not reproducible per seed across machine load: the bot's rest (`R`) steps on the wall clock, so how many turns pass before its next key depends on CPU speed, and every later floor differs.
 - Run every arm of a comparison at the same time, with the same runner count, launches interleaved; drop an arm that ran under different load.
+- Builds play differently: compare within a build (`hero.build`), or give both arms the same seeds so the mix matches. Summaries before P-36's audit (16 Oct 2026) are all `warrior`, with no `hero` block.
 - Compare unpaired: Mann-Whitney on deepest floors, two-proportion tests on pass rates. Per-seed pairing holds only for the first floors.
 - Measure a bot change on a fixed game commit, so bot commits touch only `e2e/`: the baseline arm runs from a worktree at the last commit before the change. Filter summaries by `sha`. `.prompts/soak/compare-bots.py` is the last comparison script; adapt its paths.
 - Measure a game change with the bot fixed, the same way.

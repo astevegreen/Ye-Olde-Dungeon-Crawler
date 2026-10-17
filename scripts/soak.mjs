@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { spawnSync } from 'node:child_process';
-import { readFileSync, appendFileSync, existsSync, mkdirSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { readFileSync, appendFileSync, existsSync, mkdirSync, openSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 
 function printHelp() {
@@ -11,13 +11,15 @@ Options:
   --lens <lens>        chaos | player | ui-sweep (default: chaos)
   --from <seed>        Starting seed integer (default: 1)
   --count <count>      Number of seeds to run (default: 100)
-  --actions <actions>  Maximum actions per run (default: 1500)
+  --actions <actions>  Maximum actions per run (default: 10000 for player, 1500 otherwise)
   --opening <opening>  play | skip (default: even play / odd skip for chaos, play for player)
   --until <HH:MM>      Wall-clock cutoff time (e.g. 06:30)
   --project <browser>  Playwright browser project (default: chromium)
-  --workers <workers>  Worker count (default: 1)
+  --workers <workers>  Seeds run at once, each in its own browser (default: 1)
   --start-floor <n>    Deep-floor start: outfit the hero for floor n and drop it there (default: 0, off)
   --start-level <n>    The level that outfit aims at (default: 1 + 0.7 x floor)
+  --build <name>       player: warrior | caster | hybrid for every seed (default: by seed, n % 3)
+  --runestones <p>     player: first | second | leave for every seed (default: by seed, floor(n / 3) % 3)
   --help               Show this help message
 `);
 }
@@ -26,13 +28,15 @@ const args = process.argv.slice(2);
 let lens = 'chaos';
 let fromSeed = 1;
 let count = 100;
-let actions = 1500;
+let actions = null;
 let openingOverride = null;
 let untilStr = null;
 let project = 'chromium';
 let workers = 1;
 let startFloor = 0;
 let startLevel = 0;
+let build = null;
+let runestones = null;
 
 for (let i = 0; i < args.length; i++) {
   const arg = args[i];
@@ -59,8 +63,15 @@ for (let i = 0; i < args.length; i++) {
     startFloor = parseInt(args[++i], 10);
   } else if (arg === '--start-level' && i + 1 < args.length) {
     startLevel = parseInt(args[++i], 10);
+  } else if (arg === '--build' && i + 1 < args.length) {
+    build = args[++i];
+  } else if (arg === '--runestones' && i + 1 < args.length) {
+    runestones = args[++i];
   }
 }
+
+// The player lens plays until death in most runs; 1500 actions ended it on floor 2-4.
+actions ??= lens === 'player' ? 10000 : 1500;
 
 let cutoffMs = null;
 if (untilStr) {
@@ -80,21 +91,14 @@ mkdirSync(soakOutDir, { recursive: true });
 
 const runsLogPath = join(soakOutDir, 'runs.jsonl');
 const testResultsDir = join(soakOutDir, 'test-results');
-const reportDir = join(soakOutDir, 'report');
 
-console.log(`[soak runner] Starting soak runs: lens=${lens}, seeds ${fromSeed} to ${fromSeed + count - 1}, maxActions=${actions}`);
+console.log(`[soak runner] Starting soak runs: lens=${lens}, seeds ${fromSeed} to ${fromSeed + count - 1}, maxActions=${actions}, ${workers} at once`);
 console.log(`[soak runner] Output directory: ${soakOutDir}`);
 
-for (let seed = fromSeed; seed < fromSeed + count; seed++) {
-  if (cutoffMs && Date.now() >= cutoffMs) {
-    console.log(`[soak runner] Cutoff time reached (${untilStr}). Stopping loop.`);
-    break;
-  }
-
+/** One seed: one Playwright run of the soak spec, then a line in runs.jsonl. */
+function runSeed(seed) {
   const opening = openingOverride ?? (lens === 'chaos' ? (seed % 2 === 0 ? 'play' : 'skip') : 'play');
-  console.log(`\n======================================================`);
   console.log(`[soak runner] Running seed ${seed} (${opening}, actions: ${actions})...`);
-  console.log(`======================================================`);
 
   const env = {
     ...process.env,
@@ -106,71 +110,85 @@ for (let seed = fromSeed; seed < fromSeed + count; seed++) {
     SOAK_OPENING: opening,
     SOAK_START_FLOOR: String(startFloor),
     SOAK_START_LEVEL: String(startLevel),
-    PLAYWRIGHT_HTML_REPORT: reportDir,
+    ...(build ? { SOAK_BUILD: build } : {}),
+    ...(runestones ? { SOAK_RUNESTONES: runestones } : {}),
     // playwright.config.ts defines Firefox and WebKit only when this is set.
     PW_ALL_BROWSERS: '1',
   };
 
+  // Seeds side by side: each keeps its own test-results folder, and the line reporter writes
+  // no shared HTML report.
+  const pwArgs = [
+    'playwright',
+    'test',
+    'e2e/soak.spec.ts',
+    `--project=${project}`,
+    '--workers=1',
+    '--reporter=line',
+    `--output=${join(testResultsDir, String(seed))}`,
+  ];
   const cmd = process.platform === 'win32' ? 'cmd.exe' : 'npx';
-  const cmdArgs = process.platform === 'win32'
-    ? [
-        '/c',
-        'npx',
-        'playwright',
-        'test',
-        'e2e/soak.spec.ts',
-        `--project=${project}`,
-        `--workers=${workers}`,
-        `--output=${testResultsDir}`,
-      ]
-    : [
-        'playwright',
-        'test',
-        'e2e/soak.spec.ts',
-        `--project=${project}`,
-        `--workers=${workers}`,
-        `--output=${testResultsDir}`,
-      ];
+  const cmdArgs = process.platform === 'win32' ? ['/c', 'npx', ...pwArgs] : pwArgs;
 
   const startTime = Date.now();
-  const child = spawnSync(cmd, cmdArgs, {
-    env,
-    stdio: 'inherit',
-    shell: false,
-  });
-  const durationMs = Date.now() - startTime;
-  const exitCode = child.status ?? (child.signal ? 1 : 0);
-
-  // Read summary if written
-  const summaryFile = join(soakOutDir, String(seed), 'summary.json');
-  let summary = null;
-  if (existsSync(summaryFile)) {
-    try {
-      summary = JSON.parse(readFileSync(summaryFile, 'utf-8'));
-    } catch {
-      // ignore
+  return new Promise((done) => {
+    // Side by side, each seed's console goes to <seed>/console.txt rather than interleaving.
+    let stdio = 'inherit';
+    if (workers > 1) {
+      mkdirSync(join(soakOutDir, String(seed)), { recursive: true });
+      const out = openSync(join(soakOutDir, String(seed), 'console.txt'), 'w');
+      stdio = ['ignore', out, out];
     }
-  }
+    const child = spawn(cmd, cmdArgs, { env, stdio, shell: false });
+    child.on('close', (code, signal) => {
+      const durationMs = Date.now() - startTime;
+      const exitCode = code ?? (signal ? 1 : 0);
 
-  const runRecord = {
-    seed,
-    lens,
-    opening,
-    exitCode,
-    status: exitCode === 0 ? 'passed' : 'failed',
-    durationMs,
-    endedBy: summary?.endedBy ?? null,
-    turnsPlayed: summary?.turnsPlayed ?? null,
-    deepestFloor: summary?.deepestFloor ?? null,
-    causeOfDeath: summary?.causeOfDeath ?? null,
-    sha: summary?.sha ?? null,
-    deathCause: summary?.bot?.deathCause ?? null,
-    findingCounts: summary?.findingCounts ?? {},
-    timestamp: new Date().toISOString(),
-  };
+      const summaryFile = join(soakOutDir, String(seed), 'summary.json');
+      let summary = null;
+      if (existsSync(summaryFile)) {
+        try {
+          summary = JSON.parse(readFileSync(summaryFile, 'utf-8'));
+        } catch {
+          // ignore
+        }
+      }
 
-  appendFileSync(runsLogPath, JSON.stringify(runRecord) + '\n');
-  console.log(`[soak runner] Completed seed ${seed}: exitCode=${exitCode}, duration=${durationMs}ms`);
+      const runRecord = {
+        seed,
+        lens,
+        opening,
+        exitCode,
+        status: exitCode === 0 ? 'passed' : 'failed',
+        durationMs,
+        endedBy: summary?.endedBy ?? null,
+        turnsPlayed: summary?.turnsPlayed ?? null,
+        deepestFloor: summary?.deepestFloor ?? null,
+        causeOfDeath: summary?.causeOfDeath ?? null,
+        sha: summary?.sha ?? null,
+        deathCause: summary?.bot?.deathCause ?? null,
+        build: summary?.hero?.build ?? null,
+        findingCounts: summary?.findingCounts ?? {},
+        timestamp: new Date().toISOString(),
+      };
+
+      appendFileSync(runsLogPath, JSON.stringify(runRecord) + '\n');
+      console.log(`[soak runner] Completed seed ${seed}: exitCode=${exitCode}, floor ${runRecord.deepestFloor}, ${runRecord.endedBy}, ${Math.round(durationMs / 1000)} s`);
+      done();
+    });
+  });
 }
 
+let next = fromSeed;
+async function lane() {
+  while (next < fromSeed + count) {
+    if (cutoffMs && Date.now() >= cutoffMs) {
+      console.log(`[soak runner] Cutoff time reached (${untilStr}). Stopping.`);
+      return;
+    }
+    await runSeed(next++);
+  }
+}
+
+await Promise.all(Array.from({ length: Math.max(1, workers) }, lane));
 console.log(`\n[soak runner] All scheduled runs completed.`);

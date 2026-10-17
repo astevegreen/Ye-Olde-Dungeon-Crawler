@@ -60,6 +60,7 @@ import { COTW_HOMECOMING_HOOK } from './homecoming';
 import { COTW_PROLOGUE, COVEN_CHANNELER_STRATEGY, PROLOGUE_HOOKS, PROLOGUE_TIMED_EVENT } from './prologue';
 import { COTW_TILES } from './tiles';
 import { COTW_TOWN_FURNISHING_HOOK } from './townFurnishings';
+import { COTW_TOWN_STAGES_HOOK } from './townStages';
 import { COTW_FLOOR_HAZARDS, COTW_ROOM_DECORATION } from './floorBands';
 import { COTW_FLOOR_LAYOUTS, COTW_FLOOR_SIZE } from './floorLayouts';
 import { COTW_MONSTER_CATEGORIES } from './monsterCategories';
@@ -194,6 +195,7 @@ export const cotwManifest: GameContentManifest = {
     COTW_COMPANION_BARKS_HOOK,
     COTW_NORN_CHOICES_HOOK,
     COTW_TOWN_FURNISHING_HOOK,
+    COTW_TOWN_STAGES_HOOK,
     COTW_TEMPLE_MET_HOOK,
     COTW_RELIC_HOOK,
     OATH_HOLD_HOOK,

@@ -12,7 +12,7 @@ import { torvaldModel } from './sculpt/torvald';
 import { haakonModel } from './sculpt/haakon';
 import { bjornModel } from './sculpt/bjorn';
 import { thrainModel } from './sculpt/thrain';
-import { eirModel, sigrunModel, brandrModel, hallvardModel, ingridModel, torsteinModel, sigridModel, leifModel } from './sculpt/villagers';
+import { eirModel, sigrunModel, brandrModel, hallvardModel, ingridModel, torsteinModel, sigridModel, leifModel, ketilModel } from './sculpt/villagers';
 
 /** Every companion and townsfolk model idles over four frames. */
 const ALLY_FRAMES = 4;
@@ -58,4 +58,6 @@ export const COTW_TOWNSFOLK_SPRITES: Record<string, PixelSprite> = {
   captive_villager_2: sculpted(torsteinModel),
   captive_villager_3: sculpted(sigridModel),
   captive_villager_4: sculpted(leifModel),
+  // The carter who comes over the pass with the thaw (townStages.ts).
+  'npc-ketil': sculpted(ketilModel),
 };

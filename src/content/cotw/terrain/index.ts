@@ -43,6 +43,8 @@ export const COTW_TERRAIN_ART: TerrainArtConfig = {
     // The town's cobbled lanes blend like a liquid; its fountain spans a 2x2 block.
     town_road: { kind: 'area', macro: true },
     town_fountain: { kind: 'area', macro: true },
+    town_fountain_thawed: { kind: 'area', macro: true },
+    town_fountain_sapped: { kind: 'area', macro: true },
   },
   contactShadows: true,
   entityShadows: true,

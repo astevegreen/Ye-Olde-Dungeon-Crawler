@@ -299,8 +299,13 @@ function roadEdge(pen: Pen, side: 'N' | 'E' | 'S' | 'W'): void {
   }
 }
 
-/** The plaza fountain, 64x64 over a 2x2 block: frozen basin, spout pillar, icicles. */
-function fountain(pen: Pen): void {
+/**
+ * The plaza fountain, 64x64 over a 2x2 block: basin, spout pillar and raven. Frozen with
+ * icicles until the Thaw; then running, with water from the raven's beak; then fouled with
+ * black sap once the roots come up (townStages.ts).
+ */
+function fountain(pen: Pen, state: 'frozen' | 'running' | 'sapped'): void {
+  const frozen = state === 'frozen';
   cobbles(pen);
   pen.fillStyle = 'rgba(0,0,0,0.4)';
   ell(pen, 33, 36, 27, 21);
@@ -311,23 +316,54 @@ function fountain(pen: Pen): void {
   pen.fillStyle = '#8a9099';
   ell(pen, 32, 31.5, 27, 20);
   pen.fill();
-  pen.fillStyle = rgba(SNOW, 0.85);
-  ell(pen, 32, 14, 17, 3.2);
-  pen.fill();
-  pen.fillStyle = '#4b6f86';
+  if (frozen) {
+    pen.fillStyle = rgba(SNOW, 0.85);
+    ell(pen, 32, 14, 17, 3.2);
+    pen.fill();
+  }
+  pen.fillStyle = { frozen: '#4b6f86', running: '#2f6a8a', sapped: '#24302c' }[state];
   ell(pen, 32, 33, 21, 15);
   pen.fill();
-  pen.fillStyle = rgba('#a9cadb', 0.45);
-  ell(pen, 26, 29, 10, 5, -0.3);
-  pen.fill();
-  pen.strokeStyle = rgba('#dff1fa', 0.55);
-  pen.lineWidth = 0.8;
-  pen.beginPath();
-  pen.moveTo(18, 38);
-  pen.lineTo(27, 35);
-  pen.lineTo(34, 40);
-  pen.lineTo(45, 36);
-  pen.stroke();
+  if (frozen) {
+    pen.fillStyle = rgba('#a9cadb', 0.45);
+    ell(pen, 26, 29, 10, 5, -0.3);
+    pen.fill();
+    pen.strokeStyle = rgba('#dff1fa', 0.55);
+    pen.lineWidth = 0.8;
+    pen.beginPath();
+    pen.moveTo(18, 38);
+    pen.lineTo(27, 35);
+    pen.lineTo(34, 40);
+    pen.lineTo(45, 36);
+    pen.stroke();
+  } else {
+    // Rings spreading from where the stream falls.
+    pen.strokeStyle = state === 'running' ? rgba('#bfe3f2', 0.5) : rgba('#6f7a52', 0.45);
+    pen.lineWidth = 0.8;
+    for (const [rx, ry] of [[5, 2.4], [10, 4.6], [15, 7]]) {
+      ell(pen, 32, 37, rx, ry);
+      pen.stroke();
+    }
+  }
+  if (state === 'sapped') {
+    // Black sap threading the water and staining the rim.
+    pen.strokeStyle = rgba('#0b0d0a', 0.85);
+    pen.lineWidth = 1.6;
+    pen.beginPath();
+    pen.moveTo(16, 31);
+    pen.quadraticCurveTo(24, 36, 30, 33);
+    pen.moveTo(36, 40);
+    pen.quadraticCurveTo(42, 36, 49, 38);
+    pen.moveTo(22, 42);
+    pen.quadraticCurveTo(28, 44, 34, 45);
+    pen.stroke();
+    pen.fillStyle = rgba('#0b0d0a', 0.7);
+    for (const [x, y] of [[12, 40], [52, 34], [44, 48]]) {
+      ell(pen, x, y, 3, 1.6);
+      pen.fill();
+      pen.fillRect(x - 0.6, y, 1.2, 4);
+    }
+  }
   // The spout: a carved post with a raven on top.
   pen.fillStyle = '#5d636b';
   pen.fillRect(29, 18, 6, 17);
@@ -338,10 +374,25 @@ function fountain(pen: Pen): void {
   pen.fillStyle = '#1e2126';
   poly(pen, [[29, 16], [35, 16], [37, 12], [33, 10], [31, 11]]);
   pen.fill();
-  pen.fillStyle = rgba(SNOW, 0.9);
-  pen.fillRect(27, 15.4, 10, 1.2);
-  pen.fillStyle = rgba('#dff1fa', 0.8);
-  for (const x of [19, 24, 40, 45]) poly(pen, [[x - 1, 45], [x + 1, 45], [x, 49]]), pen.fill();
+  if (frozen) {
+    pen.fillStyle = rgba(SNOW, 0.9);
+    pen.fillRect(27, 15.4, 10, 1.2);
+    pen.fillStyle = rgba('#dff1fa', 0.8);
+    for (const x of [19, 24, 40, 45]) poly(pen, [[x - 1, 45], [x + 1, 45], [x, 49]]), pen.fill();
+    return;
+  }
+  // The stream from the raven's beak, and steam off the warm water.
+  pen.strokeStyle = state === 'running' ? rgba('#cfeaf6', 0.85) : rgba('#4a5a40', 0.85);
+  pen.lineWidth = 1.4;
+  pen.beginPath();
+  pen.moveTo(37, 12.5);
+  pen.quadraticCurveTo(41, 18, 34, 37);
+  pen.stroke();
+  pen.fillStyle = rgba('#e8eef2', 0.18);
+  for (const [x, y, r] of [[22, 24, 5], [42, 26, 4], [30, 22, 3.5]]) {
+    ell(pen, x, y, r, r * 0.7);
+    pen.fill();
+  }
 }
 
 function pine(pen: Pen): void {
@@ -660,6 +711,311 @@ function kennel(pen: Pen): void {
   pen.fill();
 }
 
+/* The town as Act 2 changes it (townStages.ts). */
+
+/** The market stall with its board laid: a fresh awning, fish, wool and apples. */
+function openStall(pen: Pen): void {
+  pen.fillStyle = 'rgba(0,0,0,0.4)';
+  ell(pen, 16, 28.5, 14, 3);
+  pen.fill();
+  pen.fillStyle = '#4b2f1a';
+  pen.fillRect(4, 8, 2, 20);
+  pen.fillRect(26, 8, 2, 20);
+  pen.fillStyle = '#6b4a2e';
+  pen.fillRect(3, 19, 26, 7);
+  pen.fillStyle = '#8a6440';
+  pen.fillRect(3, 19, 26, 1.4);
+  pen.fillStyle = '#9fb0b8'; // salt fish, laid head to tail
+  for (const x of [5, 10]) {
+    ell(pen, x + 2, 17.6, 2.6, 0.9);
+    pen.fill();
+    poly(pen, [[x - 1, 17.6], [x - 2.2, 16.4], [x - 2.2, 18.8]]);
+    pen.fill();
+  }
+  pen.fillStyle = '#c9b48a'; // a bale of fjord-wool
+  pen.beginPath();
+  pen.roundRect(14, 14.5, 6, 4.5, 1.5);
+  pen.fill();
+  pen.fillStyle = '#b5452f'; // dried apples
+  for (const [x, y] of [[23, 18], [25.4, 18], [24.2, 16.4]]) {
+    ell(pen, x, y, 1.3, 1.2);
+    pen.fill();
+  }
+  for (let i = 0; i < 7; i++) {
+    pen.fillStyle = i % 2 ? '#efe6cf' : '#2f6a8a';
+    poly(pen, [[2 + i * 4, 5], [6 + i * 4, 5], [6.8 + i * 4, 11], [2.8 + i * 4, 11]]);
+    pen.fill();
+  }
+}
+
+/** The hay cart on its side, a wheel in the air and the hay spilled. */
+function toppledCart(pen: Pen): void {
+  pen.fillStyle = 'rgba(0,0,0,0.4)';
+  ell(pen, 16, 27.5, 14, 3);
+  pen.fill();
+  pen.fillStyle = '#b8913e'; // the spilled load
+  ell(pen, 9, 25, 8, 3.2);
+  pen.fill();
+  pen.fillStyle = rgba('#d4ae5a', 0.8);
+  ell(pen, 6, 24, 4, 1.6);
+  pen.fill();
+  pen.fillStyle = '#6b4a2e'; // the bed, stood on edge
+  poly(pen, [[11, 10], [27, 13], [27, 26], [11, 23]]);
+  pen.fill();
+  pen.fillStyle = '#8a6440';
+  poly(pen, [[11, 10], [27, 13], [27, 14.4], [11, 11.4]]);
+  pen.fill();
+  pen.fillStyle = '#4b2f1a'; // the shaft, pointing at the sky
+  poly(pen, [[24, 12], [30, 3], [31.4, 4], [25.6, 13]]);
+  pen.fill();
+  pen.fillStyle = '#2e1c0f'; // a wheel up, a wheel down
+  ell(pen, 19, 8.5, 3.6, 2);
+  pen.fill();
+  pen.fillStyle = '#7a5530';
+  ell(pen, 19, 8.5, 2.6, 1.3);
+  pen.fill();
+  pen.fillStyle = '#2e1c0f';
+  ell(pen, 19, 25.5, 3.6, 2);
+  pen.fill();
+}
+
+/** Black roots heaved up through the cobbles, a loop and two broken ends. */
+function worldRoots(pen: Pen): void {
+  cobbles(pen); // they stand in the plaza, so the lane runs under them
+  pen.fillStyle = '#1f1a15'; // the earth they broke through
+  ell(pen, 15, 22, 14, 7);
+  pen.fill();
+  pen.fillStyle = 'rgba(0,0,0,0.45)';
+  ell(pen, 16, 26, 14, 4);
+  pen.fill();
+  pen.fillStyle = '#3b3c40'; // cobbles thrown up round the break
+  for (const [x, y, a] of [[5, 24, 0.4], [26, 25, -0.5], [12, 28, 0.2], [22, 21, 0.8]]) {
+    pen.save();
+    pen.translate(x, y);
+    pen.rotate(a);
+    pen.fillRect(-2.6, -2, 5.2, 4);
+    pen.restore();
+  }
+  pen.lineCap = 'round';
+  for (const [w, c] of [[5.2, '#14110f'], [3.4, '#2a221c']] as const) {
+    pen.strokeStyle = c;
+    pen.lineWidth = w;
+    pen.beginPath();
+    pen.moveTo(3, 25);
+    pen.bezierCurveTo(8, 6, 20, 6, 24, 24);
+    pen.moveTo(18, 26);
+    pen.quadraticCurveTo(24, 14, 29, 12);
+    pen.stroke();
+  }
+  pen.lineCap = 'butt';
+  pen.fillStyle = rgba('#0b0d0a', 0.8); // sap weeping from the bark
+  ell(pen, 13, 12, 1, 1.6);
+  pen.fill();
+  ell(pen, 26, 17, 0.9, 1.4);
+  pen.fill();
+  pen.fillStyle = rgba(SNOW, 0.6);
+  ell(pen, 13, 9.4, 3, 0.8);
+  pen.fill();
+}
+
+/** A cart packed for the road: a chest, rolled bedding and a spinning wheel lashed on. */
+function ladenLoad(pen: Pen): void {
+  pen.fillStyle = '#5a3d27'; // the chest
+  pen.fillRect(6, 10, 10, 8);
+  pen.fillStyle = '#3a3d44';
+  pen.fillRect(6, 12, 10, 1);
+  pen.fillRect(10.5, 10, 1, 8);
+  pen.fillStyle = '#8a7a62'; // rolled bedding
+  ell(pen, 21, 15.5, 5.5, 2.6);
+  pen.fill();
+  pen.fillStyle = '#6f5f48';
+  ell(pen, 16.4, 15.5, 1.2, 2.6);
+  pen.fill();
+  pen.strokeStyle = '#7a5530'; // the spinning wheel on top
+  pen.lineWidth = 1;
+  ell(pen, 20, 8, 4.4, 4.4);
+  pen.stroke();
+  pen.beginPath();
+  for (let i = 0; i < 3; i++) {
+    const a = (i * Math.PI) / 3;
+    pen.moveTo(20 - Math.cos(a) * 4.4, 8 - Math.sin(a) * 4.4);
+    pen.lineTo(20 + Math.cos(a) * 4.4, 8 + Math.sin(a) * 4.4);
+  }
+  pen.stroke();
+  pen.strokeStyle = '#2e1c0f'; // the lashing rope
+  pen.lineWidth = 0.6;
+  pen.beginPath();
+  pen.moveTo(5, 18);
+  pen.lineTo(27, 11);
+  pen.stroke();
+}
+
+/** One of Torvald's ward-stones: a squat stone with Thor's hammer cut in, oil-dark at the foot. */
+function wardStone(pen: Pen): void {
+  shadow(pen, 9);
+  pen.fillStyle = '#6a6f78';
+  pen.beginPath();
+  pen.roundRect(9, 9, 14, 19, 6);
+  pen.fill();
+  pen.fillStyle = '#868c95';
+  pen.fillRect(10, 11, 2, 15);
+  pen.fillStyle = '#e0b552'; // the hammer, picked out in gold
+  pen.fillRect(12, 13, 8, 3.4);
+  pen.fillRect(15, 16, 2, 7);
+  pen.fillStyle = rgba('#e0b552', 0.35); // holy oil
+  ell(pen, 16, 27.5, 7, 1.6);
+  pen.fill();
+  pen.fillStyle = rgba(SNOW, 0.9);
+  ell(pen, 16, 9.6, 5, 1.2);
+  pen.fill();
+}
+
+/** A muster rack: a timber frame with spears upright and an axe hung on the end. */
+function weaponRack(pen: Pen): void {
+  shadow(pen, 13);
+  pen.fillStyle = TIMBER;
+  pen.fillRect(4, 14, 2, 14);
+  pen.fillRect(26, 14, 2, 14);
+  pen.fillRect(3, 14, 26, 2);
+  pen.fillRect(3, 23, 26, 2);
+  for (const x of [8, 12, 16, 20]) {
+    pen.fillStyle = '#7a5530';
+    pen.fillRect(x, 6, 1.2, 21);
+    pen.fillStyle = '#a9b0b8';
+    poly(pen, [[x - 0.8, 6.4], [x + 2, 6.4], [x + 0.6, 1.5]]);
+    pen.fill();
+  }
+  pen.fillStyle = '#7a5530'; // the axe
+  pen.fillRect(24, 8, 1.2, 15);
+  pen.fillStyle = '#a9b0b8';
+  poly(pen, [[25, 8.5], [29, 7], [29, 13], [25, 11.5]]);
+  pen.fill();
+  pen.fillStyle = rgba(SNOW, 0.85);
+  pen.fillRect(3, 13.4, 26, 0.9);
+}
+
+/** A small standing stone for one lost at the altar, a candle at its foot. */
+function memorialStone(pen: Pen): void {
+  shadow(pen, 8);
+  pen.fillStyle = '#5d636b';
+  pen.beginPath();
+  pen.roundRect(11, 8, 10, 20, 4);
+  pen.fill();
+  pen.fillStyle = '#767c85';
+  pen.fillRect(12, 10, 1.6, 17);
+  pen.strokeStyle = '#2b2d31'; // the cut name
+  pen.lineWidth = 0.8;
+  pen.beginPath();
+  for (const y of [13, 16, 19]) {
+    pen.moveTo(14, y);
+    pen.lineTo(18.5, y - 0.6);
+  }
+  pen.stroke();
+  pen.fillStyle = '#e8e2d0'; // the candle and its flame
+  pen.fillRect(22, 24, 1.6, 4);
+  pen.fillStyle = HEARTH;
+  ell(pen, 22.8, 23, 0.8, 1.3);
+  pen.fill();
+  pen.fillStyle = rgba(SNOW, 0.85);
+  ell(pen, 16, 8.6, 4, 1);
+  pen.fill();
+}
+
+/** Sól's brazier: an iron bowl on three legs, burning high. */
+function solBrazier(pen: Pen): void {
+  shadow(pen, 10);
+  pen.strokeStyle = '#2b2c31';
+  pen.lineWidth = 1.4;
+  pen.beginPath();
+  for (const [ax, bx] of [[12, 8], [16, 16], [20, 24]]) {
+    pen.moveTo(ax, 17);
+    pen.lineTo(bx, 28);
+  }
+  pen.stroke();
+  pen.fillStyle = '#3a3d44';
+  poly(pen, [[7, 13], [25, 13], [21, 19], [11, 19]]);
+  pen.fill();
+  pen.fillStyle = '#d6a542'; // a sun-disc on the bowl
+  ell(pen, 16, 16, 2, 2);
+  pen.fill();
+  pen.fillStyle = '#f97316'; // the fire
+  poly(pen, [[8, 13], [11, 6], [13, 10], [16, 2], [19, 9], [21, 5], [24, 13]]);
+  pen.fill();
+  pen.fillStyle = '#fbbf24';
+  poly(pen, [[11, 13], [14, 7], [16, 10], [18, 6], [21, 13]]);
+  pen.fill();
+}
+
+/** Thrym's frost-shrine: a cairn rimed white, an icicle crown and a ring of frost on the ground. */
+function thrymShrine(pen: Pen): void {
+  pen.fillStyle = rgba('#cfe6f2', 0.35);
+  ell(pen, 16, 27, 13, 4);
+  pen.fill();
+  for (const [x, y, rx, ry, c] of [[16, 24, 9, 4.5, '#5b6470'], [16, 18, 7, 3.8, '#66707c'], [16, 12.5, 5, 3.2, '#727c88'], [16, 8, 3.4, 2.4, '#7d8894']] as const) {
+    pen.fillStyle = c;
+    ell(pen, x, y, rx, ry);
+    pen.fill();
+    pen.fillStyle = rgba('#e6f3fa', 0.75);
+    ell(pen, x - 1, y - ry * 0.6, rx * 0.7, ry * 0.35);
+    pen.fill();
+  }
+  pen.fillStyle = rgba('#dff1fa', 0.9); // the icicle crown
+  for (const x of [13, 16, 19]) poly(pen, [[x - 1, 6.4], [x + 1, 6.4], [x, 1.5]]), pen.fill();
+}
+
+/** The ground split by a tremor, warm air misting out of the crack. */
+function tremorCrack(pen: Pen): void {
+  pen.fillStyle = rgba('#14171c', 0.35); // heaved, darkened ground along the split
+  ell(pen, 16, 16, 14, 7, 0.55);
+  pen.fill();
+  pen.strokeStyle = '#0b0d10';
+  pen.lineWidth = 3;
+  pen.lineJoin = 'round';
+  pen.beginPath();
+  pen.moveTo(2, 10);
+  pen.lineTo(9, 14);
+  pen.lineTo(13, 12);
+  pen.lineTo(19, 18);
+  pen.lineTo(24, 17);
+  pen.lineTo(30, 23);
+  pen.moveTo(13, 12);
+  pen.lineTo(14, 6);
+  pen.moveTo(19, 18);
+  pen.lineTo(17, 26);
+  pen.stroke();
+  pen.strokeStyle = rgba(SNOW, 0.35);
+  pen.lineWidth = 0.7;
+  pen.beginPath();
+  pen.moveTo(2, 11.4);
+  pen.lineTo(9, 15.4);
+  pen.lineTo(13, 13.4);
+  pen.lineTo(19, 19.4);
+  pen.stroke();
+  pen.lineJoin = 'miter';
+  pen.fillStyle = rgba('#e8eef2', 0.14);
+  ell(pen, 15, 13, 7, 4);
+  pen.fill();
+}
+
+/** Black sap welled up in a glossy pool, with a few beads still rising. */
+function blackSap(pen: Pen): void {
+  pen.fillStyle = '#0b0d0a';
+  pen.beginPath();
+  pen.moveTo(6, 20);
+  pen.bezierCurveTo(4, 13, 14, 11, 18, 14);
+  pen.bezierCurveTo(24, 10, 30, 17, 26, 22);
+  pen.bezierCurveTo(23, 27, 10, 27, 6, 20);
+  pen.fill();
+  pen.fillStyle = rgba('#5a6a3c', 0.35); // a sick sheen
+  ell(pen, 14, 16.5, 4, 1.4, -0.2);
+  pen.fill();
+  pen.fillStyle = '#1a1d16';
+  for (const [x, y, r] of [[21, 18, 1.4], [11, 21, 1], [17, 22, 0.8]]) {
+    ell(pen, x, y, r, r);
+    pen.fill();
+  }
+}
+
 function prop(draw: (pen: Pen) => void): SpriteRecipe {
   return (ctx: Pen, ox: number, oy: number) => {
     ctx.save();
@@ -677,13 +1033,15 @@ export function townThingRecipes(): Record<string, SpriteRecipe> {
   const out: Record<string, SpriteRecipe> = {};
   for (let q = 0; q < 4; q++) {
     out[`town_road~q${q}`] = prop((pen) => macroQuadrant(pen, q, cobbles));
-    out[`town_fountain~q${q}`] = prop((pen) => {
-      // Not seamless: one fountain per 2x2 block, so draw it once rather than wrapped.
-      pen.save();
-      pen.translate(-(q & 1) * 32, -(q >> 1) * 32);
-      fountain(pen);
-      pen.restore();
-    });
+    for (const [type, state] of [['town_fountain', 'frozen'], ['town_fountain_thawed', 'running'], ['town_fountain_sapped', 'sapped']] as const) {
+      out[`${type}~q${q}`] = prop((pen) => {
+        // Not seamless: one fountain per 2x2 block, so draw it once rather than wrapped.
+        pen.save();
+        pen.translate(-(q & 1) * 32, -(q >> 1) * 32);
+        fountain(pen, state);
+        pen.restore();
+      });
+    }
   }
   for (const side of ['N', 'E', 'S', 'W'] as const) out[`town_road~edge${side}`] = prop((pen) => roadEdge(pen, side));
   out['town_pine~prop'] = prop(pine);
@@ -701,5 +1059,16 @@ export function townThingRecipes(): Record<string, SpriteRecipe> {
   out['town_lectern~prop'] = prop(lectern);
   out['town_strongbox~prop'] = prop(strongbox);
   out['town_kennel~prop'] = prop(kennel);
+  out['town_stall_open~prop'] = prop(openStall);
+  out['town_toppled_cart~prop'] = prop(toppledCart);
+  out['town_world_roots~prop'] = prop(worldRoots);
+  out['town_laden_cart~prop'] = prop((pen) => cart(pen, ladenLoad));
+  out['town_ward_stone~prop'] = prop(wardStone);
+  out['town_weapon_rack~prop'] = prop(weaponRack);
+  out['town_memorial_stone~prop'] = prop(memorialStone);
+  out['town_sol_brazier~prop'] = prop(solBrazier);
+  out['town_thrym_shrine~prop'] = prop(thrymShrine);
+  out['town_tremor_crack~prop'] = prop(tremorCrack);
+  out['town_black_sap~prop'] = prop(blackSap);
   return out;
 }

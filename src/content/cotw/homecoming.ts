@@ -290,6 +290,21 @@ export const RETURNED_CAPTIVE_POSITIONS = [
   { x: 24, y: 20 },
 ];
 
+/**
+ * Once the herald falls, the homecomers gather in the temple yard to pray for the hero, either
+ * side of the steps (townStages.ts changes the rest of the town). Eir and the third captive are
+ * inside the temple already.
+ */
+export const HERALD_GATHERING: Record<string, { x: number; y: number }> = {
+  'npc-sigrun': { x: 24, y: 25 },
+  'npc-brandr': { x: 32, y: 25 },
+  'npc-returned-1': { x: 26, y: 25 },
+  'npc-returned-2': { x: 30, y: 25 },
+  'npc-returned-4': { x: 30, y: 23 },
+};
+
+const placeFor = (npcId: string, stage: HomeStage, home: { x: number; y: number }) => (stage === 'herald' && HERALD_GATHERING[npcId]) || home;
+
 const BROTH_CHOICE_ID = 'choice_returned_broth';
 const BROTH_CLAIMED_FLAG = 'returned_broth_claimed';
 
@@ -352,7 +367,7 @@ export function populateHomecoming(engine: EngineContext): void {
       const added = seat(engine, {
         npcId: home.npcId,
         name: villager.name,
-        position: home.position,
+        position: placeFor(home.npcId, stage, home.position),
         spriteKey: id,
         line: lineFor(id, stage, false),
       });
@@ -368,10 +383,11 @@ export function populateHomecoming(engine: EngineContext): void {
     if (!captiveRescued(engine, captive.id)) return;
     const identity = captiveIdentity(engine, captive.id);
     const spriteKey = identity.standIn?.villagerId ?? captive.id;
+    const npcId = `npc-returned-${i + 1}`;
     const added = seat(engine, {
-      npcId: `npc-returned-${i + 1}`,
+      npcId,
       name: identity.name,
-      position: identity.standIn ? RAID_VILLAGER_HOMES[identity.standIn.villagerId].position : RETURNED_CAPTIVE_POSITIONS[i],
+      position: placeFor(npcId, stage, identity.standIn ? RAID_VILLAGER_HOMES[identity.standIn.villagerId].position : RETURNED_CAPTIVE_POSITIONS[i]),
       spriteKey,
       choiceId: i === 0 && brothOnOffer ? BROTH_CHOICE_ID : undefined,
       line: lineFor(spriteKey, stage, true),

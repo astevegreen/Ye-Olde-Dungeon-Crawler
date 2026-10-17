@@ -407,3 +407,47 @@ export function leifModel(f: number): PrimTree {
   // a boy, drawn at the grown townsfolk's scale and shrunk about his feet
   return [Sh(16, 28.6, 7.2, 1.9), T(out, { s: 0.84, py: 28.6 })];
 }
+
+/**
+ * Ketil the Carter (townStages.ts), over the pass with the thaw: weathered and grey-bearded in
+ * a sheepskin coat and a fur hat, a red scarf against the wind, his whip over his shoulder.
+ */
+export function ketilModel(f: number): PrimTree {
+  const b = breath(f);
+  const w = sway(f);
+  const hx = 15.4;
+  const hy = 8.8 + b * 0.35;
+  const ty = 17.2 + b * 0.3;
+  const out: Out = [Sh(16.2, 28.6, 9.4, 2.3)];
+  out.push(
+    // the whip's lash, trailing behind him
+    K(9.4, 6.0, 6.4 + w * 0.2, 14.0, 0.25, 0.2, 'leatherDark', { occ: false }),
+    K(6.4 + w * 0.2, 14.0, 7.4 + w * 0.3, 20.0, 0.2, 0.15, 'leatherDark', { occ: false }),
+    // back arm
+    K(11.6, 13.4, 10.8, 18.4, 1.8, 1.5, 'hide'), E(10.8, 19.0, 1.1, 1.1, 'ally_skinWeather'),
+    // legs in wool, wrapped boots
+    K(13.4, 21.8, 12.8, 26.6, 1.9, 1.6, 'woolBrown'), K(18.0, 21.8, 18.8, 26.6, 1.9, 1.6, 'woolBrown'),
+    E(12.8, 27.5, 2.3, 1.3, 'leatherDark'), E(19.2, 27.5, 2.3, 1.3, 'leatherDark'),
+    // the sheepskin coat, fleece at the hem and cuffs, a belt
+    P([10.4, 12.6, 21.0, 12.6, 22.4, ty + 2.0, 22.8, ty + 6.2, 9.0, ty + 6.2, 9.6, ty + 2.0], 'hide', { bv: 1.0 }),
+    K(9.2, ty + 6.0, 22.6, ty + 6.0, 0.9, 0.9, 'vil_fleece'),
+    K(10.0, ty + 1.4, 21.8, ty + 1.4, 0.6, 0.6, 'leatherDark'),
+    X(15.2, ty + 1.0, 1.2, 0.9, 'bronze:4'),
+    // the red scarf, its end blowing
+    K(12.0, 12.4, 19.6, 12.4, 1.1, 1.1, 'woolRed'),
+    K(18.6, 12.8, 21.0 + w * 0.3, 16.2, 0.8, 0.6, 'woolRed'),
+    // head: weathered, a grey beard, a fur hat with flaps
+    E(hx, hy, 3.6, 3.7, 'ally_skinWeather', { fl: 0.2 }),
+    P([hx - 2.8, hy + 1.4, hx - 0.2, hy + 1.8, hx + 0.6, hy + 2.6, hx + 2.6, hy + 2.6, hx + 3.4, hy + 1.6, hx + 3.8, hy + 2.0, hx + 3.2, hy + 5.0, hx + 0.8, hy + 5.8, hx - 1.8, hy + 4.8], 'hairGrey', { bv: 0.8 }),
+    X(hx + 0.4, hy + 0.2, 0.9, 0.9, EYE), X(hx + 2.6, hy + 0.2, 0.9, 0.9, EYE),
+    K(hx - 0.2, hy - 0.7, hx + 1.6, hy - 0.8, 0.3, 0.3, 'hairGrey'), K(hx + 2.2, hy - 0.8, hx + 3.6, hy - 0.6, 0.3, 0.3, 'hairGrey'),
+    E(hx + 3.8, hy + 1.0, 0.95, 0.85, 'ally_skinWeather'),
+    E(hx, hy - 3.0, 4.4, 2.6, 'furBrown', { fl: 0.3 }),
+    K(hx - 3.6, hy - 1.6, hx - 3.4, hy + 2.0, 1.1, 0.9, 'furBrown'),
+    // front arm up, the whip-stock over his shoulder
+    K(20.4, 13.2, 21.8, 16.8, 1.8, 1.5, 'hide'), K(21.8, 16.8, 20.2, 14.6, 1.4, 1.2, 'hide'),
+    E(19.6, 14.2, 1.15, 1.15, 'ally_skinWeather'),
+    K(19.8, 15.2, 9.4, 6.0, 0.45, 0.35, 'wood'),
+  );
+  return out;
+}

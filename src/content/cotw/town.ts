@@ -4,6 +4,7 @@ import { makeShopItem } from './items/makeItem';
 import { COTW_TABLET_STOCK } from './spellTablets';
 import { TOWN_ROWS, TOWN_LEGEND, TOWN_WIDTH, TOWN_HEIGHT, TOWN_BUILDINGS, TOWN_PLAYER_SPAWN, TOWN_STAIRS_DOWN } from './townLayout';
 import { IVALDA_MASTERWORK } from './ironClans';
+import { HEARTH_TEAR_RETURNED_FLAG } from './relic';
 
 export const COTW_TOWN: TownLayoutDefinition = {
   name: 'Bjarnarhaven',
@@ -40,7 +41,9 @@ export const COTW_TOWN: TownLayoutDefinition = {
           makeShopItem('birch_tar_poultice', 'olaf-poultice-1'),
           // Bigger purses (Q44): the coins in the old one move into the new one.
           makeShopItem('wooden_torch', 'olaf-torch-1'),
-          makeShopItem('wooden_torch', 'olaf-torch-2'),
+          // Once the Hearth-Tear is home nobody buys candles, and the hearths are lit for broth (townStages.ts).
+          makeShopItem('wooden_torch', 'olaf-torch-2', { type: 'not', predicate: { type: 'hasFlag', flag: HEARTH_TEAR_RETURNED_FLAG } }),
+          makeShopItem('hearth_broth_flask', 'olaf-broth-2', { type: 'hasFlag', flag: HEARTH_TEAR_RETURNED_FLAG }),
           makeShopItem('ironclasp_purse', 'olaf-purse-1'),
           makeShopItem('quicksilver_lined_purse', 'olaf-purse-2'),
         ],

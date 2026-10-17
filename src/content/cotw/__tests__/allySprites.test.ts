@@ -6,6 +6,7 @@ import { COTW_TOWN } from '../town';
 import { IVALDA_ID } from '../ironClans';
 import { COTW_PROLOGUE } from '../prologue';
 import { HOSTAGE_VILLAGERS } from '../hostageRitual';
+import { CARTER_ID } from '../townStages';
 import { getEntitySpriteKey } from '../../../rendering/atlas/sprite-mapper';
 import { Companion } from '../../../engine/entities/companion';
 import { NPC } from '../../../engine/entities/npc';
@@ -24,6 +25,7 @@ describe('the cotw companions and townsfolk have their own drawings', () => {
       ...(COTW_PROLOGUE.npcs ?? []).map((n) => n.id),
       ...(COTW_PROLOGUE.aftermathNpcs ?? []).map((n) => n.id),
       ...HOSTAGE_VILLAGERS.map((n) => n.id),
+      CARTER_ID,
     ]);
     for (const key of Object.keys(COTW_TOWNSFOLK_SPRITES)) expect([key, npcs.has(key)]).toEqual([key, true]);
   });

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { cotwManifest, COTW_CHOICES } from '../index';
-import { populateHomecoming, RETURNED_CAPTIVE_POSITIONS } from '../homecoming';
+import { HERALD_GATHERING, populateHomecoming, RETURNED_CAPTIVE_POSITIONS } from '../homecoming';
 import { COTW_DEEPEST_FLOOR_COUNTER } from '../spellTablets';
 import { RELIC_RECOVERED_FLAG } from '../relic';
 import { TOWN_BUILDINGS } from '../townLayout';
@@ -67,6 +67,9 @@ describe('the saved come home to Bjarnarhaven', () => {
     setFlag(worldState, 'vidnir_slain', true);
     populateHomecoming(ctx);
     expect(npc('npc-returned-2')?.dialogText).not.toBe(before);
+    // Once the herald falls they gather at the temple; the one inside it stays.
+    expect(npc('npc-returned-2')).toMatchObject(HERALD_GATHERING['npc-returned-2']);
+    expect(npc('npc-returned-3')).toMatchObject(RETURNED_CAPTIVE_POSITIONS[2]);
     expect(map.getAllEntities().filter((e) => e.id.startsWith('npc-returned-'))).toHaveLength(4);
     expect(logs.filter((l) => l.includes('home from the Siphon Altar'))).toHaveLength(1);
 

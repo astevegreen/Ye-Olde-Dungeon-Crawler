@@ -26,6 +26,8 @@ The owner asked to "Audit the test suite and how it works…", then "Do all 1-6 
 Sonnet 5.5 at medium thinking: a workflow trigger and a one-line doc or gate change, both specified.
 
 ## Decisions
+- The Pages deploy waits for `playwright.yml` to pass — owner: "approve your recommendations"
+- Keep `check:engine-purity` as it is; narrow ARCHITECTURE.md §2's deep-import wording to engine and content tests and `scripts/` — owner: "approve your recommendations"
 - Chromium-only specs skip per spec with `test.skip(({ browserName }) => …)`, not with a project filter, so `npm run gates` and the push run the same list (chosen because it keeps one source of truth in the spec).
 - The itemModifiers mechanism tests use modifiers the tests own. Hel-touched (Q23/Q34) and Loki-touched (Q22) keep cotw's numbers, because those are the owner's approved values (chosen).
 

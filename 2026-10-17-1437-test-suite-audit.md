@@ -38,3 +38,4 @@ Sonnet 5.5 at medium thinking: a workflow trigger and a one-line doc or gate cha
 - lint, unit (425 files, 3262 tests), tooling (6 files, 45 tests): green on 9acca344
 - pre-push: sim, validate:schema, build, and Playwright in three browsers (90 passed, 12 skipped as designed): green on 9acca344
 - CI: deploy.yml and playwright.yml succeeded on 9acca344
+Resumed: 2026-10-17 15:03 UTC

@@ -18,7 +18,7 @@
 ## 2. System Boundaries & Tech Stack Invariants
 - **Build Target:** TypeScript, Vite and `vite-plugin-singlefile`: one offline, zero-dependency HTML file per content pack, picked by Vite mode (`VITE_THEME`); a mode no pack's `id` matches throws at startup (§7.1).
 - **Execution-Path Headless Simulation Purity:** anything run inside the simulation (engine, content, runtime-registered callbacks) touches no DOM, Canvas, audio or timing globals, and its outcomes are deterministic (§7.2).
-- **Public API Surface Integrity:** `src/ui/`, `src/rendering/` and `src/content/` import the engine only through `src/engine/index.ts` (`check:engine-purity`); test files and `scripts/` may deep-import.
+- **Public API Surface Integrity:** `src/ui/`, `src/rendering/` and `src/content/` import the engine only through `src/engine/index.ts` (`check:engine-purity`), and so do UI and rendering tests; content tests, `scripts/`, `tests/` and `e2e/` may deep-import.
 - **Diagnostic API Namespacing & Triage Access:** triage methods live under `engine.diagnostics`; presentation calls them and never writes engine state. The F2 triage menu is a deliberate player feature, always reachable.
 - **Bug-Report Replay:** player actions are recorded after action-boundary checkpoints, and checkpoint + trail replay deterministically (`src/engine/debug/replay.ts`, [ADR-0007](docs/decisions/0007-bug-report-replay-and-triage-api.md)).
 

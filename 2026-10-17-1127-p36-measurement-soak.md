@@ -21,6 +21,7 @@ P-36 (ARCHITECTURE.md §9): measure magic in play. The soak now records what the
 Sonnet 5.5 at medium thinking — running and reading a specified soak; Opus only if the report shows a magic bug to trace.
 
 ## Decisions
+- Run the full measurement soak now — owner: "The note's Decide first is answered: yes, run the full measurement soak now. Before that, fix what the last soak found"
 - One build per seed n%3 (warrior/caster/hybrid), Runestone policy floor(n/3)%3 (first/second/leave): nine seeds cover every pair — chosen so one soak compares play styles
 - Bot fixes touch only e2e/; game bugs reported, not fixed — brief `.prompts/p36-soak-data-audit.md`
 

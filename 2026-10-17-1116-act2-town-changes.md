@@ -38,3 +38,4 @@ Opus 5.5 at high thinking — the staged-patch hook and the passability rules de
 
 ## Verification
 - not run: nothing built yet
+Resumed: 2026-10-17 11:20 UTC

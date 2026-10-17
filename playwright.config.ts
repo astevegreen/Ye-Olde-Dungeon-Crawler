@@ -19,14 +19,10 @@ if (recordVideo !== 'off') {
   console.log(`[playwright.config.ts] Video recording ENABLED (video: "${recordVideo}")`);
 }
 
-// Separate sustained recording demo tests and campaign flow from standard CI smoke test runs
+// The recording demo and the soak run only when asked for, outside every gate.
 const isRecordingRun =
   process.argv.some((arg) => arg.includes('gameplay-record') || arg.includes('@record')) ||
   !!process.env.RECORD_DURATION_MS;
-
-const isCampaignRun =
-  process.argv.some((arg) => arg.includes('campaign-flow') || arg.includes('@campaign')) ||
-  !!process.env.CAMPAIGN_RUN;
 
 const isSoakRun =
   process.argv.some((arg) => arg.includes('soak') || arg.includes('@soak')) ||
@@ -46,7 +42,6 @@ export default defineConfig({
   testDir: './e2e',
   testIgnore: [
     ...(isRecordingRun ? [] : ['**/gameplay-record.spec.ts']),
-    ...(isCampaignRun ? [] : ['**/campaign-flow.spec.ts']),
     ...(isSoakRun ? [] : ['**/soak.spec.ts']),
   ],
   fullyParallel: true,

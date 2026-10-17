@@ -152,7 +152,7 @@ declare global {
     /** Bug-report relay base URL (relay/), from the REPORT_RELAY_URL build variable; empty when unset. */
     readonly VITE_REPORT_RELAY_URL?: string;
   }
-  /** Debug/e2e introspection handles (e2e/campaign-flow.spec.ts reads the engine and input handler). */
+  /** Debug/e2e introspection handles: the e2e specs read the engine, renderer and input handler. */
   interface Window {
     __cotwEngine?: GameEngine;
     __cotwSaveAndReturn?: () => void;

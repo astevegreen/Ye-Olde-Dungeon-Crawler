@@ -202,6 +202,7 @@ test.describe('a whole run', () => {
     await triage(page, 'teleportToStairs', 'down');
     await pressUntil(page, 'Shift+Period', async () => (await engineState(page)).floor === 1);
     await closeAll(page);
+    await expect(page.locator('#header-floor')).toHaveText('Floor 1');
 
     // A level-up, spent on the Character tab: plan a point of Strength, accept it.
     await triage(page, 'toggleGodMode');

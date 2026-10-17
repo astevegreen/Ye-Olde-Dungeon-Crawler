@@ -17,7 +17,6 @@
     "prepare": "git config core.hooksPath .githooks || exit 0",
     "test:e2e": "playwright test --",
     "test:record": "playwright test e2e/gameplay-record.spec.ts --project=chromium",
-    "test:campaign": "playwright test e2e/campaign-flow.spec.ts --project=chromium",
     "soak": "node scripts/soak.mjs",
     "soak:report": "npx tsx scripts/soak-report.ts",
     "ci:watch": "tsx scripts/watch-ci.ts",

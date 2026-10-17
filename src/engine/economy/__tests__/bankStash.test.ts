@@ -6,7 +6,8 @@ import { Player } from '../../entities/player';
 import { Item } from '../../items/item';
 import { addCoinsToContainer } from '../currency';
 import { BankService } from '../services';
-import { serializeSaveData, deserializeSaveData } from '../../storage/serializer';
+import { serializeGame } from '../../storage/serializer';
+import { deserializeSaveData } from '../../__fixtures__/testHelpers';
 import { cotwManifest } from '../../../content/cotw';
 
 const gem = (id: string) => new Item({ id, name: `Gem ${id}`, category: 'misc', weight: 100, bulk: 50, value: 100, identified: true });
@@ -51,7 +52,7 @@ describe("the bank's stash: items kept in town between delves", () => {
   it('keeps the stash through a save and load', () => {
     engine.player.inventory.primaryPack.addItem(gem('g1'));
     BankService.stashItem(engine, 'g1');
-    const restored = deserializeSaveData(serializeSaveData(engine), cotwManifest);
+    const restored = deserializeSaveData(serializeGame(engine), cotwManifest);
     expect(BankService.stashedItems(restored).map((i) => i.name)).toEqual(['Gem g1']);
   });
 });

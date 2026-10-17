@@ -7,11 +7,8 @@ import {
   getItemBuyPrice,
   getItemSellPrice,
 } from '../merchant';
-import {
-  COTW_TOWN,
-  createOlafGeneralStore,
-  createGuntherArmory,
-} from '../../../content/cotw/town';
+import { COTW_TOWN } from '../../../content/cotw/town';
+import { createOlafGeneralStore, createGuntherArmory } from '../../../content/cotw/__tests__/townMerchants';
 import { cotwManifest } from '../../../content/cotw';
 import { ProfileManager, MemoryStorage } from '../../storage/profile-manager';
 import { serializeGame, deserializeGame } from '../../storage/serializer';

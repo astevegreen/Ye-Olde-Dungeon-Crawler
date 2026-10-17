@@ -6,7 +6,8 @@ import { cotwManifest } from '../../content/cotw';
 import { ItemFactory } from '../items/factory';
 import { Container } from '../items/container';
 import { QuickLootAction } from '../actions/inventory-actions';
-import { serializeSaveData, deserializeSaveData } from '../storage/serializer';
+import { serializeGame } from '../storage/serializer';
+import { deserializeSaveData } from '../__fixtures__/testHelpers';
 
 describe('Inventory Friction Reducers: QuickLoot, Sorting, and Coin Consolidation', () => {
   let engine: GameEngine;
@@ -167,7 +168,7 @@ describe('Inventory Friction Reducers: QuickLoot, Sorting, and Coin Consolidatio
 
     pack.sort('category'); // dagger (weapon) first, then potion (consumable)
 
-    const serialized = serializeSaveData(engine);
+    const serialized = serializeGame(engine);
     const restored = deserializeSaveData(serialized, cotwManifest);
 
     const restoredItems = restored.player.inventory.primaryPack.getItems();

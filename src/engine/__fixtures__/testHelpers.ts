@@ -8,6 +8,10 @@ import { Item } from '../items/item';
 import { ItemFactory } from '../items/factory';
 import type { Position } from '../types';
 import { getMonsterDefinition } from '../bestiary/monsterDefinitions';
+import { deserializeGame } from '../storage/serializer';
+import type { SaveData } from '../storage/types';
+import type { GameContentManifest } from '../types/manifest';
+import type { GameEngine } from '../engine';
 
 export function createTestKobold(id: string, position: Position): Monster {
   const def = getMonsterDefinition('kobold');
@@ -172,4 +176,9 @@ export function useTestCompanion(): void {
     activateRegistries(null);
     CompanionRegistry.clear();
   });
+}
+
+/** The engine a save restores to, for a test that has no use for the profile beside it. */
+export function deserializeSaveData(data: SaveData, manifest?: GameContentManifest): GameEngine {
+  return deserializeGame(data, manifest).engine;
 }

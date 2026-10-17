@@ -484,7 +484,7 @@ export function reconcileGrimoireState(config: GrimoireSystemConfig, state: Grim
   return unslotted;
 }
 
-/** Problems in a pack's grimoire declaration, one line each; none means it is sound. */
+/** Problems in a pack's grimoire declaration, one line each; none means it is sound. A pack's own tests run it; the engine does not at startup. */
 export function validateGrimoireSystem(config: GrimoireSystemConfig): string[] {
   const problems: string[] = [];
   const ids = new Set<string>();

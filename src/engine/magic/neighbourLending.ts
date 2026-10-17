@@ -5,7 +5,6 @@ import {
   openSlots,
   resolveSlotStats,
   slotNeighbours,
-  slotOfSpell,
   slotStatSteps,
   spellAt,
   type GrimoireSlotRef,
@@ -186,18 +185,6 @@ export function resolveAllCasts(
   return openSlots(config, state).flatMap((ref) => resolveCast(config, state, ref, spellOf, oppositeOf) ?? []);
 }
 
-/** The resolved cast of a known spell, or nothing when it sits in no slot. */
-export function resolveSpellCast(
-  config: GrimoireSystemConfig,
-  state: GrimoireState,
-  spellId: string,
-  spellOf: SpellLookup,
-  oppositeOf: OppositeLookup
-): ResolvedCast | undefined {
-  const ref = slotOfSpell(state, spellId);
-  return ref ? resolveCast(config, state, ref, spellOf, oppositeOf) : undefined;
-}
-
 /** A terrain cast's one borrowed flavour: its forged material, else picked by `roll` (0 ≤ roll < 1) from those it has. */
 export function pickMaterial(cast: ResolvedCast, roll: number): ResolvedLend | undefined {
   const fixed = cast.material !== undefined ? cast.lends.find((l) => l.flavourId === cast.material) : undefined;
@@ -206,7 +193,7 @@ export function pickMaterial(cast: ResolvedCast, roll: number): ResolvedLend | u
   return cast.lends[Math.min(cast.lends.length - 1, Math.floor(roll * cast.lends.length))];
 }
 
-/** Problems in a pack's lending tables against its spells, one line each. */
+/** Problems in a pack's lending tables against its spells, one line each. A pack's own tests run it; the engine does not at startup. */
 export function validateNeighbourLending(lending: NeighbourLendingConfig, spells: readonly SpellDefinition[]): string[] {
   const problems: string[] = [];
   const ids = new Set<string>();

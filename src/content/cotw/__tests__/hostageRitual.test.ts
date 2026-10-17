@@ -23,7 +23,7 @@ import {
 } from '../hostageRitual';
 import { cotwManifest } from '../index';
 import { COTW_QUEST } from '../quest';
-import { createGuntherArmory } from '../town';
+import { createGuntherArmory } from './townMerchants';
 
 /**
  * The live hostage-ritual path: captives are spawned by the manifest's scripted vault

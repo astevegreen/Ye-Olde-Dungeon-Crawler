@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ProfileManager, MemoryStorage } from '../../../engine/storage/profile-manager';
-import { serializeSaveData, deserializeSaveData } from '../../../engine/storage/serializer';
+import { serializeGame } from '../../../engine/storage/serializer';
+import { deserializeSaveData } from '../../../engine/__fixtures__/testHelpers';
 import { Container } from '../../../engine/items/container';
 import { createScaledItem } from '../../../engine/dungeon/lootSpawner';
 import { cotwManifest } from '../index';
@@ -38,7 +39,7 @@ describe('the rune pouch', () => {
   it('keeps its runes and its filter through a save', () => {
     const engine = newHero();
     engine.player.inventory.storeItem(make('essence_uruz', 1));
-    const loaded = deserializeSaveData(JSON.parse(JSON.stringify(serializeSaveData(engine))), cotwManifest);
+    const loaded = deserializeSaveData(JSON.parse(JSON.stringify(serializeGame(engine))), cotwManifest);
     const pouch = pouchOf(loaded);
     expect(pouch.getItems().map((i) => i.definitionId)).toEqual(['essence_uruz']);
     expect(loaded.player.inventory.storeItem(make('essence_ansuz', 1)).destination).toBe('runes');

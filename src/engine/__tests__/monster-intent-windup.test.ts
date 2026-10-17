@@ -4,10 +4,10 @@ import { GameMap } from '../grid/map';
 import { Player } from '../entities/player';
 import { cotwManifest } from '../../content/cotw';
 import { Monster } from '../entities/monster';
-import { createTestOgre, createTestKoboldShaman } from '../__fixtures__/testHelpers';
+import { createTestOgre, createTestKoboldShaman, deserializeSaveData } from '../__fixtures__/testHelpers';
 import { MovementAction } from '../actions/movement';
 import { WindUpDeclareAction } from '../actions/combat';
-import { serializeSaveData, deserializeSaveData } from '../storage/serializer';
+import { serializeGame } from '../storage/serializer';
 
 describe('Telegraphed Enemy Wind-Up Attacks & Monster Intent', () => {
   let engine: GameEngine;
@@ -145,7 +145,7 @@ describe('Telegraphed Enemy Wind-Up Attacks & Monster Intent', () => {
     };
     engine.addEntity(ogre);
 
-    const serialized = serializeSaveData(engine);
+    const serialized = serializeGame(engine);
     const restoredEngine = deserializeSaveData(serialized, cotwManifest);
 
     const restoredOgre = restoredEngine.map.getEntityById('ogre-save-test') as Monster;

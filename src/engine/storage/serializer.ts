@@ -1295,22 +1295,3 @@ function hydrateGame(
     profile: saveData.profile,
   };
 }
-
-export function serializeSaveData(engine: GameEngine, profile?: CharacterProfile): SaveData {
-  const p: CharacterProfile = profile ?? {
-    id: engine.player.id,
-    name: engine.player.name,
-    level: 1,
-    floor: engine.currentFloor,
-    lastSaved: Date.now(),
-    hp: engine.player.hp,
-    maxHp: engine.player.maxHp,
-    strength: engine.player.strength,
-  };
-  return serializeGame(engine, p);
-}
-
-export function deserializeSaveData(data: SaveData, manifest?: GameContentManifest): GameEngine {
-  const res = deserializeGame(data, manifest);
-  return res.engine;
-}

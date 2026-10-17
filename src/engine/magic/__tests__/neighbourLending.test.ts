@@ -7,7 +7,7 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { DEFAULT_AFFINITY_MATRIX } from '../elements';
 import { createGrimoireState, type GrimoireSlotRef, type GrimoireState } from '../grimoires';
-import { pickMaterial, resolveAllCasts, resolveCast, resolveSpellCast, validateNeighbourLending, type ResolvedCast } from '../neighbourLending';
+import { pickMaterial, resolveAllCasts, resolveCast, validateNeighbourLending, type ResolvedCast } from '../neighbourLending';
 import type { SpellType } from '../magicConfig';
 import type { SpellDefinition } from '../types';
 
@@ -216,11 +216,9 @@ describe('neighbour lending: the rules', () => {
     expect(c.gives).toEqual([]);
   });
 
-  it('resolves every placed spell, and a spell by id', () => {
+  it('resolves every placed spell', () => {
     const state = grid([[0, 0, 'bolt'], [1, 0, 'rock']]);
     expect(resolveAllCasts(FIXTURE_GRIMOIRES, state, spellOf, oppositeOf).map((c) => c.spellId).sort()).toEqual(['bolt', 'rock']);
-    expect(resolveSpellCast(FIXTURE_GRIMOIRES, state, 'rock', spellOf, oppositeOf)!.slot).toEqual(at(1, 0));
-    expect(resolveSpellCast(FIXTURE_GRIMOIRES, state, 'frost', spellOf, oppositeOf)).toBeUndefined();
   });
 });
 

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ProfileManager, MemoryStorage } from '../../storage/profile-manager';
-import { serializeGame, deserializeSaveData } from '../../storage/serializer';
+import { serializeGame } from '../../storage/serializer';
+import { deserializeSaveData } from '../../__fixtures__/testHelpers';
 import type { SaveData } from '../../storage/types';
 import type { GameContentManifest, PrologueDefinition } from '../../types/manifest';
 import { Monster } from '../../entities/monster';

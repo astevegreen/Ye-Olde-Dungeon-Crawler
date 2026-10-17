@@ -1,4 +1,3 @@
-import { Merchant } from '../../engine';
 import type { TownLayoutDefinition } from '../../engine';
 import { makeShopItem } from './items/makeItem';
 import { COTW_TABLET_STOCK } from './spellTablets';
@@ -259,16 +258,3 @@ export const COTW_TOWN: TownLayoutDefinition = {
     ],
   },
 };
-
-export function createOlafGeneralStore(): Merchant {
-  const npc = COTW_TOWN.npcs.find((n) => n.id === 'npc-olaf')!;
-  const cfg = npc.merchantConfig!;
-  return new Merchant(cfg.id, cfg.name, cfg.name, 'general', cfg.greeting, cfg.initialInventory(), cfg);
-}
-
-export function createGuntherArmory(): Merchant {
-  const npc = COTW_TOWN.npcs.find((n) => n.id === 'npc-gunther')!;
-  const cfg = npc.merchantConfig!;
-  return new Merchant(cfg.id, cfg.name, cfg.name, 'armory', cfg.greeting, cfg.initialInventory(), cfg);
-}
-

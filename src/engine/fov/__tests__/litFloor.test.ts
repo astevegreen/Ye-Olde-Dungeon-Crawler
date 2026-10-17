@@ -3,7 +3,8 @@ import { FovManager } from '../fov-manager';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { ProfileManager, MemoryStorage } from '../../storage/profile-manager';
-import { serializeGame, deserializeSaveData } from '../../storage/serializer';
+import { serializeGame } from '../../storage/serializer';
+import { deserializeSaveData } from '../../__fixtures__/testHelpers';
 import type { SaveData } from '../../storage/types';
 import { cotwManifest } from '../../../content/cotw';
 

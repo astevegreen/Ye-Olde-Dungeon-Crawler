@@ -55,7 +55,7 @@ export function awardMilestone(
   def: RenownMilestoneDefinition
 ): RecordMilestoneResult {
   if (!def.repeatable) {
-    if (getFlag(engine.worldState, earnedFlagKey(def.id))) {
+    if (hasEarnedMilestone(engine, def.id)) {
       return { awarded: false, reason: 'already_earned' };
     }
     setFlag(engine.worldState, earnedFlagKey(def.id), true);
@@ -85,7 +85,7 @@ export function getRenownTotal(engine: GameEngine, category?: string): number {
 }
 
 /** Whether a (non-repeatable) milestone has already fired this run. */
-export function hasEarnedMilestone(engine: GameEngine, milestoneId: string): boolean {
+export function hasEarnedMilestone(engine: Pick<EngineContext, 'worldState'>, milestoneId: string): boolean {
   return getFlag(engine.worldState, earnedFlagKey(milestoneId));
 }
 

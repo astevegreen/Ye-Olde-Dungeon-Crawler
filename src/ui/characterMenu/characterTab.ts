@@ -396,6 +396,7 @@ export class CharacterTab implements MenuTab {
     const xpPct = player.isAtLevelCap ? 100 : Math.min(100, (100 * player.xp) / Math.max(1, player.xpToNextLevel));
     const actionCost = player.getActionCost(100);
     const speed = actionCost === 100 ? 'normal' : actionCost > 100 ? 'slowed' : 'hastened';
+    const loadLimit = getMaxCarryWeight(player.carryStrength);
     const gear = (total: number, base: number): string =>
       total === base ? `${total}` : `${total} <span class="ui-faint">(${base} ${total > base ? '+' : '−'} gear)</span>`;
     const resistances = Object.entries(player.elementalResistances)
@@ -427,6 +428,7 @@ export class CharacterTab implements MenuTab {
           <dt>Purse</dt><dd class="ui-num">${escapeHtml(formatCurrency(getPlayerTotalCp(player)))}</dd>
           <dt>Depth</dt><dd>${floor === 0 ? escapeHtml(branding.townName) : `Floor <span class="ui-num">${floor}</span>`}</dd>
         </dl>
+        <div class="ui-note" title="Above half the limit you are Burdened; above three quarters, Overburdened; above the limit you cannot move.">Load slows you over ${formatKg(loadLimit / 2)} kg, much more over ${formatKg(loadLimit * 0.75)}, and pins you over ${formatKg(loadLimit)}.</div>
       </div>
       <div class="ui-card">
         <div class="ui-h">Resistances</div>

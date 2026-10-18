@@ -27,6 +27,18 @@
 ## Model
 Opus at high thinking — engine fixes that cross the scheduler, combat and content hooks.
 
+## Decisions
+- Wand Zap from inventory — owner: "Open the aim"
+- Blood Reap — owner: "Judge who's hit" (refuse at no cost)
+- Prologue warlocks — owner: "Let them roam" (no fix)
+- Slow/burden/water/mud energy clamp — owner: "Fix now" (no soak first)
+- Gear Speed/Strength — owner: "Apply, then retune"
+- Ally kills — owner: "No reward"
+- Runestone cancel — owner: "A normal turn"
+- Pick up/drop/equip speed — owner: "Apply them"
+- Spellbook edits mid-fight — owner: "Monsters act"
+- Einherjar holy-ground refusal — owner: "Swing lands, turn spent"
+
 ## Read first
 - C:/Antigravity/YODC/.prompts/engine-bug-hunt/report.md — every fix, the dropped findings, the questions
 - C:/Antigravity/YODC/.prompts/engine-bug-hunt/notes.md — per-finding files and line numbers

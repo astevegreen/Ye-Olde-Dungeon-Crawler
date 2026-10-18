@@ -56,6 +56,24 @@ describe('TrainerService (docs/architecture/content-companions.md Phase 2)', () 
       expect(engine.map.getAllEntities()).toContain(dead);
     });
 
+    // It fell on a dungeon floor: where it died means nothing on the town map.
+    it.each([
+      ['off this map', { x: 40, y: 40 }],
+      ['on what is a wall here', { x: 5, y: 5 }],
+    ])('brings back a companion that died at a tile %s beside the hero', (_where, death) => {
+      const engine = buildEngine();
+      engine.map.setTile(5, 5, TILES.WALL);
+      const dead = Companion.fromDefinition(TEST_DEF_ID, 'dead-far', death)!;
+      engine.deadCompanionRecord = dead;
+      addCurrencyToPlayer(engine.player, { copper: 0, silver: 0, gold: 200 });
+
+      expect(TrainerService.reviveCompanion(engine).success).toBe(true);
+
+      expect(engine.map.getAllEntities()).toContain(dead);
+      expect(engine.map.isPassable(dead.x, dead.y)).toBe(true);
+      expect(Math.max(Math.abs(dead.x - engine.player.x), Math.abs(dead.y - engine.player.y))).toBeLessThanOrEqual(5);
+    });
+
     it('refuses when the player cannot afford the revival cost', () => {
       const engine = buildEngine();
       const dead = Companion.fromDefinition(TEST_DEF_ID, 'dead-comp-2', { x: 5, y: 5 })!;

@@ -18,6 +18,7 @@ import { getRenownTotal, recordMilestone } from '../renown/renownLedger';
 import { familyModifier } from '../items/modifierRoller';
 import { RunAdvisor, type AdvisoryReport } from '../advisory/runAdvisor';
 import { growCompanion } from '../combat/lastStand';
+import { findSafeSpawnPosition } from '../spatial/collisionSolver';
 import { restatRefusal, type AltarRestat } from '../magic/altars';
 import { grimoireAxes, statPickFor } from '../magic/grimoires';
 
@@ -596,6 +597,10 @@ export class TrainerService {
     dead.statusManager.clear();
     dead.aiState = 'hunting';
     engine.deadCompanionRecord = null;
+    // It fell on another floor: it comes back beside the hero, not at the tile it died on.
+    const spawn = findSafeSpawnPosition(engine.map, { x: engine.player.x, y: engine.player.y }, 5);
+    dead.x = spawn.x;
+    dead.y = spawn.y;
     engine.attachCompanion(dead);
     growCompanion(engine, dead);
     return {

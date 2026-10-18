@@ -39,3 +39,6 @@ Sonnet 5.5 at medium thinking — each approved change is a small, specified eng
 - gate-stamp (lint, test, tooling): green on e1810bc3
 - pre-push (sim, build, Playwright 3 browsers): passed; ci:watch: deploy.yml success on e1810bc3
 Resumed: 2026-10-18 23:06 UTC
+- (a) Companion stances step in — owner: "Yes, step in (Recommended)"
+- (b) Níðhögg log line, keep mechanic — owner: "Add a log line (Recommended)"
+- (c) Rest ignores fleeing monsters — owner: "Yes, ignore fleeing (Recommended)"

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from 'vitest';
 import {
+  Companion,
   Container,
   GameEngine,
   GameMap,
@@ -115,10 +116,24 @@ describe('ShopDialog', () => {
     teach: 'trainer_teach_skill',
   };
 
+  const hound = () =>
+    new Companion({
+      id: 'hound',
+      name: 'Garm',
+      position: { x: 6, y: 5 },
+      stats: { hp: 20, maxHp: 20, attack: 5, defense: 1 },
+      speed: 100,
+      companionDefinitionId: 'test_hound',
+      packWeightCapacity: 10000,
+      packBulkCapacity: 8000,
+    });
+
   for (const role of ['priest', 'banker', 'trainer'] as NpcRole[]) {
     it(`runs each ${role} offer from its own key`, () => {
       // Loose copper, so the banker has something to exchange.
       addCoinsToContainer(engine.player.inventory.primaryPack, 'copper', 50);
+      // The trainer revives only a fallen companion.
+      if (role === 'trainer') engine.deadCompanionRecord = hound();
       const shop = new ShopDialog();
       const who = npc(role);
       shop.open(who, null, engine);
@@ -181,6 +196,7 @@ describe('ShopDialog', () => {
         town: { ...base.town, services: { trainerSkills: [{ id: 'test_song', name: 'Test Song', description: 'Sings the pack on.' }] } },
       } as GameContentManifest,
     });
+    taught.attachCompanion(hound());
     const sent = vi.spyOn(taught.commandBus, 'dispatch').mockReturnValue({ success: true, message: 'Done.' });
     const shop = new ShopDialog();
     shop.open(npc('trainer'), null, taught);
@@ -190,6 +206,42 @@ describe('ShopDialog', () => {
     expect(sent.mock.calls.map((c) => c[0])).toEqual([
       { type: 'trainer_teach_skill', payload: { skillId: 'test_song', skillName: 'Test Song' } },
     ]);
+  });
+
+  it('greys out the trainer offers that cannot apply, and frees them when they can', () => {
+    const base = testEngine().manifest;
+    const make = () =>
+      new GameEngine({
+        map: new GameMap(20, 20),
+        player: new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } }),
+        floor: 0,
+        manifest: {
+          ...base,
+          town: { ...base.town, services: { trainerSkills: [{ id: 'test_song', name: 'Test Song', description: 'Sings the pack on.' }] } },
+        } as GameContentManifest,
+      });
+    const state = (e: GameEngine) => Object.fromEntries(servicePanelFor(e, npc('trainer'))!.offers.map((o) => [o.act, o.disabled]));
+
+    const none = make();
+    expect(state(none)).toEqual({ revive: true, teach: true });
+
+    const alive = make();
+    alive.attachCompanion(hound());
+    expect(state(alive)).toEqual({ revive: true, teach: false });
+    alive.companion!.unlockSkill('test_song');
+    expect(state(alive)).toEqual({ revive: true, teach: true });
+
+    const fallen = make();
+    fallen.deadCompanionRecord = hound();
+    expect(state(fallen)).toEqual({ revive: false, teach: true });
+  });
+
+  it('shows no purse or pack in the window of a townsperson who only talks', () => {
+    const shop = new ShopDialog();
+    shop.open(npc('priest'), null, engine);
+    expect(html()).toContain('shop-purse');
+    shop.open(npc('villager'), null, engine);
+    expect(html()).not.toContain('shop-purse');
   });
 
   it("leaves a disabled offer's key inert (nothing to identify)", () => {

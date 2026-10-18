@@ -157,9 +157,7 @@ test.describe('story milestones and HUD wiring', () => {
 
     await expect(page.locator('#choice-modal-overlay')).toContainText('Skaldic Runestone: Lay of the Frost King');
 
-    // Confirm choice with ArrowDown + Enter
-    await page.keyboard.press('ArrowDown');
-    await page.waitForTimeout(100);
+    // Confirm the preselected first choice with Enter
     await page.keyboard.press('Enter');
     await page.waitForTimeout(250);
 
@@ -267,8 +265,6 @@ test.describe('story milestones and HUD wiring', () => {
     await expect(prophecy).toContainText('DRIVE IT OFF');
 
     // Choose to heed the warning (>200ms debounce already passed from waitForTimeout)
-    await page.keyboard.press('ArrowDown');
-    await page.waitForTimeout(100);
     await page.keyboard.press('Enter');
     await page.waitForTimeout(250);
 

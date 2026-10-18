@@ -106,7 +106,6 @@ test.describe('the opening', () => {
     const choice = page.locator('#choice-modal-overlay');
     await expect(choice).toBeVisible();
     await page.waitForTimeout(250); // past the modal's open debounce
-    await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Enter');
     await expect(choice).toBeHidden();
     await expect.poll(() => flag(page, 'cotw_prologue_gateward_heard')).toBe(true);

@@ -590,7 +590,7 @@ export class ShopDialog {
     const status = canServe
       ? `<div class="shop-status is-${this.statusTone}" role="status" aria-live="polite">${escapeHtml(this.statusMessage)}</div>`
       : '';
-    const body = `${this.greetingHtml(engine, npc, title !== npc.name)}
+    const body = `${this.greetingHtml(engine, npc, title !== npc.name, canServe)}
       ${status}
       ${this.merchant ? this.tradeHtml(engine) : panel ? servicePanelHtml(panel) : ''}`;
 
@@ -629,8 +629,9 @@ export class ShopDialog {
     this.bind(scrim, engine);
   }
 
-  /** `showName` is false when the dialog's title already is the NPC's name. */
-  private greetingHtml(engine: GameEngine, npc: NPC, showName: boolean): string {
+  /** `showName` is false when the dialog's title already is the NPC's name; `showPurse` is
+   *  false for a townsperson who only talks, who has no use for the hero's purse or pack. */
+  private greetingHtml(engine: GameEngine, npc: NPC, showName: boolean, showPurse: boolean): string {
     const pack = engine.player.inventory.primaryPack;
     const px = this.options.portraitPx?.() ?? 40;
     return `
@@ -640,10 +641,14 @@ export class ShopDialog {
           ${showName ? `<div class="shop-npc">${escapeHtml(npc.name)}</div>` : ''}
           <div class="shop-quote">“${escapeHtml(npc.dialogText)}”</div>
         </div>
-        <dl class="ui-kv shop-purse">
+        ${
+          showPurse
+            ? `<dl class="ui-kv shop-purse">
           <dt>Purse</dt><dd class="ui-num shop-purse-total">${escapeHtml(formatCurrency(getPlayerTotalCp(engine.player)))}</dd>
           <dt>Pack</dt><dd class="ui-num">${escapeHtml(formatLoad(pack.totalWeight(), pack.maxWeightCapacity))}</dd>
-        </dl>
+        </dl>`
+            : ''
+        }
       </div>`;
   }
 

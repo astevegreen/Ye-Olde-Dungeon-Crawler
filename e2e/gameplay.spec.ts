@@ -472,7 +472,7 @@ test('save & quit and choices take each key once, through one modal-stack entry'
   const choiceOverlay = page.locator('#choice-modal-overlay');
 
   // The Oath climax cannot be cancelled: Escape leaves it open. Number keys never pick
-  // (number-pad movement must not choose by accident); arrows highlight, Enter picks once.
+  // (number-pad movement must not choose by accident); arrows move the highlight (the first option starts lit), Enter picks once.
   await offer('oath_hearth');
   await expect(choiceOverlay).toBeVisible();
   expect(await stackIds(page)).toEqual(['choice']);
@@ -481,14 +481,12 @@ test('save & quit and choices take each key once, through one modal-stack entry'
   await expect(choiceOverlay).toBeVisible();
   expect(await stackIds(page)).toEqual(['choice']);
   await page.keyboard.press('Digit2');
-  await page.keyboard.press('Enter'); // nothing highlighted yet
   await expect(choiceOverlay).toBeVisible();
   expect(await outcome()).toEqual({ picked: [], cancelled: 0 });
   await page.keyboard.press('ArrowDown');
   // A highlight redraws the frame in place: the entrance fade, long finished, doesn't
   // replay (it blanked the window on every highlight, N9).
   expect(await runningAnimations(page, '#choice-modal-overlay')).toEqual([]);
-  await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
   await expect(choiceOverlay).toBeHidden();
   expect(await outcome()).toEqual({ picked: ['break'], cancelled: 0 });

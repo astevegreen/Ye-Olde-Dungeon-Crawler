@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { ProfileManager, MemoryStorage } from '../profile-manager';
 import { AutosaveManager } from '../autosaveManager';
 import { resolveContinueTarget } from '../continueTarget';
+import { serializeGame, deserializeGame } from '../serializer';
+import { encodeSaveCode, decodeSaveCode } from '../saveTransfer';
+import { CURRENT_SCHEMA_VERSION } from '../migrator';
 
 // A dead player's state is never written as a loadable save, and Continue never
 // resumes a fallen run; earlier saves stay loadable (ARCHITECTURE.md §5).
@@ -50,6 +53,33 @@ describe('death is final for the dead state', () => {
 
     expect(autosaves.autosave(engine, profile)).toBe(false);
     expect(storage.getItem(autosaves.autosaveKey)).toBe(livingAutosave);
+  });
+
+  describe('a save code of the fallen run', () => {
+    it('a 0-HP state loads as the dead hero it is, not on 1 HP', () => {
+      const { profile, engine } = profiles.createCharacter('Hilda', { hp: 30 });
+      kill(engine);
+      const back = deserializeGame(serializeGame(engine, profile)).engine;
+      expect(back.player.hp).toBe(0);
+      expect(back.player.isAlive()).toBe(false);
+    });
+
+    it('is refused on restore: the fallen hero does not come back', () => {
+      const { profile, engine } = profiles.createCharacter('Hilda', { hp: 30 });
+      profiles.saveCharacter(engine, profile);
+      kill(engine);
+      profiles.saveCharacter(engine, { ...profile, questStatus: 'fallen' });
+      const code = encodeSaveCode({
+        schemaVersion: CURRENT_SCHEMA_VERSION,
+        contentManifestId: 'test',
+        timestamp: 1700000000000,
+        data: serializeGame(engine, profile),
+      });
+
+      const decoded = decodeSaveCode(code, { expectedManifestId: 'test' });
+      expect(() => profiles.importHero(JSON.stringify(decoded))).toThrow(/fallen/);
+      expect(profiles.listProfiles()).toHaveLength(1);
+    });
   });
 
   describe('Continue', () => {

@@ -1011,6 +1011,12 @@ export function deserializeGame(
   }
 }
 
+/** A saved hero's HP: 1 only when it is missing, so a fallen hero never loads alive (§5). */
+function savedHp(hp: unknown): number {
+  const n = Number(hp);
+  return hp !== undefined && hp !== null && Number.isFinite(n) ? n : 1;
+}
+
 function hydrateGame(
   rawSaveData: SaveData | any,
   manifest?: GameContentManifest
@@ -1087,7 +1093,7 @@ function hydrateGame(
     constitution: Number(pData.constitution ?? pData.attributes?.constitution) || 15,
     dexterity: Number(pData.dexterity ?? pData.attributes?.dexterity) || 15,
     stats: {
-      hp: Number(pData.hp) || 1,
+      hp: savedHp(pData.hp),
       maxHp: Math.max(1, Number(pData.maxHp) || 1),
       attack: Number(pData.baseAttack) || 0,
       defense: Number(pData.baseDefense) || 0,
@@ -1123,7 +1129,7 @@ function hydrateGame(
   if (Array.isArray(pData.carriedAtStairs)) player.carriedAtStairs = pData.carriedAtStairs.map(String);
   // Before HP is clamped to max HP, which the blessing raises.
   player.maxHpPercentBonus = Number(pData.maxHpPercentBonus) || 0;
-  player.hp = Math.min(Number(pData.hp) || 1, player.maxHp);
+  player.hp = Math.min(savedHp(pData.hp), player.maxHp);
   const statusEffects = (legacy ? legacy.statusEffects : pData.statusEffects)?.filter((s) => !RETIRED_CORRUPTION_STATUSES.includes(s.type));
   if (statusEffects) {
     player.statusManager.deserialize(statusEffects);

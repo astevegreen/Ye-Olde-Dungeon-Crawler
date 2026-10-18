@@ -508,6 +508,10 @@ export class ProfileManager {
     if (!parsed.profile || !parsed.player || !parsed.map) {
       throw new Error('Incomplete save data: missing profile, player, or map.');
     }
+    // A dead hero's state is never loadable (§5).
+    if (Number(parsed.player.hp) <= 0) {
+      throw new Error('This hero has fallen: a fallen hero cannot be restored.');
+    }
 
     // Ensure imported profile has a valid unique ID if collision occurs
     let profileId = parsed.profile.id;

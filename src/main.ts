@@ -1122,7 +1122,8 @@ window.addEventListener('DOMContentLoaded', () => {
     profileManager,
     activeManifestId: activeManifest.id,
     getActiveEnvelope: () => {
-      if (activeEngine && activeProfile) {
+      // A fallen run has no save code: its state is never loadable (§5).
+      if (activeEngine && activeProfile && activeEngine.player.isAlive()) {
         const saveData = serializeGame(activeEngine, activeProfile);
         return {
           schemaVersion: CURRENT_SCHEMA_VERSION,

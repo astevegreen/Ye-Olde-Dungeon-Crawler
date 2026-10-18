@@ -463,11 +463,11 @@ function approachAction(engine: GameEngine, monster: Monster, target: Entity): A
 }
 
 /** Shared by the routines of the hero's side below. */
-function findAdjacentHostile(engine: GameEngine, actor: Actor): Entity | undefined {
+function findAdjacentHostile(engine: GameEngine, actor: Actor, around: Entity = actor): Entity | undefined {
   for (let dy = -1; dy <= 1; dy++) {
     for (let dx = -1; dx <= 1; dx++) {
       if (dx === 0 && dy === 0) continue;
-      const other = engine.map.getEntityAt(actor.x + dx, actor.y + dy);
+      const other = engine.map.getEntityAt(around.x + dx, around.y + dy);
       if (other && other.isAlive() && actor.isHostileTo(other) && !other.statusManager.hasStatus('pacified')) {
         return other;
       }
@@ -478,7 +478,7 @@ function findAdjacentHostile(engine: GameEngine, actor: Actor): Entity | undefin
 
 /**
  * What an actor on the hero's side does: strike an adjacent foe; otherwise walk to the nearest
- * foe within `seekRadius` (0: wait for foes to come); otherwise close on the hero once farther
+ * foe within `seekRadius` (0: only a foe next to the hero); otherwise close on the hero once farther
  * than `followDistance`; otherwise wait.
  */
 function guardHeroAction(actor: Actor, engine: GameEngine, followDistance: number, seekRadius: number): Action {
@@ -492,7 +492,9 @@ function guardHeroAction(actor: Actor, engine: GameEngine, followDistance: numbe
     return new MeleeAttackAction(actor, adjacentHostile);
   }
 
-  const seekTarget = seekRadius > 0 ? findNearestHostileActor(engine, actor, seekRadius) : null;
+  // A stance that waits for foes still steps in to strike one that is at the hero.
+  const seekTarget =
+    seekRadius > 0 ? findNearestHostileActor(engine, actor, seekRadius) : (findAdjacentHostile(engine, actor, player) ?? null);
   const chebyshevToPlayer = Math.max(Math.abs(actor.x - player.x), Math.abs(actor.y - player.y));
   const destination = seekTarget ?? (chebyshevToPlayer > followDistance ? player : null);
 

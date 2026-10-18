@@ -7,7 +7,7 @@ import { Monster } from '../../entities/monster';
 import { Companion } from '../../entities/companion';
 import { MeleeAttackAction } from '../../actions/combat';
 import { MovementAction } from '../../actions/movement';
-import { CompanionBodyguardStrategy, CompanionSkirmisherStrategy } from '../aiRegistry';
+import { CompanionBodyguardStrategy, CompanionFollowStrategy, CompanionSkirmisherStrategy } from '../aiRegistry';
 
 function buildEngine(): { engine: GameEngine; player: Player } {
   const map = new GameMap(20, 20, TILES.FLOOR);
@@ -137,5 +137,33 @@ describe('CompanionSkirmisherStrategy (docs/architecture/content-companions.md P
     expect(action).toBeInstanceOf(MovementAction);
     const move = action as MovementAction;
     expect(move.dx).toBeLessThan(0); // player is to the west
+  });
+});
+
+describe('a companion that waits for foes still defends the hero', () => {
+  it.each([
+    ['default', new CompanionFollowStrategy(), 2],
+    ['bodyguard', new CompanionBodyguardStrategy(), 1],
+  ] as const)('the %s stance steps toward a foe biting the hero', (_name, strategy, distance) => {
+    const { engine, player } = buildEngine();
+    const companion = makeCompanion({ x: player.x - distance, y: player.y }, 'bodyguard');
+    engine.attachCompanion(companion);
+    const hostile = makeHostile('wolf-1', { x: player.x + 1, y: player.y });
+    engine.map.addEntity(hostile);
+
+    const action = strategy.decideAction(companion, engine);
+
+    expect(action).toBeInstanceOf(MovementAction);
+  });
+
+  it('the default stance does not wander off after a foe that is not at the hero', () => {
+    const { engine, player } = buildEngine();
+    const companion = makeCompanion({ x: player.x - 1, y: player.y }, 'bodyguard');
+    engine.attachCompanion(companion);
+    engine.map.addEntity(makeHostile('wolf-far', { x: player.x + 6, y: player.y }));
+
+    const action = new CompanionFollowStrategy().decideAction(companion, engine);
+
+    expect(action).not.toBeInstanceOf(MovementAction);
   });
 });

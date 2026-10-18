@@ -18,8 +18,9 @@ export class ChoiceModal implements UIModal {
   private choice: ChoiceDefinition | null = null;
   private onOptionSelected?: (optionId: string) => void;
   private onCancel?: () => void;
-  /** The highlighted option, or -1 before the player has picked one. Highlighting never
-   *  commits: only Enter or the Confirm button does, so a stray key can't lock a choice in. */
+  /** The highlighted option: the first available one on opening, then wherever the player
+   *  moves it. Highlighting never commits: only Enter or the Confirm button does, and keys
+   *  already in flight when the choice opens are swallowed (see handleKeyDown). */
   private activeIndex: number = -1;
   private openedAt = 0;
   private currentOptions: Array<{ option: ChoiceOption; enabled: boolean; index: number }> = [];
@@ -63,8 +64,8 @@ export class ChoiceModal implements UIModal {
       index: idx,
     }));
 
-    // Nothing is highlighted until the player picks, so Enter alone can't commit anything.
-    this.activeIndex = -1;
+    // The first available option starts highlighted, so Enter confirms it without an arrow key.
+    this.activeIndex = this.currentOptions.findIndex((o) => o.enabled);
     this.openedAt = Date.now();
 
     // Keys arrive only through the modal stack (handleKeyDown below): main.ts pushes this

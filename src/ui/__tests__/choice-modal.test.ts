@@ -319,11 +319,11 @@ describe('ChoiceModal input through the modal stack', () => {
     expect(modal.isOpen).toBe(true);
   });
 
-  it('does nothing on Enter until an option is highlighted', () => {
+  it('opens with the first option highlighted, so Enter alone confirms it', () => {
     openAsMainDoes(true);
     win.dispatchEvent(keydown('Enter'));
-    expect(onSelect).not.toHaveBeenCalled();
-    expect(modal.isOpen).toBe(true);
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith('left');
   });
 
   it('swallows keys in flight when it opens', () => {
@@ -337,7 +337,6 @@ describe('ChoiceModal input through the modal stack', () => {
   it('moves focus with the arrows and selects the focused option on Enter', () => {
     openAsMainDoes(true);
 
-    win.dispatchEvent(keydown('ArrowDown'));
     win.dispatchEvent(keydown('ArrowDown'));
     expect(onSelect).not.toHaveBeenCalled();
     win.dispatchEvent(keydown('Enter'));
@@ -369,7 +368,6 @@ describe('ChoiceModal input through the modal stack', () => {
     expect(overlay().style.display).toBe('flex');
     expect(input.modalStack.getStackIds()).toEqual(['choice']);
 
-    win.dispatchEvent(keydown('ArrowDown'));
     win.dispatchEvent(keydown('Enter'));
     expect(onSelect).toHaveBeenCalledTimes(1);
     expect(onSelect).toHaveBeenCalledWith('left');

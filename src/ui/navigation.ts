@@ -101,10 +101,15 @@ export class NavigationController {
       const tile = this.engine.map.getTile(next.x, next.y);
       if (tile && (tile.type === 'door_closed' || tile.isClosedDoor)) {
         const openResult = this.engine.handlePlayerAction(new OpenDoorAction(this.engine.player, next.x, next.y));
-        if (!openResult.success) {
+        const after = this.engine.map.getTile(next.x, next.y);
+        if (!openResult.success || !after || after.type === 'door_closed' || after.isClosedDoor) {
           this.cancel(`Path blocked: ${openResult.message}`);
           return;
         }
+        // The door is open and the hero still before it: the next step walks into the doorway.
+        if (options?.onStep) options.onStep([...this.currentPath]);
+        this.timerId = window.setTimeout(step, stepDelay);
+        return;
       } else {
         // Step forward
         const hpBefore = this.engine.player.hp;

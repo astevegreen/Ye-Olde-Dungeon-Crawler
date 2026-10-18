@@ -63,7 +63,7 @@ describe('click-to-travel reports to the post-action refresh', () => {
 });
 
 // A click-to-travel moves the hero one tile a step: it never jumps back onto its route after a
-// blink or a teleport carried the hero off it.
+// blink or a teleport carried the hero off it, nor hops over a door it has just opened.
 describe('click-to-travel moves one tile a step', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -101,5 +101,23 @@ describe('click-to-travel moves one tile a step', () => {
     expect({ x: engine.player.x, y: engine.player.y }).toEqual({ x: 0, y: 6 });
     expect(nav.isNavigating).toBe(false);
     expect(reasons).toHaveLength(1);
+  });
+
+  it('opens a door on its way and walks through it a tile at a time', () => {
+    const engine = buildEngine();
+    for (let y = 0; y < 20; y++) engine.map.setTile(6, y, TILES.WALL);
+    engine.map.setTile(6, 10, TILES.DOOR_CLOSED);
+    engine.fov.update(engine.map, engine.player.x, engine.player.y, 20);
+    const seen: Array<{ x: number; y: number }> = [{ x: engine.player.x, y: engine.player.y }];
+    let done = false;
+    const nav = new NavigationController(engine);
+    nav.navigatePlayerTo(9, 10, { stepDelayMs: 10, onStep: () => seen.push({ x: engine.player.x, y: engine.player.y }), onComplete: () => (done = true) });
+    vi.advanceTimersByTime(500);
+
+    expect(done).toBe(true);
+    expect({ x: engine.player.x, y: engine.player.y }).toEqual({ x: 9, y: 10 });
+    const hops = seen.slice(1).map((p, i) => Math.max(Math.abs(p.x - seen[i].x), Math.abs(p.y - seen[i].y)));
+    expect(Math.max(...hops)).toBeLessThanOrEqual(1);
+    expect(seen).toContainEqual({ x: 6, y: 10 });
   });
 });

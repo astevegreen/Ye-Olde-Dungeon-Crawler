@@ -14,7 +14,7 @@ import { showConfirmDialog } from './confirmDialog';
 import type { SaveCodeModal } from './saveCodeModal';
 import type { SagaShareModal } from './sagaShareModal';
 import { defaultPlatformAdapter, getBrowserStorage } from './platform';
-import { resolveBranding } from './branding';
+import { floorTag, resolveBranding } from './branding';
 import { formatWeight } from './units';
 import type { AutosaveManager } from '../engine';
 
@@ -607,7 +607,7 @@ export class TitleScreen {
       if (this.loadAutosaveBtn) {
         this.loadAutosaveBtn.style.display = 'block';
         this.loadAutosaveBtn.disabled = false;
-        this.loadAutosaveBtn.textContent = `Load the autosave (${meta?.profileName ?? 'Hero'}, F${meta?.floor ?? 1})`;
+        this.loadAutosaveBtn.textContent = `Load the autosave (${meta?.profileName ?? 'Hero'}, ${floorTag(meta?.floor ?? 1, this.profileManager.manifest)})`;
       }
     } else if (this.loadAutosaveBtn) {
       this.loadAutosaveBtn.style.display = 'none';

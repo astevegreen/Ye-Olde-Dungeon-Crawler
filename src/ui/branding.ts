@@ -89,3 +89,8 @@ export function applyDocumentBranding(doc: Document, branding: ResolvedBranding)
     el.setAttribute('title', `Current and Maximum ${branding.manaName} (Click to Open Spellbook)`);
   });
 }
+
+/** Where a saved hero stands, for short labels: the pack's town on floor 0, else "F<n>". */
+export function floorTag(floor: number, manifest?: GameContentManifest): string {
+  return floor === 0 ? resolveBranding(manifest).townName : `F${floor}`;
+}

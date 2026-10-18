@@ -1,7 +1,7 @@
 import { resolveContinueTarget } from '../../engine';
 import type { AutosaveManager, ContinueTarget, ProfileManager } from '../../engine';
 import { formatStorageStatus, getStoragePersistenceInfo } from '../persistenceInit';
-import { APP_VERSION, resolveBranding } from '../branding';
+import { APP_VERSION, floorTag, resolveBranding } from '../branding';
 import { escapeHtml } from '../html';
 import { ScreenBackdrop } from '../screenArt';
 
@@ -62,10 +62,12 @@ export class MainMenu {
     // Continue shows only when there is something to continue.
     this.continueBtn.disabled = !target;
     this.continueBtn.hidden = !target;
-    this.continueBtn.textContent = target ? `Continue (${target.profileName}, F${target.floor})` : 'Continue';
+    const manifest = this.options.profileManager.manifest;
+    this.continueBtn.textContent = target ? `Continue (${target.profileName}, ${floorTag(target.floor, manifest)})` : 'Continue';
     if (!this.saveSummaryEl) return;
     if (target) {
-      this.saveSummaryEl.textContent = `${target.kind === 'autosave' ? 'Autosave' : 'Saved hero'}: ${target.profileName}, floor ${target.floor}.`;
+      const where = target.floor === 0 ? `in ${resolveBranding(manifest).townName}` : `floor ${target.floor}`;
+      this.saveSummaryEl.textContent = `${target.kind === 'autosave' ? 'Autosave' : 'Saved hero'}: ${target.profileName}, ${where}.`;
     } else if (this.options.profileManager.listProfiles().length > 0) {
       this.saveSummaryEl.textContent = 'Your last hero has fallen. Load a saved game or roll a new hero.';
     } else {

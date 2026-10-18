@@ -98,7 +98,7 @@ import { SessionGuard } from './ui/sessionGuard';
 import { getBrowserAsyncStore } from './ui/indexedDbStore';
 import { setupSaveDragAndDrop, importSaveWithValidation } from './ui/saveImporter';
 import { defaultPlatformAdapter, getBrowserStorage, onSystemReducedMotionChange, reducesMotion } from './ui/platform';
-import { applyDocumentBranding, resolveBranding } from './ui/branding';
+import { applyDocumentBranding, floorTag, resolveBranding } from './ui/branding';
 import {
   CharacterMenuModal,
   CharacterTab,
@@ -1546,7 +1546,7 @@ window.addEventListener('DOMContentLoaded', () => {
             })
           : undefined,
       score: entry ? `${brand.hallOfFameShortName} score: ${entry.score.toLocaleString()}` : undefined,
-      autosaveLabel: autosave ? `Load the autosave (${autosave.profileName ?? 'Hero'}, F${autosave.floor ?? 1})` : undefined,
+      autosaveLabel: autosave ? `Load the autosave (${autosave.profileName ?? 'Hero'}, ${floorTag(autosave.floor ?? 1, activeEngine?.manifest)})` : undefined,
       exportLabel: `Export save (${SAVE_FILE_EXTENSION})`,
       art,
     });

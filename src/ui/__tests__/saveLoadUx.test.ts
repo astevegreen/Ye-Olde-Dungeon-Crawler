@@ -264,6 +264,41 @@ describe('Menu Streamlining & Save/Load UX', () => {
     expect(continueBtn?.textContent).toContain('F3');
   });
 
+  it("names the pack's town, not floor 0, for a hero saved in town", () => {
+    const profile: CharacterProfile = {
+      id: 'sven-1',
+      name: 'Sven the Bold',
+      level: 4,
+      floor: 0,
+      lastSaved: Date.now(),
+      hp: 42,
+      maxHp: 45,
+      strength: 18,
+      difficulty: 'hard',
+      questStatus: 'active',
+    };
+    mockProfileManager.listProfiles.mockReturnValue([profile]);
+    mockProfileManager.manifest = { town: { name: 'Hearthvale' } };
+
+    const menu = new MainMenu({
+      profileManager: mockProfileManager,
+      autosaveManager: mockAutosaveManager,
+      onNewGame: vi.fn(),
+      onContinue: vi.fn(),
+      onLoadGame: vi.fn(),
+      onOpenSettings: vi.fn(),
+      onOpenHelp: vi.fn(),
+      onOpenValhalla: vi.fn(),
+    });
+    menu.show();
+
+    const label = mockDoc.getElementById('btn-menu-continue')?.textContent;
+    expect(label).toBe('Continue (Sven the Bold, Hearthvale)');
+    const summary = mockDoc.getElementById('main-menu-save-summary')?.textContent;
+    expect(summary).toContain('in Hearthvale');
+    expect(summary).not.toContain('floor 0');
+  });
+
   it('renders SaveSlotModal with metadata for both autosave and profiles', () => {
     mockAutosaveManager.getAutosaveMetadata.mockReturnValue({
       profileName: 'Astrid',

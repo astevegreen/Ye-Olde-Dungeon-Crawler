@@ -7,6 +7,7 @@ import { Player } from '../../entities/player';
 import { Monster } from '../../entities/monster';
 import { CastSpellAction } from '../../actions/spell-actions';
 import { WaitAction } from '../../actions/wait';
+import { ClimbStairsAction } from '../../actions/stairs';
 import { StatusManager } from '../../status/statusManager';
 import { DELAYED_BLAST_STATUS, pendingBlasts } from '../delayedBlast';
 
@@ -119,5 +120,24 @@ describe('delayed blast', () => {
     const restored = new StatusManager();
     restored.deserialize(hero.statusManager.serialize());
     expect(restored.getAll().map((b) => b.data?.x)).toEqual([15, 12]);
+  });
+
+  it('falls on no one once the caster has taken the stairs: its tiles are on the floor left', () => {
+    const { engine, map, hero, cast } = build();
+    map.setTile(10, 10, TILES.STAIRS_DOWN);
+    const below = new GameMap(30, 30, TILES.FLOOR);
+    below.setTile(3, 3, TILES.STAIRS_UP);
+    const bystander = new Monster({ id: 'bystander', name: 'Bystander', position: { x: 15, y: 10 }, stats: { hp: 50, maxHp: 50, attack: 1, defense: 0 }, speed: 100, xpValue: 1 });
+    below.addEntity(bystander);
+    bystander.statusManager.applyStatus('paralysis', 99);
+    engine.storedFloors.set(2, below);
+
+    expect(cast('rockslide', 15, 10).success).toBe(true);
+    expect(engine.handlePlayerAction(new ClimbStairsAction(hero)).success).toBe(true);
+    expect(engine.map).toBe(below);
+
+    expect(bystander.hp).toBe(50);
+    expect(engine.surfaces.getSurface(15, 10)).toBeUndefined();
+    expect(pendingBlasts(engine)).toEqual([]);
   });
 });

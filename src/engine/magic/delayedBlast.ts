@@ -46,7 +46,7 @@ export function layDelayedBlast(
       // The caster's statuses tick once as this action ends: `delay` more actions before it goes off.
       duration: delay + 1,
       sourceEntityId: caster.id,
-      data: { spell: spell.id, x: at.x, y: at.y, ox: caster.x, oy: caster.y, element: spell.element, free: freeCast },
+      data: { spell: spell.id, x: at.x, y: at.y, ox: caster.x, oy: caster.y, floor: engine.currentFloor, element: spell.element, free: freeCast },
     },
     [],
     caster,
@@ -81,6 +81,8 @@ function resolveBlast(
 ): { spell: SpellDefinition; shaping?: CastShaping; aim: Position; origin: Position; tiles: Position[] } | undefined {
   const d = effect.data ?? {};
   if (typeof d.spell !== 'string' || ![d.x, d.y, d.ox, d.oy].every((n) => typeof n === 'number')) return undefined;
+  // Its tiles are on the floor it was cast on: once the caster has left, it falls on no one.
+  if (typeof d.floor === 'number' && d.floor !== engine.currentFloor) return undefined;
   const cast = resolveCastSpell(engine, caster, d.spell, d.free === true);
   if (!cast.spell) return undefined;
   // Wildfire picked its element at the cast.

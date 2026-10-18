@@ -5,6 +5,7 @@ import { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { applyImpulse } from '../combat/impulse';
 import { TILES } from '../grid/tile';
+import { TrapInstance } from '../dungeon/traps';
 
 describe('Positional Impulse Physics & Wall Splats', () => {
   let engine: GameEngine;
@@ -115,6 +116,25 @@ describe('Positional Impulse Physics & Wall Splats', () => {
     expect(target.y).toBe(5);
     expect(target.hp).toBeLessThan(hpBefore);
     expect(engine.messages.some((m) => m.includes('triggers a hidden trap'))).toBe(true);
+  });
+
+  it('ends the push where a teleport rune sends the victim, without dragging it back', () => {
+    const rune = new TrapInstance({ id: 'tp', type: 'teleport', x: 7, y: 5 });
+    map.addTrap(rune);
+    let sentTo: { x: number; y: number } | undefined;
+    const trigger = rune.trigger.bind(rune);
+    rune.trigger = (entity, eng) => {
+      const message = trigger(entity, eng);
+      sentTo = { x: entity.x, y: entity.y };
+      return message;
+    };
+
+    const result = applyImpulse(engine, player, target, 1, 0, 3);
+
+    expect(sentTo).toBeDefined();
+    expect(sentTo).not.toEqual({ x: 7, y: 5 });
+    expect({ x: target.x, y: target.y }).toEqual(sentTo);
+    expect(result).toMatchObject({ triggeredTrap: 'teleport', wallSplat: false, newPosition: sentTo });
   });
 
   it('stops early and damages victim when colliding into another entity', () => {

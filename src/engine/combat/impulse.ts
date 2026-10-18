@@ -216,7 +216,9 @@ function travel(
       triggeredTrapType = trap.type;
       engine.log(`*** ${target.name} is shoved directly onto a ${trap.type} trap! ***`);
       trap.trigger(target, engine);
-      if (!target.isAlive()) {
+      // A trap that kills the target or carries it off (a teleport rune) ends the push, as it
+      // ends a step: the push would otherwise go on from the trap tile and drag it back.
+      if (!target.isAlive() || target.x !== currX || target.y !== currY) {
         return {
           pushed: true,
           distanceTraveled,
@@ -225,8 +227,8 @@ function travel(
           triggeredTrap: trap.type,
           impactDamageDealt: 0,
           stunned: false,
-          killed: true,
-          newPosition: { x: currX, y: currY },
+          killed: !target.isAlive(),
+          newPosition: { x: target.x, y: target.y },
         };
       }
     } else if (nextTile.type === 'trap' && !wearsFlag(target, 'trapImmune')) {

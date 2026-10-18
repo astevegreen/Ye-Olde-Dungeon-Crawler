@@ -53,7 +53,7 @@ import { COTW_FAMILY_PERKS, COTW_LEVEL_MILESTONES, COTW_MILESTONE_PERKS, COTW_PE
 import { COTW_COINAGE } from './coinage';
 import { COTW_ITEM_FAMILIES } from './itemFamilies';
 import { COTW_LOOT_RATES } from './loot';
-import { OATH_HOLD_HOOK, OATH_SIDE_HOOK, OATH_TRIGGER } from './oath';
+import { OATH_HOLD_HOOK, OATH_SIDE_HOOK, OATH_TRIGGER, TEAR_LEFT_BEHIND_HOOK } from './oath';
 import { HEARTH_COLD_HOOK } from './hearthCold';
 import { ALTAR_MARKS, HOSTAGE_VILLAGERS, SIPHON_GIFT_TRIGGERS, SIPHON_RITUAL_FLOOR, SIPHON_RITUAL_HOOKS, SIPHON_TIMED_EVENT, SIPHON_VAULT_ID } from './hostageRitual';
 import { COTW_HOMECOMING_HOOK } from './homecoming';
@@ -199,6 +199,7 @@ export const cotwManifest: GameContentManifest = {
     COTW_TEMPLE_MET_HOOK,
     COTW_RELIC_HOOK,
     OATH_HOLD_HOOK,
+    TEAR_LEFT_BEHIND_HOOK,
     ...IRON_CLANS_HOOKS,
   ],
   storyChoiceTriggers: [OATH_TRIGGER, ZEALOT_LEADER_TRIGGER, VIDNIR_DEFEATED_TRIGGER, ...SIPHON_GIFT_TRIGGERS],

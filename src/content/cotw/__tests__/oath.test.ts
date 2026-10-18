@@ -85,6 +85,23 @@ describe("The Matriarch's Blood-Oath (real cotw manifest)", () => {
     expect(offers).toEqual(['oath_hearth']);
   });
 
+  it('says the Hearth-Tear still lies there when the hero leaves without it, and not once it is taken', () => {
+    const { engine, map, player } = buildEngine();
+    slay(engine, map, OATH_GUARDIAN_ID, { x: 4, y: 3 });
+    map.addItemAt(6, 6, makeLootItem(HEARTH_TEAR_ID, 'shard', () => 0.5));
+    map.setTile(player.x, player.y, TILES.STAIRS_UP);
+    engine.handlePlayerAction(new ClimbStairsAction(player));
+    expect(engine.messages.filter((m) => m.includes('still lies where the Warden fell'))).toHaveLength(1);
+  });
+
+  it('stays silent about the Hearth-Tear once it is in hand', () => {
+    const { engine, map, player } = buildEngine();
+    winTheHearthTear(engine, map);
+    map.setTile(player.x, player.y, TILES.STAIRS_UP);
+    engine.handlePlayerAction(new ClimbStairsAction(player));
+    expect(engine.messages.some((m) => m.includes('still lies'))).toBe(false);
+  });
+
   it('honoring the oath: -2 attack, +3 defense and a Frost-Ward Hound', () => {
     const { engine, player, map, choose } = buildEngine();
     const baseAttack = player.baseAttackValue;

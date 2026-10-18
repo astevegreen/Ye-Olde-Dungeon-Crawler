@@ -1,6 +1,7 @@
 import type { ActionHook, StoryChoiceTrigger } from '../../engine';
 import { Companion } from '../../engine';
-import { RELIC_RECOVERED_FLAG } from './relic';
+import { HEARTH_TEAR_ID, RELIC_RECOVERED_FLAG } from './relic';
+import { CHARIOT_FORGE_FLOOR } from './vaults';
 
 /**
  * The Matriarch's Blood-Oath (`choices.ts`'s `oath_hearth`) closes Act 1. Once the
@@ -65,6 +66,25 @@ const OATH_OFFERED_FLAG = `${OATH_TRIGGER.id}_offered`;
 
 /** The ways off a floor that don't take a step: a step opens the matriarch's choice itself. */
 const LEAVING_ACTIONS = new Set(['ClimbStairsAction', 'ChannelRuneOfReturnAction']);
+
+/**
+ * The Warden is dead but the shard still lies on its floor: the hero is leaving without it,
+ * and the matriarch's offer, which waits on the shard, will never come. Says so, and lets
+ * the hero go. Once per leave; never once the shard has been picked up.
+ */
+export const TEAR_LEFT_BEHIND_HOOK: ActionHook = {
+  id: 'cotw-tear-left-behind',
+  phase: 'pre',
+  actionType: '*',
+  execute: ({ actor, engine, actionType }) => {
+    if (actor !== engine.player || !LEAVING_ACTIONS.has(actionType)) return;
+    if (engine.currentFloor !== CHARIOT_FORGE_FLOOR || engine.getWorldFlag(RELIC_RECOVERED_FLAG)) return;
+    if (engine.compendium.getEntry(OATH_GUARDIAN_ID).kills < 1) return;
+    if (actionType === 'ClimbStairsAction' && !engine.map.getTile(engine.player.x, engine.player.y)?.isStairs) return;
+    const lies = engine.map.getAllGroundItems().some(({ items }) => items.some((i) => i.definitionId === HEARTH_TEAR_ID));
+    if (lies) engine.log('The Hearth-Tear still lies where the Warden fell.');
+  },
+};
 
 /**
  * Keeps the hero on the Warden's floor until the matriarch has made her offer. It holds

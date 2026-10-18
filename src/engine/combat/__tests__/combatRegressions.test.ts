@@ -23,7 +23,7 @@ import { cotwManifest } from '../../../content/cotw';
  * on the map after a chasm plunge. R-cmbt-4, -5 and -6: wind-ups, bonusDamage hooks and
  * poison and burning ticks go through the victim's affinity. R-cmbt-11: a Scroll of Identify
  * read with nothing to identify is kept, and costs no turn. R-cmbt-13: a kill a hook makes resolves once.
- * R-cmbt-14: an attacker killed by melee reflection stops attacking, and a bite that kills
+ * R-cmbt-14: an attacker killed by melee reflection or a retaliation hook stops attacking, and a bite that kills
  * the hero as it dies still ends the run. R-cmbt-15: a paralysed hero's turns still run the
  * environmental updates.
  */
@@ -335,6 +335,32 @@ describe('R-cmbt-14 · an attacker killed by melee reflection stops attacking', 
     expect(rat.isAlive()).toBe(false);
     expect(engine.gameState.runStatus).toBe('fallen');
     expect(engine.gameState.killerName).toBe('rat');
+  });
+
+  it('a rat slain by a retaliation hook mid-bite does not poison the hero either', () => {
+    const { map, player, engine } = make();
+    const hauberk = new Item({
+      id: 'h',
+      name: 'Dripping Hauberk',
+      unidentifiedName: 'x',
+      category: 'armor',
+      slot: 'torso',
+      weight: 100,
+      bulk: 100,
+      stats: { defenseBonus: 0 },
+      identified: true,
+      hooks: [{ event: 'onDamageTaken', chance: 1, action: { type: 'bonusDamage', amount: 6, element: 'acid' } }],
+    } as never);
+    player.inventory.primaryPack.addItem(hauberk);
+    player.inventory.equipFromPack(hauberk.id);
+    const rat = mon('rat', 4, 3, 1, { onHitAffliction: { type: 'poison', chance: 1, duration: 5, potency: 2 } });
+    map.addEntity(rat);
+
+    new MeleeAttackAction(rat, player).perform(engine);
+
+    expect(player.hp).toBeLessThan(100); // the bite landed, so the hook fired
+    expect(rat.isAlive()).toBe(false);
+    expect(player.statusManager.hasStatus('poison')).toBe(false);
   });
 });
 

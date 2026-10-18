@@ -320,6 +320,16 @@ export class MeleeAttackAction implements Action {
       });
     }
 
+    // A defender's hook that killed the attacker (a retaliating hauberk) ends the blow as a
+    // reflected kill does.
+    if (!this.attacker.isAlive()) {
+      if (killed) {
+        message += ` ${this.defender.name} is slain!`;
+        DeathResolver.resolveDeath(engine, this.attacker, this.defender, { damageElement: 'physical' });
+      }
+      return { success: true, cost, message };
+    }
+
     // On-hit status affliction (e.g. Giant Rat venomous bite)
     if (this.attacker instanceof Monster && this.attacker.onHitAffliction && !killed) {
       const aff = this.attacker.onHitAffliction;

@@ -109,7 +109,7 @@ export function createDarknessHook(floors: DarkFloor[]): ActionHook {
     id: 'cotw-darkness',
     phase: 'post',
     actionType: '*',
-    execute: ({ actor, engine }) => {
+    execute: ({ actor, engine, result }) => {
       const player = engine.player;
       if (actor !== player) return;
       // Off a dark floor there is nothing to do: the dark's statuses end themselves (onTick).
@@ -146,6 +146,8 @@ export function createDarknessHook(floors: DarkFloor[]): ActionHook {
         }
       }
 
+      // Only an action that spends a turn counts: a bump into a wall passes no time (§4).
+      if ((result?.cost ?? 0) <= 0) return;
       const actions = incrementCounter(engine.worldState, `cotw:dark_actions_${dark.floor}`);
       if (actions % DARK_SPAWN_INTERVAL === 0) spawnFromTheDark(engine, dark);
     },

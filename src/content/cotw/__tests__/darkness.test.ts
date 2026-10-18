@@ -1,6 +1,7 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import { GameEngine, GameMap, TILES, Player, Monster, activateRegistries } from '../../../engine';
 import { WaitAction } from '../../../engine/actions/wait';
+import { MovementAction } from '../../../engine/actions/movement';
 import { StatusHandlerRegistry } from '../../../engine/status/statusHandlers';
 import { makeShopItem } from '../items/makeItem';
 import { ProfileManager, MemoryStorage } from '../../../engine/storage/profile-manager';
@@ -140,5 +141,17 @@ describe('dark floors', () => {
     expect(spawned).toBeDefined();
     expect(spawned!.aiState).toBe('hunting');
     expect(spawned!.statusManager.hasStatus(EMBOLDENED_STATUS)).toBe(true);
+  });
+
+  it('give up nothing on actions that pass no time: bumping a wall', () => {
+    const { engine, player } = buildEngine();
+    engine.map.setTile(21, 20, TILES.WALL);
+
+    for (let t = 0; t < DARK_SPAWN_INTERVAL * 20; t++) {
+      expect(engine.handlePlayerAction(new MovementAction(player, 1, 0)).cost).toBe(0);
+    }
+
+    expect(engine.worldState.counters[`cotw:dark_actions_${FLOOR}`] ?? 0).toBe(0);
+    expect(engine.map.getAllEntities().filter((e) => e.id.startsWith('dark-'))).toEqual([]);
   });
 });

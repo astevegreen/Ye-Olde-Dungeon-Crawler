@@ -21,6 +21,13 @@
 1. Complete. Answers to the questions above start new tasks; the full list with screenshots is `.prompts/playtest/log-yodc-07.md` (main checkout).
 2. Prune worktree `.claude/worktrees/playtest-yodc-07` (all pushed).
 
+## Decisions
+- Chasm knockback: the hero takes fall damage instead of dying — owner: "Fall damage (Recommended)"
+- Hearth-Tear left behind: a nudge line on leaving floor 25, plus a Sealed-ending variant — owner: "Nudge + ending variant (Recommended)"
+- Bolt range counts grid steps — owner: "Count steps (Recommended)"
+- Narrow character menu keeps the sideways scroll — owner: "Keep sideways scroll (Recommended)"
+- Reword "Ten levels under Bjarnarhaven" and "Sure Shot"; poison ticks don't stop a rest; investigate the idle wolf / fleeing Níðhögg / fled foe blocking regen — owner chose all
+
 ## Read first
 - .prompts/playtest/log-yodc-07.md — every finding, with screenshot paths
 - .prompts/playtest/claims.md — who fixed what across sessions

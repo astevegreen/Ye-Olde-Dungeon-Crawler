@@ -7,7 +7,8 @@ import { ChannelRuneOfReturnAction, RuneOfReturnItem } from '../../magic/runeOfR
 import { ExecuteChoiceAction } from '../../actions/choiceAction';
 import { WaitAction } from '../../actions/wait';
 import { flightRecorder } from '../flightRecorder';
-import { loadReplayState, rebuildAction } from '../replay';
+import { loadReplayState, rebuildAction, replayActionTrail } from '../replay';
+import { AutoRestManager } from '../../actions/autoRest';
 
 /**
  * Whole-codebase review, 2026-10-06, area 10 (replay): regression guards. Two player actions
@@ -130,5 +131,29 @@ describe('a replay checkpoint keeps the bestiary and mastery perks', () => {
     const loaded = loadReplayState(JSON.stringify(rd));
     expect(loaded.ok).toBe(true);
     if (loaded.ok) expect(loaded.value.engine.compendium.serialize()).toEqual(engine.compendium.serialize());
+  });
+});
+
+// A full rest settles the Void Debt after its last trailed rest turn; the replay rebuilt only
+// the turns, each worth one point of debt, so it kept nearly all of it.
+describe('a replay of a full rest ends with the debt the live run has', () => {
+  it('the settle reaches the replay through a checkpoint', () => {
+    const map = new GameMap(12, 12, TILES.FLOOR);
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 5 } });
+    const engine = new GameEngine({ map, player, floor: 1, seed: 1 });
+    engine.handlePlayerAction(new WaitAction(player));
+    player.accrueVoidDebt(10);
+    player.hp = player.maxHp - 1;
+    player.mana = player.maxMana;
+    flightRecorder.requestCheckpoint('overcast aftermath');
+
+    expect(AutoRestManager.executeFullRest(engine, 100).interrupted).toBe(false);
+    expect(player.voidDebt).toBe(0);
+
+    const loaded = loadReplayState(JSON.stringify(flightRecorder.getReplayData(engine)));
+    if (!loaded.ok) throw new Error(loaded.message);
+    replayActionTrail(loaded.value.engine, loaded.value.trail);
+    expect(loaded.value.engine.player.voidDebt).toBe(0);
+    expect(loaded.value.engine.player.hp).toBe(player.hp);
   });
 });

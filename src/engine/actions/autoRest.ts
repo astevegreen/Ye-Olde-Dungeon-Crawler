@@ -10,6 +10,7 @@ import type { ActionResult } from '../types';
 import { BASE_ACTION_COST } from '../types';
 import { isPrologueRunning } from '../quest/prologue';
 import { getRunningTimedEvents } from '../quest/timedEvents';
+import { flightRecorder } from '../debug/flightRecorder';
 
 export interface AutoRestStepResult {
   finished: boolean;
@@ -190,10 +191,13 @@ export class AutoRestManager {
 
     if (player.hp >= player.maxHp && player.mana >= player.maxMana) {
       // A full rest settles all debt, except what the pack lets linger until town.
+      const debtBefore = player.voidDebt;
       if (player.decayVoidDebt(player.voidDebt, lingeringDebtFloor(engine, player.voidDebt)) > 0) {
         const lingering = getOverflowConfig(engine)?.lingeringRestMessage;
         if (lingering) engine.log(lingering);
       }
+      // The settle runs outside the trailed rest turn: a checkpoint carries it into a replay.
+      if (player.voidDebt < debtBefore) flightRecorder.requestCheckpoint('full rest settle');
       return end(false, turn, `Fully rested (HP and ${resolveManaTerms(engine.manifest).name} full).`);
     }
 

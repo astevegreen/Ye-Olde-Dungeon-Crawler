@@ -125,8 +125,10 @@ export class FloorManager {
 
     // 1. Raise living monsters to this visit's multiplier, in total: a survivor already scaled
     // that far by an earlier return is left alone, so repeated returns never compound. Its XP
-    // rises with it.
-    const livingMonsters = map.getAllEntities().filter((e) => e instanceof Monster && e.isAlive()) as Monster[];
+    // rises with it. The companion, on the map by now, is the hero's side, not the floor's.
+    const livingMonsters = map
+      .getAllEntities()
+      .filter((e) => e instanceof Monster && e.isAlive() && e !== engine.companion) as Monster[];
     for (const monster of livingMonsters) {
       if (multiplier <= monster.catchUpScale) continue;
       const ratio = multiplier / monster.catchUpScale;

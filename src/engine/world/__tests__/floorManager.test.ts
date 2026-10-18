@@ -7,6 +7,9 @@ import { Player } from '../../entities/player';
 import { Monster } from '../../entities/monster';
 import type { MonsterDefinition } from '../../bestiary/monsterDefinitions';
 import type { GameContentManifest } from '../../types/manifest';
+import { WaitAction } from '../../actions/wait';
+import { ProfileManager, MemoryStorage } from '../../storage/profile-manager';
+import { cotwManifest } from '../../../content/cotw';
 
 describe('Inactive Floor Simulation & Temporal Catch-Up (floorManager.ts)', () => {
   let floorManager: FloorManager;
@@ -273,5 +276,30 @@ describe('R-ai-7, R-pipe-18 · revisit catch-up spawns across the floor, away fr
     expect(spawned.length).toBe(5);
     for (const m of spawned) expect(Math.hypot(m.x - player.x, m.y - player.y), `${m.id} at ${m.x},${m.y}`).toBeGreaterThanOrEqual(8);
     expect(Math.max(...spawned.map((m) => m.y))).toBeGreaterThan(5);
+  });
+});
+
+// The companion travels with the hero and stands on the map when catch-up runs: it is the
+// hero's side, not the floor's, so a revisit leaves its HP and attack alone.
+describe('revisit catch-up and the companion', () => {
+  it('a wounded companion keeps its HP and attack through a revisit and its next turn', () => {
+    const { engine } = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Hild', { manifest: cotwManifest, seed: 7 });
+    engine.changeFloor(1);
+    engine.setWorldFlag(GameEngine.COMPANION_BONDED_FLAG, true);
+    const hound = engine.summonCompanion('hearth_frost_hound')!;
+    hound.hp = 10;
+    const before = { hp: hound.hp, maxHp: hound.maxHp, attack: hound.attack };
+
+    engine.changeFloor(2);
+    engine.turnCount += 300;
+    engine.changeFloor(1);
+    expect({ hp: hound.hp, maxHp: hound.maxHp, attack: hound.attack, catchUpScale: hound.catchUpScale }).toEqual({ ...before, catchUpScale: 1 });
+
+    // Only the hero and the hound left: the hound's own turn regrows nothing from a scale.
+    for (const e of engine.map.getAllEntities()) {
+      if (e instanceof Monster && e !== hound) engine.map.removeEntity(e);
+    }
+    engine.handlePlayerAction(new WaitAction(engine.player));
+    expect({ hp: hound.hp, maxHp: hound.maxHp, attack: hound.attack }).toEqual(before);
   });
 });

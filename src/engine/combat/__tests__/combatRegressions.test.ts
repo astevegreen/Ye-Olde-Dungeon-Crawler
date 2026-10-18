@@ -22,7 +22,7 @@ import { cotwManifest } from '../../../content/cotw';
  * run once, with its cause. R-cmbt-3: a death the hero's last stand refuses leaves the hero
  * on the map after a chasm plunge. R-cmbt-4, -5 and -6: wind-ups, bonusDamage hooks and
  * poison and burning ticks go through the victim's affinity. R-cmbt-11: a Scroll of Identify
- * read with nothing to identify is kept. R-cmbt-13: a kill a hook makes resolves once.
+ * read with nothing to identify is kept, and costs no turn. R-cmbt-13: a kill a hook makes resolves once.
  * R-cmbt-14: an attacker killed by melee reflection stops attacking, and a bite that kills
  * the hero as it dies still ends the run. R-cmbt-15: a paralysed hero's turns still run the
  * environmental updates.
@@ -244,6 +244,22 @@ describe('R-cmbt-11 · reading a Scroll of Identify with nothing to identify kee
 
     expect(res.success).toBe(false); // nothing to identify: the cast fails
     expect(player.inventory.findItemById(scroll.id)).toBe(scroll); // and the scroll is still there
+  });
+
+  it('the refused read is no turn: the hero keeps its energy (§4)', () => {
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 2, y: 2 } });
+    const engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player, manifest: cotwManifest, seed: 7 });
+    const scroll = new ScrollItem({ id: 'scroll-id', name: 'Scroll of Identify', spellId: 'identify', identified: true });
+    player.inventory.primaryPack.addItem(scroll);
+    player.energy = 100;
+    const turn = engine.turnCount;
+
+    const res = engine.handlePlayerAction(new ReadScrollAction(player, scroll));
+
+    expect(res.message).toBe('You have no unidentified items to decipher.');
+    expect(res.cost).toBe(0);
+    expect(engine.turnCount).toBe(turn);
+    expect(player.energy).toBe(100);
   });
 });
 

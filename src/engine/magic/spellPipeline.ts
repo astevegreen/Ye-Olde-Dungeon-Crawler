@@ -38,6 +38,7 @@ import { castGeometry } from './castTrace';
 import type { LendDelivery } from './neighbourLending';
 import { dispatchDamageHooks } from '../hooks/damageHooks';
 import { breakCurses } from '../items/breakCurses';
+import type { Item } from '../items/item';
 import { applyImpulse } from '../combat/impulse';
 import { executeReveal } from './reveal';
 import { sensesThroughWalls } from '../fov/sensing';
@@ -357,6 +358,16 @@ export class SpellPipeline {
     for (const effect of lends.effects) EffectPrimitiveRegistry.dispatch(effect, lent);
   }
 
+  public static readonly NO_INVENTORY_TARGET = 'You have no unidentified items to decipher.';
+
+  /** The item an inventory spell works on: the one named, else the first unidentified one carried or worn. */
+  public static inventoryTargetOf(player: Player, itemTargetId: string | undefined): Item | undefined {
+    return itemTargetId
+      ? player.inventory.findItemById(itemTargetId)
+      : player.inventory.primaryPack.getItems().find((i) => !i.identified) ??
+          player.inventory.paperdoll.getAllEquipped().map((e) => e.item).find((i) => !i.identified);
+  }
+
   private static executeInventorySpell(
     engine: GameEngine,
     _spell: SpellDefinition | undefined,
@@ -369,13 +380,10 @@ export class SpellPipeline {
     }
 
     const player = caster;
-    let targetItem = itemTargetId
-      ? player.inventory.findItemById(itemTargetId)
-      : player.inventory.primaryPack.getItems().find((i) => !i.identified) ??
-        player.inventory.paperdoll.getAllEquipped().map((e) => e.item).find((i) => !i.identified);
+    const targetItem = SpellPipeline.inventoryTargetOf(player, itemTargetId);
 
     if (!targetItem) {
-      const msg = 'You have no unidentified items to decipher.';
+      const msg = SpellPipeline.NO_INVENTORY_TARGET;
       engine.log(msg);
       return { success: false, cost: 0, message: msg };
     }

@@ -133,6 +133,13 @@ export class CastSpellAction implements Action {
       }
     }
 
+    // An inventory spell with nothing to work on is refused before any cost is paid (§4).
+    const mode = spell.targetingMode ?? spell.targetType;
+    if (player && mode === 'inventory_item' && !SpellPipeline.inventoryTargetOf(player, this.itemTargetId)) {
+      engine.log(SpellPipeline.NO_INVENTORY_TARGET);
+      return { success: false, cost: 0, message: SpellPipeline.NO_INVENTORY_TARGET };
+    }
+
     // What the caster wears, and a hero's perks (`effectiveManaCost`, which the HUD reads too).
     const effectiveManaCost = player ? effectiveManaCostOf(player, spell) : spell.manaCost;
 

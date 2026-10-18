@@ -79,9 +79,12 @@ export class TargetingOverlay implements UIModal {
     }
 
     // Initialize reticle in front of player or at nearest enemy
-    const enemies = engine.map.getAllEntities().filter(
-      (e) => e.isAlive() && e.isHostileTo(engine.player) && engine.fov.isVisible(e.x, e.y)
-    );
+    const p = engine.player;
+    const steps = (e: { x: number; y: number }) => Math.max(Math.abs(e.x - p.x), Math.abs(e.y - p.y));
+    const enemies = engine.map
+      .getAllEntities()
+      .filter((e) => e.isAlive() && e.isHostileTo(p) && engine.fov.isVisible(e.x, e.y))
+      .sort((a, b) => steps(a) - steps(b) || Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y));
 
     if (enemies.length > 0) {
       this.reticleX = enemies[0].x;

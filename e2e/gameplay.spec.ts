@@ -325,6 +325,37 @@ test('while aiming, the reticle follows the mouse and a click fires the spell', 
     .toBe('acted');
 });
 
+// Zapping an aimed wand from the inventory opens the reticle: it fired on the hero's own tile,
+// so a Wand of Fireballs exploded on him (engine bug hunt, 18 Oct).
+test('zapping a wand from the inventory opens the aim instead of firing at the hero', async ({ page }) => {
+  await embarkNewHero(page);
+  const wandName = await page.evaluate(() => {
+    const e = window.__cotwEngine!;
+    const wand = e.merchants.get('merchant-astrid')!.stock.find((i) => i.id === 'astrid-wand-1')!;
+    wand.identified = true;
+    e.diagnostics.spawnItem(wand);
+    return wand.displayName;
+  });
+  const wand = () =>
+    page.evaluate(() => {
+      const e = window.__cotwEngine!;
+      const w = e.player.inventory.findItemById('astrid-wand-1') as unknown as { charges: number };
+      return { charges: w.charges, hp: e.player.hp, turn: e.turnCount, aiming: window.__cotwRenderer!.targetingOverlay.isOpen, stack: window.__cotwInputHandler!.modalStack.getStackIds() };
+    });
+  const before = await wand();
+
+  await page.keyboard.press('i');
+  await page.locator(`#character-menu-tab-content .inv-cell[aria-label="${wandName}"]`).dblclick();
+  await expect.poll(async () => (await wand()).aiming).toBe(true);
+  const aiming = await wand();
+  expect(aiming).toMatchObject({ charges: before.charges, hp: before.hp, turn: before.turn });
+  expect(aiming.stack).toEqual(['targeting']);
+
+  await page.keyboard.press('Escape');
+  await expect.poll(async () => (await wand()).aiming).toBe(false);
+  expect(await wand()).toMatchObject({ charges: before.charges, turn: before.turn });
+});
+
 // UI scale (N8, tracker 4.5): Auto grows the bars, sidebar and dialogs with a large window,
 // the map still fits beside and between them, and Settings can fix the size.
 test('the interface grows with a large window, and Settings can fix its size', async ({ page }) => {

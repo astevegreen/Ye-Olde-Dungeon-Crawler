@@ -58,6 +58,7 @@ import type {
   SaveData,
   ScreenScene,
   VersionedSaveEnvelope,
+  WandItem,
 } from './engine';
 import { CanvasRenderer } from './rendering/canvas-renderer';
 import type { MeleeFxKind } from './rendering/fxRunner';
@@ -426,44 +427,59 @@ window.addEventListener('DOMContentLoaded', () => {
       combatSidebar.update(activeEngine);
       void processVisualEffectsAndRender();
     } else {
-      const entry: SpellbookEntry = {
+      startAiming({
         key: '',
         type: 'spell',
         id: spell.id,
         name: spell.name,
         manaCost: cast.manaCost,
         spellDef: cast,
-      };
-      renderer.inspectOverlay.close();
-      renderer.mapOverlay.close();
-      renderer.targetingOverlay.startTargeting(entry, activeEngine);
-
-      // A spell needing no aim (Identify on an item) fired and closed already: nothing to
-      // put on the stack, which would only pause the world behind a dead entry (R-main-16).
-      if (!renderer.targetingOverlay.isOpen) {
-        void processVisualEffectsAndRender();
-      } else if (inputHandler) {
-        inputHandler.modalStack.push({
-          id: 'targeting',
-          get isOpen() { return renderer?.targetingOverlay.isOpen ?? false; },
-          set isOpen(val: boolean) { if (!val) renderer?.targetingOverlay.close(); },
-          handleKeyDown: (e: KeyboardEvent) => {
-            if (!renderer || !activeEngine) return false;
-            const handled = renderer.targetingOverlay.handleKeyDown(e, activeEngine);
-            renderer.render();
-            return handled;
-          },
-          // The overlay's `onClose` takes the entry off the stack, however it closed.
-          close: () => renderer?.targetingOverlay.close(),
-        });
-      }
-
-      renderer.render();
-      if (typeof document !== 'undefined') {
-        (document.activeElement as HTMLElement)?.blur();
-        document.getElementById('game-canvas')?.focus();
-      }
+      });
     }
+  }
+
+  /** Opens the aiming reticle for a spell or wand entry, and puts it on the modal stack. */
+  function startAiming(entry: SpellbookEntry): void {
+    if (!activeEngine || !renderer) return;
+    renderer.inspectOverlay.close();
+    renderer.mapOverlay.close();
+    renderer.targetingOverlay.startTargeting(entry, activeEngine);
+
+    // A spell needing no aim (Identify on an item) fired and closed already: nothing to
+    // put on the stack, which would only pause the world behind a dead entry (R-main-16).
+    if (!renderer.targetingOverlay.isOpen) {
+      void processVisualEffectsAndRender();
+    } else if (inputHandler) {
+      inputHandler.modalStack.push({
+        id: 'targeting',
+        get isOpen() { return renderer?.targetingOverlay.isOpen ?? false; },
+        set isOpen(val: boolean) { if (!val) renderer?.targetingOverlay.close(); },
+        handleKeyDown: (e: KeyboardEvent) => {
+          if (!renderer || !activeEngine) return false;
+          const handled = renderer.targetingOverlay.handleKeyDown(e, activeEngine);
+          renderer.render();
+          return handled;
+        },
+        // The overlay's `onClose` takes the entry off the stack, however it closed.
+        close: () => renderer?.targetingOverlay.close(),
+      });
+    }
+
+    renderer.render();
+    if (typeof document !== 'undefined') {
+      (document.activeElement as HTMLElement)?.blur();
+      document.getElementById('game-canvas')?.focus();
+    }
+  }
+
+  /** An inventory Zap of a wand that needs aiming opens the reticle (it once fired on the hero's own tile). */
+  function aimWand(wand: WandItem): boolean {
+    if (!activeEngine || !renderer || !wand.canZap()) return false;
+    const spell = activeEngine.manifest?.spells?.find((s) => s.id === wand.spellId) ?? getSpell(wand.spellId);
+    if (!spell || spell.targetType === 'self' || spell.targetingMode === 'self') return false;
+    characterMenuModal?.close();
+    startAiming({ key: '', type: 'wand', id: spell.id, name: wand.displayName, sourceItem: wand, spellDef: spell });
+    return true;
   }
 
   function triggerQuickSpell(slotIndex: number): void {
@@ -1894,6 +1910,7 @@ window.addEventListener('DOMContentLoaded', () => {
         drawPortrait: (canvas, entity) => renderer?.drawEntityPortrait(canvas, entity),
         richHoverCards: () => settingsManager.getSettings().inventoryRichHoverCards,
       });
+      inventoryTab.controller.onAimWand = (wand) => aimWand(wand);
       characterMenuModal = new CharacterMenuModal(
         [inventoryTab, characterTab, spellbookTab, bestiaryTab, pactsTab, storyTab],
         () => ({

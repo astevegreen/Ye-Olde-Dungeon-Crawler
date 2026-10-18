@@ -79,6 +79,8 @@ export class ItemInspector {
   public onPeek?: (container: Container) => void;
   /** Asks how many of a stack to drop, when the Drop button is pressed on one. */
   public onDropStack?: (item: Item) => void;
+  /** Zaps a wand when the Zap button is pressed; without it the wand is zapped untargeted. */
+  public onZapWand?: (wand: WandItem) => void;
 
   private peek(container: Container): void {
     if (this.onPeek) this.onPeek(container);
@@ -496,7 +498,8 @@ export class ItemInspector {
           enabled: item.canZap(),
           reason: item.canZap() ? undefined : 'No charges remaining.',
           execute: (eng) => {
-            eng.commandBus.dispatch({ type: 'zap_wand', payload: { itemId: item.id } });
+            if (this.onZapWand) this.onZapWand(item);
+            else eng.commandBus.dispatch({ type: 'zap_wand', payload: { itemId: item.id } });
             this.clearSelection();
           },
         });

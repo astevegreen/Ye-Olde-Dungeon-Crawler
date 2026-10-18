@@ -27,6 +27,7 @@ import { SmithService } from '../economy/smith';
 import type { Merchant } from '../economy/merchant';
 import { formatCurrency } from '../economy/currency';
 import { ChannelRuneOfReturnAction, RuneOfReturnItem, cancelChannel } from '../magic/runeOfReturn';
+import { getSpell } from '../magic/spellRegistry';
 import { recordMilestone } from '../renown/renownLedger';
 import { flightRecorder } from '../debug/flightRecorder';
 import type { Action } from '../actions/action';
@@ -144,6 +145,16 @@ export class EngineCommandBus implements GameCommandBus {
       case 'zap_wand': {
         const item = this.resolveItem(p.itemId as string);
         if (item instanceof WandItem) {
+          // Only a wand of a self spell may go off untargeted, on the hero; any other waits for an aim.
+          if (p.targetX === undefined || p.targetY === undefined) {
+            const spell = this.engine.manifest?.spells?.find((s) => s.id === item.spellId) ?? getSpell(item.spellId);
+            const self = spell?.targetType === 'self' || spell?.targetingMode === 'self';
+            if (item.canZap() && !self) {
+              const message = `Choose a target for the ${item.displayName}.`;
+              this.engine.log(message);
+              return { success: false, message };
+            }
+          }
           const targetX = (p.targetX as number | undefined) ?? this.engine.player.x;
           const targetY = (p.targetY as number | undefined) ?? this.engine.player.y;
           const res = this.act(

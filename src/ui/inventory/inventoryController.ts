@@ -177,12 +177,15 @@ export class InventoryController {
   public onChange?: () => void;
   /** Closes the whole menu (channeling the Rune of Return leaves the inventory). */
   public onDismiss?: () => void;
+  /** Opens the aiming reticle for a wand; true when it took the Zap. Without it, or on false, the wand zaps untargeted. */
+  public onAimWand?: (wand: WandItem) => boolean;
 
   constructor() {
     // The inspector's "Open" actions open the container here, in the third column.
     this.inspector.onPeek = (container) => this.pushContainer(container, this.sourceOf(container));
     // A stack asks how many to drop; the inspector's Drop button hands it over.
     this.inspector.onDropStack = (item) => this.openDropDialog(item);
+    this.inspector.onZapWand = (wand) => this.zapWand(wand);
   }
 
   // ---- Opening and closing -----------------------------------------------------------
@@ -388,6 +391,12 @@ export class InventoryController {
     return this.engine ? this.engine.commandBus.dispatch(cmd) : { success: false };
   }
 
+  /** Zaps a wand: aimed through the reticle when presentation offers one, else as the engine resolves it. */
+  private zapWand(wand: WandItem): void {
+    if (this.onAimWand?.(wand)) return;
+    this.dispatch({ type: 'zap_wand', payload: { itemId: wand.id } });
+  }
+
   /** Uses or equips a carried item: drink, read, zap, open, else equip. */
   private useOrEquip(item: Item): void {
     if (item instanceof Container) {
@@ -396,7 +405,7 @@ export class InventoryController {
     }
     if (item instanceof PotionItem) this.dispatch({ type: 'drink_potion', payload: { itemId: item.id } });
     else if (item instanceof ScrollItem) this.dispatch({ type: 'read_scroll', payload: { itemId: item.id } });
-    else if (item instanceof WandItem) this.dispatch({ type: 'zap_wand', payload: { itemId: item.id } });
+    else if (item instanceof WandItem) this.zapWand(item);
     else this.dispatch({ type: 'equip_item', payload: { itemId: item.id } });
     this.inspector.clearSelection();
   }
@@ -469,7 +478,7 @@ export class InventoryController {
     } else if (item instanceof ScrollItem) {
       options.push({ label: 'Read', run: () => { this.dispatch({ type: 'read_scroll', payload: { itemId: item.id } }); done(); } });
     } else if (item instanceof WandItem) {
-      options.push({ label: 'Zap', run: () => { this.dispatch({ type: 'zap_wand', payload: { itemId: item.id } }); done(); } });
+      options.push({ label: 'Zap', run: () => { this.zapWand(item); done(); } });
     } else if (this.slotsFor(item).length > 0) {
       options.push({ label: 'Equip', run: () => { this.dispatch({ type: 'equip_item', payload: { itemId: item.id } }); done(); } });
     }

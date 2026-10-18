@@ -233,6 +233,19 @@ describe('ItemInspector: selection, item breakdown and actions', () => {
       expect(useAction?.enabled).toBe(true);
     });
 
+    it('[Zap] hands the wand to onZapWand for aiming, and zaps nothing itself', () => {
+      const wand = new WandItem({ id: 'wand-mm', name: 'Wand of Magic Missile', spellId: 'magic_missile', charges: 5 });
+      engine.player.inventory.primaryPack.addItem(wand);
+      const zapped: WandItem[] = [];
+      inspector.onZapWand = (w) => zapped.push(w);
+
+      inspector.select(wand, 'backpack');
+      inspector.getAvailableActions(engine).find((a) => a.id === 'use')!.execute(engine);
+
+      expect(zapped).toEqual([wand]);
+      expect(wand.charges).toBe(5);
+    });
+
     it('offers [Take] for items on ground and [Open] for ground chests', () => {
       const groundItem = new Item({
         id: 'loose-dagger',

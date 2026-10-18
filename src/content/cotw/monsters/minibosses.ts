@@ -8,7 +8,8 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
     name: 'Gálmr the Frost-Warden',
     minFloor: 5,
     placedOnly: true, // floor5_rune_vault (vaults.ts)
-    stats: { hp: 68, maxHp: 68, attack: 12, defense: 5 },
+    // Was 68 HP and a 0.30 Shockwave: 7 of 16 soak heroes died to him (owner: "Soften", P-36).
+    stats: { hp: 56, maxHp: 56, attack: 12, defense: 5 },
     speed: 95,
     aiType: 'caster',
     resistances: { cold: 'immune', fire: 'weak' },
@@ -25,7 +26,7 @@ export const MINIBOSS_MONSTERS: MonsterDefinition[] = [
       multiplier: 2.2,
       element: 'cold',
       spawnSurface: 'water',
-      chance: 0.30,
+      chance: 0.2,
       cooldown: 3,
     },
     spellPreferences: [

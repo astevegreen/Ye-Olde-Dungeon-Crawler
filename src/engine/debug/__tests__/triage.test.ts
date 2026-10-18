@@ -100,6 +100,15 @@ describe('engine.diagnostics.outfitForFloor: a hero as one who reached that floo
     expect(engine.player.inventory.primaryPack.getItems().length).toBeGreaterThanOrEqual(before + 1);
   });
 
+  it('does not give every piece the same family, and dresses the same every time', () => {
+    const a = newGame().diagnostics.outfitForFloor(30).worn;
+    const b = newGame().diagnostics.outfitForFloor(30).worn;
+    expect(a).toEqual(b);
+    // A random drop that deep is mostly unaligned; one family on every piece was the fixed draw.
+    const tricksters = a.filter((n) => n.startsWith("Chaotic Trickster's")).length;
+    expect(tricksters, a.join(' | ')).toBeLessThanOrEqual(a.length / 2);
+  });
+
   it('dresses a deeper hero better, and takes a level target when given one', () => {
     const shallow = newGame();
     shallow.diagnostics.outfitForFloor(3);

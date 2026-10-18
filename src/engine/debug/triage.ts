@@ -7,6 +7,7 @@ import { TILES } from '../grid/tile';
 import { flightRecorder } from './flightRecorder';
 import { concludePrologue, isPrologueRunning } from '../quest/prologue';
 import { createScaledItem } from '../dungeon/lootSpawner';
+import { PRNG } from '../dungeon/prng';
 import type { EquipmentSlot } from '../items/item';
 import type { ItemDefinition } from '../types/manifest';
 import { heroResolvedCasts } from '../magic/castNumbers';
@@ -229,6 +230,9 @@ function createTriageApi(engine: GameEngine): TriageAPI {
         slot === 'mainHand' ? d.stats?.attackBonus ?? 0 : (d.stats?.defenseBonus ?? 0) + (d.stats?.attackBonus ?? 0);
       const items = engine.manifest?.items ?? [];
       const worn: string[] = [];
+      // Its own stream: the outfit varies piece to piece, repeats for the same floor, and leaves the run's alone.
+      const stream = new PRNG(depth * 7919);
+      const draw = (): number => stream.next();
       const taken = new Set<string>();
       let n = 0;
       for (const { slot, defSlot } of OUTFIT_SLOTS) {
@@ -236,8 +240,8 @@ function createTriageApi(engine: GameEngine): TriageAPI {
           .filter((d) => d.slot === defSlot && allowed(d) && !taken.has(d.id))
           .sort((a, b) => score(b, slot) - score(a, slot) || (b.tier ?? 0) - (a.tier ?? 0) || a.id.localeCompare(b.id));
         for (const def of candidates) {
-          // A plain roll at that depth (the shop's midpoint draw), never one that binds.
-          const item = createScaledItem(def, `outfit-${slot}-${n++}`, depth, () => 0.5, engine.manifest?.itemFamilies);
+          // A roll as a drop at that depth would be, never one that binds.
+          const item = createScaledItem(def, `outfit-${slot}-${n++}`, depth, draw, engine.manifest?.itemFamilies);
           if (item.isBound() || item.isCursed()) continue;
           engine.identification.identifyItem(item);
           const res = p.inventory.paperdoll.equip(item, slot);

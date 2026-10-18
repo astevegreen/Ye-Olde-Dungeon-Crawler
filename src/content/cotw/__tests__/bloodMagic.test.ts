@@ -77,6 +77,21 @@ describe('the altar spells: blood and frith', () => {
       expect(result.message).toContain('Not enough life');
       expect(enemy.hp).toBe(20);
     });
+
+    // Its ray struck the healthy foe in front while the check judged the wounded one aimed at.
+    it('judges the foe its ray strikes: a healthy one in the way refuses the cast, at no cost', () => {
+      const wounded = new Monster({ id: 'wounded', name: 'Wounded Raider', position: { x: 7, y: 5 }, stats: { hp: 100, maxHp: 100, attack: 0, defense: 0 } });
+      wounded.hp = 20;
+      engine.map.addEntity(wounded);
+
+      const result = cast('blood_reap', 7, 5);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Raider is too healthy to reap');
+      expect(enemy.hp).toBe(100);
+      expect(wounded.hp).toBe(20);
+      expect(player.hp).toBe(50);
+    });
   });
 
   describe('Draugr-call', () => {

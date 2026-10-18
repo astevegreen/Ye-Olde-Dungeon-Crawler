@@ -14,7 +14,7 @@ import { WandItem, ScrollItem, PotionItem } from '../items/consumables';
 import { flightRecorder } from '../debug/flightRecorder';
 import { awardPlayerXp } from '../combat/deathResolver';
 import { findTaggedEntitiesInRadius } from '../combat/radialAuraFilter';
-import { traceProjectile } from '../magic/targeting';
+import { castGeometry } from '../magic/castTrace';
 import { ManaOverflowManager, canOvercast } from '../magic/manaOverflow';
 import { lowestWorn, sumWorn, wearsFlag } from '../items/wornModifiers';
 import {
@@ -102,22 +102,12 @@ export class CastSpellAction implements Action {
       }
     }
 
-    // Find targeted entity if applicable
+    // The creature the cast lands on: for a ray, whoever its trace strikes first, as the
+    // pipeline resolves it (a Blood Reap aimed past a healthy foe judged the one behind).
     let targetEntity = engine.map.getEntityAt(this.targetX, this.targetY);
-    if (!targetEntity && (spell.targetingMode === 'ray' || spell.targetType === 'ray')) {
-      const rayResult = traceProjectile(
-        engine.map,
-        this.caster.x,
-        this.caster.y,
-        this.targetX,
-        this.targetY,
-        spell.range,
-        spell.reflects,
-        this.caster.id
-      );
-      if (rayResult.hitEntityId) {
-        targetEntity = engine.map.getEntityById(rayResult.hitEntityId);
-      }
+    if (spell.targetingMode === 'ray' || spell.targetingMode === 'bounce_ray' || spell.targetType === 'ray') {
+      const hitId = castGeometry(engine, spell, this.caster, { x: this.targetX, y: this.targetY }).ray?.hitEntityId;
+      targetEntity = hitId ? engine.map.getEntityById(hitId) : null;
     }
 
     // Check near-death condition if required by spell (e.g. execution spells like Blood Reap)

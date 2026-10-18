@@ -502,7 +502,9 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   potionRow = new PotionRow({
+    // Clicks wait for dialogs, as HUD Wait does; the keys pass the input handler's own gate.
     onDrinkSlot: (slotIdx) => {
+      if (!playerCanAct()) return;
       drinkPotionSlot(slotIdx);
       void processVisualEffectsAndRender();
     },
@@ -514,7 +516,9 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   quickSpellsBar = new QuickSpellsBar({
-    onTriggerSlot: (slotIdx) => triggerQuickSpell(slotIdx),
+    onTriggerSlot: (slotIdx) => {
+      if (playerCanAct()) triggerQuickSpell(slotIdx);
+    },
     onOpenSpellbook: () => openSpellbook(),
   });
 
@@ -686,6 +690,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   consoleExtras = new ConsoleExtras({
     onContextAction: (action) => {
+      if (!playerCanAct()) return;
       runContextAction(action);
       void processVisualEffectsAndRender();
     },

@@ -798,7 +798,7 @@ test('the HUD Help button, F2 and the help card X keep the modal stack honest', 
 // A click-to-travel ends as a key press does: auto-pickup takes the coins at the end of the
 // walk without another key (R-main-1). And a HUD action button takes no turn while a dialog
 // that leaves the HUD clickable (the F1 card) has paused the world (R-ui-3).
-test('a click-to-travel auto-picks up where it ends; HUD Wait does nothing under the help card', async ({ page }) => {
+test('a click-to-travel auto-picks up where it ends; HUD actions do nothing under the help card', async ({ page }) => {
   await embarkNewHero(page);
 
   const target = await page.evaluate(() => {
@@ -833,11 +833,29 @@ test('a click-to-travel auto-picks up where it ends; HUD Wait does nothing under
     .poll(() => page.evaluate(({ x, y }) => window.__cotwEngine!.map.getItemsAt(x, y).length, target!))
     .toBe(0);
 
-  // HUD Wait under the F1 card: no turn.
+  // A foe beside the hero for the console's context button, a self spell in a quick slot.
+  const quickSlot = await page.evaluate(() => {
+    const e = window.__cotwEngine!;
+    const p = e.player;
+    p.learnSpell('heal_spell');
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const x = p.x + dx, y = p.y + dy;
+      if (e.map.isPassable(x, y) && !e.map.getEntityAt(x, y) && e.diagnostics.spawnMonster('goblin', { position: { x, y }, aiState: 'sleeping' })) break;
+    }
+    return p.quickSpells.indexOf('heal_spell');
+  });
+  expect(quickSlot).toBeGreaterThanOrEqual(0);
+  await page.locator('#btn-hud-wait').click(); // a turn, so the HUD redraws
+  await expect(page.locator('#context-action')).toContainText(/attack/i);
+
+  // HUD Wait, the context button, a potion slot and a quick-spell slot under the F1 card: no turn.
   await page.keyboard.press('F1');
   await expect(page.locator('#context-help-overlay')).toBeVisible();
   const turn = (await state(page)).turn;
   await page.locator('#btn-hud-wait').click();
+  await page.locator('#context-action').click();
+  await page.locator('.potion-slot:has(.potion-slot-icon)').first().click();
+  await page.locator('#quick-spells-bar .quick-spell-slot').nth(quickSlot).click();
   await page.waitForTimeout(150);
   expect((await state(page)).turn).toBe(turn);
   await page.keyboard.press('Escape');

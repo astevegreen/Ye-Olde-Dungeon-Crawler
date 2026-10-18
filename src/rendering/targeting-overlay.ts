@@ -148,6 +148,10 @@ export class TargetingOverlay implements UIModal {
       });
       result = { success: res.success, message: res.message ?? '', cost: costOf(res.data), effects: res.effects };
     }
+    // A refusal comes back unlogged ("needs a direction"); the aim closes, so say why.
+    if (!result.success && result.message && engine.messages[engine.messages.length - 1] !== result.message) {
+      engine.log(result.message);
+    }
 
     // The after-image of the flight, as the cast made it, unless the pack draws the spell's
     // own bolt and impact (`SpellFxCatalog`), which it would cover.

@@ -360,10 +360,20 @@ function runMixedCasts(): RunResult {
         failures.push(`${label}: no foe to aim ${sp.id} at`);
         continue;
       }
-      // An execution spell needs its victim near death.
-      if (!self && sp.maxTargetHpPercent !== undefined) near.hp = Math.max(1, Math.min(near.hp, Math.max(10, Math.floor(near.maxHp * sp.maxTargetHpPercent))));
+      // An execution spell needs its victim near death and within reach: a foe beside the
+      // hero, or the nearest one stepped onto open floor beside him.
+      let aim: Monster | Player = self ? player : near;
+      if (!self && sp.maxTargetHpPercent !== undefined) {
+        const around = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].map(([dx, dy]) => ({ x: player.x + dx, y: player.y + dy }));
+        const beside = foes().find((f) => around.some((t) => t.x === f.x && t.y === f.y));
+        const open = around.find((t) => engine.map.isPassable(t.x, t.y) && !engine.map.getEntityAt(t.x, t.y));
+        if (!beside && open) engine.map.moveEntity(near, open.x, open.y);
+        const victim = beside ?? near;
+        victim.hp = Math.max(1, Math.min(victim.hp, Math.max(10, Math.floor(victim.maxHp * sp.maxTargetHpPercent))));
+        aim = victim;
+      }
       const alliesBefore = alliesBrought;
-      const res = engine.handlePlayerAction(new CastSpellAction(player, sp.id, self ? player.x : near.x, self ? player.y : near.y));
+      const res = engine.handlePlayerAction(new CastSpellAction(player, sp.id, aim.x, aim.y));
       if (!res.success || res.cost <= 0) {
         failures.push(`${label}: ${sp.id} (round ${round}) spent no turn: ${res.message ?? ''}`);
         continue;

@@ -76,6 +76,13 @@ export class CastSpellAction implements Action {
       return { success: false, cost: 0, message: `${spell.name} is in no grimoire slot. Place it in the spellbook to cast it.` };
     }
 
+    // A ray or cone aimed at the caster's own tile has no direction: with nothing in sight the
+    // aim cursor starts on the hero, and Enter spent the Seiðr and the turn on a "wall" there.
+    const directional = spell.targetingMode === 'ray' || spell.targetingMode === 'bounce_ray' || spell.targetingMode === 'cone' || spell.targetType === 'ray';
+    if (directional && this.targetX === this.caster.x && this.targetY === this.caster.y) {
+      return { success: false, cost: 0, message: `${spell.name} needs a direction: aim it away from yourself.` };
+    }
+
     // A hostile cast at the hero, landing or not: it ends a rest as a hit does (owner, P-36).
     const hero = engine.player;
     if (!isPlayer && this.targetX === hero.x && this.targetY === hero.y && hero.isHostileTo(this.caster)) {

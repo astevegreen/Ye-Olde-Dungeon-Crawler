@@ -31,7 +31,8 @@ describe('CombatLogger FOV Culling & Narrative Telemetry', () => {
     expect(engine.messages.length).toBe(initialMsgCount);
   });
 
-  it('logs ambient wait messages when monster is visible in player FOV', () => {
+  // Playtest 2026-10-18: every monster in sight and the companion logged their waits each turn.
+  it("never logs a monster's wait, even in plain sight", () => {
     const map = new GameMap(30, 30, TILES.FLOOR);
     const player = new Player({
       position: { x: 10, y: 10 },
@@ -48,8 +49,7 @@ describe('CombatLogger FOV Culling & Narrative Telemetry', () => {
     const wait = new WaitAction(monster);
     wait.perform(engine);
 
-    expect(engine.messages.length).toBe(initialMsgCount + 1);
-    expect(engine.messages[engine.messages.length - 1]).toContain('waits a moment');
+    expect(engine.messages.length).toBe(initialMsgCount);
   });
 
   it('always logs wait messages for the player', () => {

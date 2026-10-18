@@ -3,7 +3,6 @@ import { BASE_ACTION_COST } from '../types';
 import type { Entity } from '../entities/entity';
 import type { GameEngine } from '../engine';
 import type { Action } from './action';
-import { CombatLogger } from '../logging/combatLogger';
 
 export class WaitAction implements Action {
   public readonly entity: Entity;
@@ -23,7 +22,9 @@ export class WaitAction implements Action {
 
     this.entity.consumeEnergy(BASE_ACTION_COST);
     const message = `${this.entity.name} waits a moment.`;
-    CombatLogger.logAmbient(engine, this.entity, message);
+    // Only the hero's wait is told: every monster in sight and the companion logging theirs
+    // each turn doubled the log.
+    if (this.entity === engine.player) engine.log(message);
 
     return {
       success: true,

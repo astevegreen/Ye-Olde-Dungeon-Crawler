@@ -30,17 +30,6 @@ export class CombatLogger {
   }
 
   /**
-   * Logs an ambient actor message (e.g. waiting, resting, wandering) only if the actor is visible to the player.
-   */
-  public static logAmbient(engine: GameEngine, entity: Entity, message: string): boolean {
-    if (entity === engine.player || engine.fov.isVisible(entity.x, entity.y)) {
-      engine.log(message);
-      return true;
-    }
-    return false;
-  }
-
-  /**
    * Formats a verbose pickup log message for an item including quantity and destination container.
    */
   public static formatPickupMessage(name: string, destination?: string): string {

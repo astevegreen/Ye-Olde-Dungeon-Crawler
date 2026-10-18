@@ -34,3 +34,4 @@ Opus at high thinking — engine fixes that cross the scheduler, combat and cont
 ## Verification
 - pre-push (sim, build, Playwright x3, 93 tests): green on 4fb4dc8d
 - ci:watch: deploy.yml success, deployed, on 4fb4dc8d
+Resumed: 2026-10-18 21:58 UTC

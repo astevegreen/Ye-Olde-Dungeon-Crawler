@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
+import { SpellRegistry } from '../magic/spellRegistry';
+import { activateRegistries } from '../registries';
 import { GameEngine } from '../engine';
 import { GameMap } from '../grid/map';
 import { TILES } from '../grid/tile';
@@ -40,6 +42,37 @@ describe('R-rend-1 · the R key’s rest stops before unseen fire kills the hero
 
     expect(player.isAlive()).toBe(true);
     expect(engine.turnCount - t0).toBeLessThan(10);
+  });
+});
+
+describe('P-36 · a hostile spell aimed at the hero ends the rest, as a hit does', () => {
+  afterAll(() => {
+    activateRegistries(null);
+    SpellRegistry.clear();
+  });
+
+  it('an unseen caster whose spell does no harm still stops the rest', () => {
+    const map = new GameMap(20, 9, TILES.FLOOR);
+    const player = new Player({ id: 'hero', position: { x: 3, y: 4 }, stats: { hp: 40, maxHp: 400, attack: 1, defense: 0 } });
+    const engine = new GameEngine({ map, player, seed: 3 });
+    SpellRegistry.register({
+      id: 'rest_hex', name: 'Hex', school: 'Combat', manaCost: 1, element: 'physical', range: 8, basePower: 0,
+      areaOfEffect: 0, reflects: false, targetType: 'ray', targetingMode: 'ray', description: '', effects: [],
+    } as never);
+    player.statusManager.applyStatus({ type: 'blindness', duration: 200 });
+    const caster = new Monster({
+      id: 'hexer', name: 'Hexer', position: { x: 7, y: 4 }, stats: { hp: 30, maxHp: 30, attack: 0, defense: 0 },
+      aiType: 'caster', aiState: 'hunting', spells: ['rest_hex'], fleeHealthPercent: 0, xpValue: 1, lootTable: [],
+    } as never);
+    engine.addEntity(caster);
+    engine.updateFov();
+    const t0 = engine.turnCount;
+
+    const result = AutoRestManager.executeFullRest(engine);
+
+    expect(result.interrupted).toBe(true);
+    expect(result.reason).toBe('Rest interrupted! Something unseen casts a spell at you!');
+    expect(engine.turnCount - t0).toBeLessThan(5);
   });
 });
 

@@ -36,6 +36,7 @@ export type BuiltInGameEventType =
   | 'uncurse'
   | 'damage_dealt'
   | 'attack_missed'
+  | 'spell_aimed'
   | 'entity_killed'
   | 'level_transition'
   | 'rune_of_return_discovered'
@@ -82,6 +83,12 @@ export interface AttackMissedEvent extends GameEventBase {
   type: 'attack_missed';
 }
 
+/** A creature hostile to the hero cast a spell aimed at the hero's tile, landing or not: `actorId` at `targetId`. */
+export interface SpellAimedEvent extends GameEventBase {
+  type: 'spell_aimed';
+  spellId: string;
+}
+
 export interface EntityKilledEvent extends GameEventBase {
   type: 'entity_killed';
   xpAwarded?: number;
@@ -125,6 +132,7 @@ export type GameEvent =
   | UncurseEvent
   | DamageDealtEvent
   | AttackMissedEvent
+  | SpellAimedEvent
   | EntityKilledEvent
   | LevelTransitionEvent
   | RuneOfReturnDiscoveredEvent

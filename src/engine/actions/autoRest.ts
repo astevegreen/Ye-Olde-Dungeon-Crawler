@@ -163,8 +163,15 @@ export class AutoRestManager {
     // What the hero should have after this turn's recovery, had nothing hurt them.
     const expectedHp = Math.min(player.maxHp, player.hp + this.restHeal(player));
     const turnBefore = engine.turnCount;
-    const res = engine.handlePlayerAction(new RestTurnAction(player));
+    const capture = engine.beginEventCapture();
+    let res: ActionResult;
+    try {
+      res = engine.handlePlayerAction(new RestTurnAction(player));
+    } finally {
+      engine.endEventCapture(capture);
+    }
     const turn = engine.turnCount > turnBefore ? currentTurn + 1 : currentTurn;
+    const aimed = capture.find((e) => e.type === 'spell_aimed' && e.targetId === player.id);
 
     // Killed during the turn: the death has been told; there is no rest to report.
     if (!player.isAlive()) return { ...end(true, turn), reason: 'You perished during rest.' };
@@ -172,6 +179,11 @@ export class AutoRestManager {
     if (!res.success) return { ...end(true, turn), reason: res.message };
 
     if (player.hp < expectedHp) return end(true, turn, `Rest interrupted! You took ${expectedHp - player.hp} damage!`);
+    if (aimed) {
+      const caster = aimed.actorId ? engine.map.getEntityById(aimed.actorId) : undefined;
+      const who = caster && engine.fov.isVisible(caster.x, caster.y) ? `A ${caster.name}` : 'Something unseen';
+      return end(true, turn, `Rest interrupted! ${who} casts a spell at you!`);
+    }
 
     const newlyVisible = this.findVisibleHostile(engine);
     if (newlyVisible) return end(true, turn, `Rest interrupted! A ${newlyVisible.name} approaches into view!`);

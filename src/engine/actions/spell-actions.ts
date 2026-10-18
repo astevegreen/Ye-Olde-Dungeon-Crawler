@@ -76,6 +76,12 @@ export class CastSpellAction implements Action {
       return { success: false, cost: 0, message: `${spell.name} is in no grimoire slot. Place it in the spellbook to cast it.` };
     }
 
+    // A hostile cast at the hero, landing or not: it ends a rest as a hit does (owner, P-36).
+    const hero = engine.player;
+    if (!isPlayer && this.targetX === hero.x && this.targetY === hero.y && hero.isHostileTo(this.caster)) {
+      engine.emitGameEvent({ type: 'spell_aimed', turn: engine.turnCount, actorId: this.caster.id, targetId: hero.id, spellId: spell.id });
+    }
+
     // Wildfire: a damaging spell takes a random element of the pack's.
     if (wearsFlag(this.caster, 'randomSpellElement') && spell.element && spell.effects?.some((e) => e.type === 'damage')) {
       const elements = engine.affinityMatrix

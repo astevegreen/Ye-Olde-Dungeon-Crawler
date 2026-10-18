@@ -12,7 +12,7 @@ import type { ChoiceDefinition, LevelMilestoneTrigger, PerkDefinition } from '..
  * The Third Verse's Elementalist chooses its element in a second choice, offered on the next
  * move (`saga_30_element`, waiting on its flag).
  *
- * Q59 "as recommended": no ranged attack can be made in play, so Sure Shot is a melee perk and
+ * Q59 "as recommended": no ranged attack can be made in play, so True Blade (id `milestone_sure_shot`, kept for saves) is a melee perk and
  * Odin's Eye reaches farther with spells only; reach weapons wait for phase 5.
  */
 /** The elements an Elementalist may choose (cotw's damaging elements), with their names. */
@@ -163,7 +163,7 @@ export const COTW_MILESTONE_PERKS: PerkDefinition[] = [
   { id: 'milestone_landslide', name: 'Landslide', source: 'milestone', tagline: 'The mountain moves when you do.', description: 'Three melee blows in ten throw a foe back a tile; into a wall or another creature it takes extra damage and is stunned.', effects: { meleeKnockbackChance: 0.3 } },
   // ── Dexterity 20 ──
   { id: 'milestone_fleet_foot', name: 'Fleet-Foot', source: 'milestone', tagline: 'The frost never quite catches you.', description: 'Speed +10, for good.' },
-  { id: 'milestone_sure_shot', name: 'Sure Shot', source: 'milestone', tagline: 'Your blade knows the way.', description: 'Melee hit chance +10% and melee damage +2.', effects: { meleeHitBonus: 10, meleeDamageFlatBonus: 2 } },
+  { id: 'milestone_sure_shot', name: 'True Blade', source: 'milestone', tagline: 'Your blade knows the way.', description: 'Melee hit chance +10% and melee damage +2.', effects: { meleeHitBonus: 10, meleeDamageFlatBonus: 2 } },
   // ── Constitution 20 ──
   { id: 'milestone_thick_hide', name: 'Thick Hide', source: 'milestone', tagline: 'Blows land, and slide off.', description: 'All damage taken −10%.', effects: { damageTakenMultiplier: 0.9 } },
   { id: 'milestone_iron_stomach', name: 'Iron Stomach', source: 'milestone', tagline: 'Venom and flame find little purchase.', description: 'Poison and burning last half as long on you.', effects: { shortenedAfflictions: { types: ['poison', 'burning'], multiplier: 0.5 } } },
@@ -337,7 +337,7 @@ export const COTW_SAGA_CHOICES: Record<string, ChoiceDefinition> = {
     id: 'saga_10',
     title: 'The First Path',
     description:
-      'Ten levels under Bjarnarhaven, and the skalds have begun to notice. A saga wants a shape. Which will yours take? This cannot be unchosen.',
+      'Ten hard winters of blooding behind you, and the skalds have begun to notice. A saga wants a shape. Which will yours take? This cannot be unchosen.',
     options: [option(perk('saga_berserkergang')), option(perk('saga_seidr_woven')), option(perk('saga_wayfarer'))],
     cancelable: false,
   },

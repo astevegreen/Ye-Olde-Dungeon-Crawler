@@ -19,7 +19,7 @@ import { bondCompanion, growCompanion } from '../combat/lastStand';
 import { flightRecorder } from '../debug/flightRecorder';
 import { huntUnseenAction, rememberTarget } from './pursuit';
 import { callForHelp, fleeAction } from './flight';
-import { perceives } from './perception';
+import { castWouldReach, perceives } from './perception';
 
 class CasterBehavior implements AiBehaviorStrategy {
   public readonly id = BUILTIN_AI_TYPES.CASTER;
@@ -89,9 +89,12 @@ class CasterBehavior implements AiBehaviorStrategy {
           break;
         }
 
-        monster.spellCooldown = 2;
-        monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
-        return new CastSpellAction(monster, chosenSpell, player.x, player.y, undefined, false);
+        // A flight that a corner would stop: it moves for a clear shot instead.
+        if (castWouldReach(engine, monster, chosenSpell, player.position)) {
+          monster.spellCooldown = 2;
+          monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
+          return new CastSpellAction(monster, chosenSpell, player.x, player.y, undefined, false);
+        }
       }
 
       if (chebyshevDist < 3) {

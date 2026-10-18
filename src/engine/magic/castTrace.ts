@@ -72,6 +72,29 @@ export function castGeometry(
   return { reflects: false };
 }
 
+/**
+ * Whether `spell` cast by `caster` at `target` would catch the creature standing there: its
+ * flight reaches that tile, its burst covers it, or its shape does. A sight line can be clear
+ * where the flight is not (a Bresenham line steps past a corner the flight clips), so a
+ * monster checks this before it casts (P-36 soak: 1,358 shots traded into one wall).
+ */
+export function castReaches(
+  engine: GameEngine,
+  spell: SpellDefinition,
+  caster: Position & { id: string },
+  target: Position
+): boolean {
+  const geo = castGeometry(engine, spell, caster, target);
+  const isTarget = (p: Position) => p.x === target.x && p.y === target.y;
+  if (geo.burst) {
+    const { epicenter, radius } = geo.burst;
+    return Math.max(Math.abs(epicenter.x - target.x), Math.abs(epicenter.y - target.y)) <= radius;
+  }
+  if (geo.area) return geo.area.some(isTarget);
+  if (geo.ray) return geo.ray.path.some(isTarget);
+  return true;
+}
+
 /** The tiles of a cone, nova, square or wall of `size` (`SpellShape`), on the map. */
 function shapeTiles(engine: GameEngine, shape: Exclude<SpellShape, 'outAndBack'>, size: number, caster: Position, aim: Position): Position[] {
   const map = engine.map;

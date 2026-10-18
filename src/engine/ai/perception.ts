@@ -2,6 +2,7 @@ import type { GameEngine } from '../engine';
 import type { Entity } from '../entities/entity';
 import type { Position } from '../types';
 import { getBresenhamLine } from '../magic/targeting';
+import { castReaches } from '../magic/castTrace';
 
 /** How far a monster sees: its wake-up check and its hunt both use it. */
 export const MONSTER_SIGHT_RADIUS = 8;
@@ -13,6 +14,12 @@ export function hasLineOfSight(engine: GameEngine, from: Position, to: Position)
     if (!engine.map.isTransparent(line[i].x, line[i].y)) return false;
   }
   return true;
+}
+
+/** Whether `caster`'s cast of `spellId` at `target` would reach it (`castReaches`); an unknown spell is the pipeline's to refuse. */
+export function castWouldReach(engine: GameEngine, caster: Entity, spellId: string, target: Position): boolean {
+  const spell = engine.registries.spells.get(spellId);
+  return !spell || castReaches(engine, spell, caster, target);
 }
 
 /**

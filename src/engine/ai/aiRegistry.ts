@@ -11,7 +11,7 @@ import { OpenDoorAction } from '../actions/door';
 import { CastSpellAction } from '../actions/spell-actions';
 import { findPath, findFleeStep } from './pathfinding';
 import { stepTowardAction } from './pursuit';
-import { perceives } from './perception';
+import { castWouldReach, perceives } from './perception';
 import { fleeAction } from './flight';
 import { FLANK_RADIUS, flankAction } from './packTactics';
 import { computeDangerTiles } from './intent';
@@ -234,9 +234,12 @@ export class KitingRangedStrategy implements AIStrategy {
           chosenSpell = pref.spellId;
           break;
         }
-        monster.spellCooldown = 2;
-        monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
-        return new CastSpellAction(monster, chosenSpell, player.x, player.y);
+        // A flight that a corner would stop: it closes in for a clear shot instead (step 4).
+        if (castWouldReach(engine, monster, chosenSpell, player.position)) {
+          monster.spellCooldown = 2;
+          monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };
+          return new CastSpellAction(monster, chosenSpell, player.x, player.y);
+        }
       }
 
       // Screened and between casts: keep out of reach behind the melee ally, and wait to cast.
@@ -312,7 +315,7 @@ export class ImmobileTurretStrategy implements AIStrategy {
     // A cast needs a target it can see and perceives, as the wind-up does: casting at a
     // wall wasted the spell and logged an unseen turret's name to the hero (R-ai-11).
     if (dist <= 6 && inSight && perceives(engine, monster, player)) {
-      if (monster.spells && monster.spells.length > 0 && monster.spellCooldown <= 0) {
+      if (monster.spells && monster.spells.length > 0 && monster.spellCooldown <= 0 && castWouldReach(engine, monster, monster.spells[0], player.position)) {
         const chosenSpell = monster.spells[0];
         monster.spellCooldown = 2;
         monster.intent = { type: 'attack', targetTile: { x: player.x, y: player.y }, turnsRemaining: 0 };

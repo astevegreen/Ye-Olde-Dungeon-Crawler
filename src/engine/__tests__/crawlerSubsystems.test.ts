@@ -272,7 +272,8 @@ describe('Dungeon Exploration & Tactical Crawler Subsystems', () => {
     it('interrupts auto-rest if player takes unexpected damage', () => {
       player.hp = 50;
       player.maxHp = 100;
-      player.statusManager.applyStatus('poison', 5, 4);
+      // Standing in fire: a status's own tick (poison) no longer stops a rest.
+      engine.surfaces.setSurface(player.x, player.y, 'fire', 5);
 
       const stepResult = AutoRestManager.stepRestTurn(engine, player.hp, 20, 0, 100);
       expect(stepResult.finished).toBe(true);

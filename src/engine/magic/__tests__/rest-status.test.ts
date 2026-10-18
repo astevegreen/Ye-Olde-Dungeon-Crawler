@@ -50,19 +50,30 @@ describe('Rest: status ticking and interruption', () => {
     expect(result.reason).toContain('Goblin Scout');
   });
 
-  it('ticks status effects on each rest step and interrupts rest immediately upon taking damage', () => {
-    // Afflict player with poison (deals 5 damage per tick, duration 3 ticks)
+  // Playtest 2026-10-18: each poison tick stopped the rest after one turn. The hero now
+  // rests the poison out; harm from anything else still stops the rest.
+  it('ticks status effects on each rest step and rests through their damage', () => {
+    // Poison deals 5 a tick for 3 ticks: 30 + 3 x (1 - 5) = 18, then a point a turn to 50.
     player.statusManager.applyStatus({ type: 'poison', duration: 3, potency: 5 });
     expect(player.statusManager.hasStatus('poison')).toBe(true);
 
-    const initialHp = player.hp; // 30
+    const result = AutoRestManager.executeFullRest(engine, 50);
+
+    expect(result.interrupted).toBe(false);
+    expect(player.statusManager.hasStatus('poison')).toBe(false);
+    expect(player.hp).toBe(50);
+    expect(engine.messages.some((m) => m.includes('Rest interrupted'))).toBe(false);
+  });
+
+  it('stops the rest when the hero is hurt by anything but a status tick', () => {
+    player.statusManager.applyStatus({ type: 'poison', duration: 3, potency: 5 });
+    engine.surfaces.setSurface(5, 5, 'fire', 5);
+
     const result = AutoRestManager.executeFullRest(engine, 50);
 
     expect(result.interrupted).toBe(true);
     expect(result.turn).toBe(1);
-    // Natural heal (+1) - poison damage (-5) = net -4 damage
-    expect(player.hp).toBe(initialHp - 4);
-    expect(result.reason).toBe('Rest interrupted! You took 5 damage!');
+    expect(result.reason).toMatch(/^Rest interrupted! You took \d+ damage!$/);
   });
 
   it('successfully rests to full health when free of afflictions and hostiles', () => {

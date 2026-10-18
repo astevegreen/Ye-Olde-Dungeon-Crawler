@@ -14,6 +14,8 @@ export interface StatusTickResult {
 export class StatusManager {
   /** Keyed by type; a stacking status's later instances by `type#n` (`StatusHandler.stacks`). */
   private effects: Map<string, StatusEffect> = new Map();
+  /** HP its ticks have taken so far (poison, bleeding), unsaved: a rest tells it from a blow. */
+  public tickDamageTotal = 0;
 
   public hasStatus(type: StatusType): boolean {
     return this.keyOf(type) !== undefined;
@@ -187,6 +189,7 @@ export class StatusManager {
       if (handler?.onTick) {
         const result = handler.onTick(entity, effect, engine);
         damageTaken += result.damageTaken;
+        this.tickDamageTotal += result.damageTaken;
         if (result.message) {
           messages.push(result.message);
         }

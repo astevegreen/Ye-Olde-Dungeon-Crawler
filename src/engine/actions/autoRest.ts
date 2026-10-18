@@ -131,8 +131,8 @@ export class AutoRestManager {
    * Rests one turn (a `RestTurnAction` through `handlePlayerAction`) and says whether the
    * rest goes on. It stops when:
    * 1. a hostile is in sight, before the turn or after it;
-   * 2. the hero is hurt during the turn, by anything, seen or not (a status tick, a
-   *    surface, an unseen archer);
+   * 2. the hero is hurt during the turn by anything but a status's tick, seen or not (a
+   *    surface, an unseen archer); poison and the like are rested out;
    * 3. the turn could not be rested (a refusal, a hook, a forced pass);
    * 4. HP and mana are full, or the turn limit is reached.
    */
@@ -163,6 +163,7 @@ export class AutoRestManager {
 
     // What the hero should have after this turn's recovery, had nothing hurt them.
     const expectedHp = Math.min(player.maxHp, player.hp + this.restHeal(player));
+    const tickedBefore = player.statusManager.tickDamageTotal;
     const turnBefore = engine.turnCount;
     const capture = engine.beginEventCapture();
     let res: ActionResult;
@@ -179,7 +180,10 @@ export class AutoRestManager {
     // Refused (already logged), or the hero lost the turn (paralysis, a hook).
     if (!res.success) return { ...end(true, turn), reason: res.message };
 
-    if (player.hp < expectedHp) return end(true, turn, `Rest interrupted! You took ${expectedHp - player.hp} damage!`);
+    // A status's own tick (poison, bleeding) lets the rest go on: the hero rests it out.
+    const ticked = player.statusManager.tickDamageTotal - tickedBefore;
+    const hurt = expectedHp - player.hp - ticked;
+    if (hurt > 0) return end(true, turn, `Rest interrupted! You took ${hurt} damage!`);
     if (aimed) {
       const caster = aimed.actorId ? engine.map.getEntityById(aimed.actorId) : undefined;
       const who = caster && engine.fov.isVisible(caster.x, caster.y) ? `A ${caster.name}` : 'Something unseen';

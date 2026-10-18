@@ -227,6 +227,20 @@ describe('Level-Up Attribute / Skill Allocation System', () => {
     expect(player.unspentStatPoints).toBe(0);
   });
 
+  it('the log counts the points left in plain words', () => {
+    player.unspentStatPoints = 3;
+    const tab = openCharacterTab();
+    tab.allocate('strength');
+    tab.accept();
+    expect(engine.messages[engine.messages.length - 1]).toMatch(/ 2 points remain\.$/);
+    tab.allocate('strength');
+    tab.accept();
+    expect(engine.messages[engine.messages.length - 1]).toMatch(/ 1 point remains\.$/);
+    tab.allocate('strength');
+    tab.accept();
+    expect(engine.messages[engine.messages.length - 1]).toMatch(/ No points remain\.$/);
+  });
+
   it('a new level-up cannot remove points locked in by an earlier one', () => {
     player.unspentStatPoints = 3;
     const tab = openCharacterTab();

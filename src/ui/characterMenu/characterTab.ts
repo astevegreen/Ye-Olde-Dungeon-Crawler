@@ -290,7 +290,9 @@ export class CharacterTab implements MenuTab {
     const summary = this.draft.describe(resolveBranding(state.engine.manifest).runeTrackNames);
     const spent = this.draft.commit(state.player);
     if (spent > 0) {
-      state.engine.log(`Points spent: ${summary}. ${state.player.unspentStatPoints} point(s) remain.`);
+      const left = state.player.unspentStatPoints;
+      const remain = left === 0 ? 'No points remain' : left === 1 ? '1 point remains' : `${left} points remain`;
+      state.engine.log(`Points spent: ${summary}. ${remain}.`);
       this.onAllocateCallback?.();
     }
     this.render();

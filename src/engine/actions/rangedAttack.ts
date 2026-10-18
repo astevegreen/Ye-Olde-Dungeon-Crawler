@@ -183,7 +183,7 @@ export class RangedAttackAction implements Action {
     }
 
     if (rayResult.hitWall) {
-      const wallMsg = `${this.attacker.name}'s shot hits the wall at (${rayResult.impactTile.x}, ${rayResult.impactTile.y}).`;
+      const wallMsg = `${this.attacker.name}'s shot hits the wall.`;
       engine.log(wallMsg);
       return { success: true, cost, message: wallMsg };
     }

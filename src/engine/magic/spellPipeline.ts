@@ -99,6 +99,16 @@ function carriedElements(effect: Pick<DamageEffect, 'element' | 'elements'>): st
 }
 
 /** The afflictions (`StatusHandler.affliction`) an entity bears, longest-lasting first. */
+/** "catching 3 targets!", or "catching no one." for an empty blast. */
+function catching(hit: number): string {
+  return hit === 0 ? 'catching no one.' : `catching ${hit} ${hit === 1 ? 'target' : 'targets'}!`;
+}
+
+/** " after 2 bounces", or nothing for a ray that flew straight. */
+function afterBounces(count: number): string {
+  return count > 0 ? ` after ${count} ${count === 1 ? 'bounce' : 'bounces'}` : '';
+}
+
 function afflictionsOf(entity: Entity): StatusType[] {
   return entity.statusManager
     .getAll()
@@ -545,8 +555,8 @@ export class SpellPipeline {
         style: spell.element === 'fire' ? 'flame' : spell.element === 'lightning' ? 'spark' : 'shockwave',
       });
       hitDescription = delayed
-        ? `${caster.name}'s ${spell.name} strikes, catching ${targetsHit.length} target(s)!`
-        : `${caster.name} casts ${spell.name}, catching ${targetsHit.length} target(s)!`;
+        ? `${caster.name}'s ${spell.name} strikes, ${catching(targetsHit.length)}`
+        : `${caster.name} casts ${spell.name}, ${catching(targetsHit.length)}`;
       engine.log(hitDescription);
     } else if ((mode === 'ray' || mode === 'bounce_ray') && geo.ray) {
       const rayResult = geo.ray;
@@ -590,22 +600,22 @@ export class SpellPipeline {
             targetsHit.push(ent);
           }
         }
-        hitDescription = `${caster.name} casts ${spell.name}! An explosive blast erupts at (${impactTile.x}, ${impactTile.y}) catching ${targetsHit.length} target(s)!`;
+        hitDescription = `${caster.name} casts ${spell.name}! An explosive blast erupts, ${catching(targetsHit.length)}`;
         engine.log(hitDescription);
       } else if (rayResult.hitEntityId) {
         const hitEnt = engine.map.getEntityById(rayResult.hitEntityId);
         if (hitEnt && hitEnt.isAlive()) {
           targetsHit.push(hitEnt);
           if (rayResult.reflectionsCount > 0) {
-            engine.log(`${caster.name}'s ${spell.name} ricochets after ${rayResult.reflectionsCount} wall bounce(s)!`);
+            engine.log(`${caster.name}'s ${spell.name} ricochets${afterBounces(rayResult.reflectionsCount)}!`);
           }
           hitDescription = `${caster.name} casts ${spell.name} at ${hitEnt.name}.`;
         }
       } else {
-        const bounceNote = rayResult.reflectionsCount > 0 ? ` after ${rayResult.reflectionsCount} bounce(s)` : '';
+        const bounceNote = afterBounces(rayResult.reflectionsCount);
         hitDescription = rayResult.hitWall
-          ? `${caster.name} casts ${spell.name}, impacting a wall at (${impactTile.x}, ${impactTile.y})${bounceNote}.`
-          : `${caster.name} casts ${spell.name}, but it strikes nothing and fades at (${impactTile.x}, ${impactTile.y})${bounceNote}.`;
+          ? `${caster.name} casts ${spell.name}, impacting a wall${bounceNote}.`
+          : `${caster.name} casts ${spell.name}, but it strikes nothing and fades${bounceNote}.`;
         engine.log(hitDescription);
       }
 
@@ -648,8 +658,8 @@ export class SpellPipeline {
         }
       }
       hitDescription = delayed
-        ? `${caster.name}'s ${spell.name} strikes at (${burstOrigin.x}, ${burstOrigin.y}), catching ${targetsHit.length} target(s)!`
-        : `${caster.name} casts ${spell.name}! An explosive blast erupts at (${burstOrigin.x}, ${burstOrigin.y}) catching ${targetsHit.length} target(s)!`;
+        ? `${caster.name}'s ${spell.name} strikes, ${catching(targetsHit.length)}`
+        : `${caster.name} casts ${spell.name}! An explosive blast erupts, ${catching(targetsHit.length)}`;
       engine.log(hitDescription);
     } else {
       // Direct entity or single tile target
@@ -658,7 +668,7 @@ export class SpellPipeline {
         targetsHit.push(ent);
         hitDescription = `${caster.name} casts ${spell.name} at ${ent.name}.`;
       } else {
-        hitDescription = `${caster.name} casts ${spell.name} at (${targetPos.x}, ${targetPos.y}).`;
+        hitDescription = `${caster.name} casts ${spell.name}.`;
         engine.log(hitDescription);
       }
     }

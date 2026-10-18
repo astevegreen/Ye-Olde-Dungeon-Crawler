@@ -39,7 +39,7 @@ export interface ImpulseResult {
  * 2. Wall Splat: Colliding with an impassable obstacle (Wall, Closed Door, Pillar, or Entity)
  *    halts movement, inflicts bonus kinetic impact damage scaled to remaining shove distance + STR,
  *    and applies a 1-turn 'stunned' status effect.
- * 3. Chasm Hazard: Pushing onto a 'chasm' tile triggers an instant fatal plunge (or heavy fall damage for bosses);
+ * 3. Chasm Hazard: Pushing onto a 'chasm' tile triggers an instant fatal plunge (or heavy fall damage for the hero and bosses);
  *    an invulnerable target stops on the brink.
  * 4. Trap Hazard: Pushing onto a trap tile triggers immediate trap activation.
  * 5. Landing: a target moved at least one tile meets the surface and gas where it ends
@@ -127,7 +127,7 @@ function travel(
       return resolveWallSplat(engine, source, target, 'solid stone', remainingDist, distanceTraveled);
     }
 
-    // 1. Chasm Check: Fatal plunge (or heavy damage for massive bosses)
+    // 1. Chasm Check: Fatal plunge (or heavy damage for the hero and massive bosses)
     if (nextTile.type === 'chasm') {
       // Nothing can harm an invulnerable target (god mode), so the plunge can't take it either.
       if (target.isInvulnerable) {
@@ -145,11 +145,14 @@ function travel(
         };
       }
       const bossId = engine.manifest?.quest?.bossMonsterId;
-      const isBoss =
+      // The hero always clings to the ledge: a charge that threw them into a chasm was an
+      // instant death under 200 max HP, a chasm tile beside them being easy to miss.
+      const clings =
+        target === engine.player ||
         (bossId && target instanceof Monster && target.definitionId === bossId) ||
         target.maxHp >= BOSS_CHASM_IMMUNITY_HP_THRESHOLD;
 
-      if (isBoss) {
+      if (clings) {
         const fallDmg = Math.max(BOSS_CHASM_FALL_MIN_DAMAGE, Math.floor(target.maxHp * BOSS_CHASM_FALL_HP_FRACTION));
         const { damageDealt, killed } = harm(engine, target, fallDmg, 'a fall against the chasm wall', {
           by: source,

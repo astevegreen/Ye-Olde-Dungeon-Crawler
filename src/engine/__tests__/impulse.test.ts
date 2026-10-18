@@ -89,6 +89,23 @@ describe('Positional Impulse Physics & Wall Splats', () => {
     expect(map.getEntityAt(7, 5)).toBeNull();
   });
 
+  // Reproduction: a Grim Glacier-Borer's charge threw a 178-max-HP hero with ~120 HP into a
+  // chasm, an instant death; a 200+ HP target would only have taken fall damage.
+  it('gives the hero fall damage on the ledge instead of a plunge, whatever their max HP', () => {
+    map.removeEntity(target);
+    map.setTile(6, 5, TILES.CHASM);
+    player.maxHp = 178;
+    player.hp = 120;
+
+    const result = applyImpulse(engine, target, player, 1, 0, 2);
+
+    expect(result.killed).toBe(false);
+    expect(player.isAlive()).toBe(true);
+    expect(player.hp).toBe(120 - 89);
+    expect(map.getEntityAt(5, 5)).toBe(player);
+    expect(engine.messages.some((m) => m.includes('crushing fall damage'))).toBe(true);
+  });
+
   // Reproduction: a Battering Charge threw a god-mode hero into the Heartwood's pit, and
   // the plunge removed and killed them though takeDamage dealt nothing.
   it('leaves an invulnerable victim alive on the brink instead of plunging it', () => {

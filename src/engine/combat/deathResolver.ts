@@ -95,8 +95,11 @@ export class DeathResolver {
     }
 
     if (victim instanceof Monster) {
+      // One of the hero's own (a summon, a risen foe) is never the hero's kill, whoever struck it:
+      // no XP, compendium kill, rite or kill perk (as spellPipeline's borrowed allies).
+      const allyDeath = victim.faction === 'player';
       const isPlayerKill =
-        !killer || killer instanceof Player || killer.faction === 'player';
+        !allyDeath && (!killer || killer instanceof Player || killer.faction === 'player');
 
       if (isPlayerKill && engine.player.isAlive()) {
         const xpBase = victim.xpValue ?? 15;
@@ -129,7 +132,7 @@ export class DeathResolver {
 
       // Bloodthirst and Blood-Drinker: each kill heals the killer a share of max HP;
       // Spell-Thief: a share of max mana.
-      if (killer instanceof Actor && killer.isAlive()) {
+      if (killer instanceof Actor && killer.isAlive() && !(allyDeath && killer.faction === 'player')) {
         const share = sumWorn(killer, 'killHealPercent');
         if (share > 0) {
           const drawn = killer.heal(Math.round(killer.maxHp * share));
@@ -143,7 +146,7 @@ export class DeathResolver {
       }
 
       // Slayer's Compendium Slay Perks (Essence Siphon & Trophy Hunter), from species or category mastery
-      if (killer instanceof Player && victim instanceof Monster && engine.compendium) {
+      if (killer instanceof Player && !allyDeath && engine.compendium) {
         // 1. Essence Siphon: Restores 10% Max HP, 10% Max Mana, and refunds 50% energy
         if (hasMasteryPerk(engine, victim.definitionId, 'essence_siphon')) {
           const hpGain = Math.max(2, Math.round(killer.maxHp * 0.10));

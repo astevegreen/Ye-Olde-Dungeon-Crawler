@@ -97,7 +97,8 @@ export class KillRiteManager {
     const config = getKillRiteConfig(engine);
     if (!config || !(victim instanceof Monster)) return { performed: false };
 
-    const isPlayerKill = killer instanceof Player || killer?.faction === 'player';
+    // One of the hero's own falling is no kill of theirs (deathResolver's ally rule).
+    const isPlayerKill = victim.faction !== 'player' && (killer instanceof Player || killer?.faction === 'player');
     if (!isPlayerKill) return { performed: false };
 
     const rite = getMonsterDefinition(victim.definitionId)?.killRite;

@@ -357,6 +357,13 @@ function loseCaptiveVillager(engine: EngineContext, captiveId: string): void {
   checkAndResolveHostageRitual(engine);
 }
 
+/** Once the countdown has run out, whoever remains is the warlocks', before the hero's next deed can save them. */
+function loseRemainingIfExpired(engine: EngineContext): boolean {
+  if (!getFlag(engine.worldState, FLAG_EXPIRED) || getFlag(engine.worldState, FLAG_RESOLVED)) return false;
+  for (const captive of remainingCaptives(engine)) loseCaptiveVillager(engine, captive.id);
+  return true;
+}
+
 /**
  * Settles the trade, once. Every two captives saved buy a frith spell and every two
  * sacrificed a blood spell, the odd one buying none; a kind earned twice gives both of its
@@ -489,8 +496,8 @@ export const BLOOD_ALTAR_CHOICE: ChoiceDefinition = {
 
 /**
  * The ritual's countdown, started when the player first comes within sight of a
- * captive. Expiry only flags it: `SIPHON_RITUAL_HOOK` gives whoever remains to the
- * warlocks' own rite on the player's next action (`loseCaptiveVillager`).
+ * captive. Expiry only flags it: the player's next action gives whoever remains to the
+ * warlocks' own rite before it can free or settle anyone (`loseRemainingIfExpired`).
  */
 export const SIPHON_TIMED_EVENT: TimedEventDefinition = {
   id: 'siphon_ritual_timer',
@@ -606,6 +613,8 @@ const SIPHON_RESCUE_HOOK: ActionHook = {
     if (actor !== engine.player || !(action instanceof MovementAction)) {
       return;
     }
+    // The bump after the countdown ran out frees no one: the warlocks took them first.
+    loseRemainingIfExpired(engine);
     const target = engine.map.getEntityAt(actor.x + action.dx, actor.y + action.dy, actor.planeId);
     // A captive already freed or sacrificed is no one's to free (R-cotw-16).
     if (!(target instanceof NPC) || !isCaptive(target.id) || isAccountedFor(engine, target.id)) {
@@ -640,18 +649,15 @@ const SIPHON_RITUAL_HOOK: ActionHook = {
     if (getFlag(engine.worldState, FLAG_RESOLVED)) {
       return;
     }
+    // Before the altar: a pick made after the countdown ran out settles no one.
+    if (loseRemainingIfExpired(engine)) {
+      return;
+    }
 
     if (action instanceof ExecuteChoiceAction && action.choice.id === SIPHON_ALTAR_CHOICE_ID) {
       const answer = ANSWERS_TO_HER_CLAIM[action.optionId];
       if (answer && claimHeard(engine)) engine.log(answer);
       applyAltarOption(engine, action.optionId);
-      return;
-    }
-
-    if (getFlag(engine.worldState, FLAG_EXPIRED)) {
-      for (const captive of remainingCaptives(engine)) {
-        loseCaptiveVillager(engine, captive.id);
-      }
       return;
     }
 

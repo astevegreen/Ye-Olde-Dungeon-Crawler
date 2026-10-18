@@ -327,6 +327,51 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
       expect(engine.getFactionStanding('temple_standing')).toBe(6);
     });
 
+    describe('once the countdown has run out', () => {
+      function waitUntilExpired(): void {
+        for (let turn = 0; turn < 40 && !engine.getWorldFlag('siphon_ritual_expired'); turn++) {
+          engine.handlePlayerAction(new WaitAction(player));
+        }
+        expect(engine.getWorldFlag('siphon_ritual_expired')).toBe(true);
+      }
+
+      it('the next bump frees no one: the last captive is lost, not saved', () => {
+        const captives = placeCaptives();
+        for (const captive of captives.slice(0, 3)) {
+          player.setPosition(captive.x - 1, captive.y);
+          engine.handlePlayerAction(new MovementAction(player, 1, 0));
+        }
+        waitUntilExpired();
+
+        const last = captives[3];
+        player.setPosition(last.x - 1, last.y);
+        const result = engine.handlePlayerAction(new MovementAction(player, 1, 0));
+
+        expect(result.message ?? '').not.toContain('Freed');
+        expect(engine.getWorldCounter('hostages_rescued')).toBe(3);
+        expect(engine.getWorldCounter('hostages_lost')).toBe(1);
+        expect(engine.getWorldFlag('savior_of_jarnvidr')).toBe(false);
+      });
+
+      it('the altar settles no one the warlocks took', () => {
+        const [first] = placeCaptives();
+        player.setPosition(first.x - 1, first.y);
+        engine.handlePlayerAction(new MovementAction(player, 1, 0));
+        waitUntilExpired();
+
+        map.setTile(5, 8, getTileDefinition(SIPHON_ALTAR_TILE));
+        engine.onChoiceInteract = (choice, onSelect) => {
+          if (choice.id === 'blood_altar_ritual') onSelect('balance_path');
+        };
+        player.setPosition(5, 7);
+        engine.handlePlayerAction(new MovementAction(player, 0, 1));
+
+        expect(engine.getWorldCounter('hostages_rescued')).toBe(1);
+        expect(engine.getWorldCounter('hostages_sacrificed')).toBe(0);
+        expect(engine.getWorldCounter('hostages_lost')).toBe(3);
+      });
+    });
+
     it('captives sacrificed while the hero was off the floor are gone when the hero comes back (R-cotw-16)', () => {
       // The countdown ran out elsewhere: the sacrifice could not reach the stored floor 22,
       // where all four still stand when the hero returns.

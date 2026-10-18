@@ -4,6 +4,7 @@ import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { GameEngine } from '../../engine';
 import { ItemFactory } from '../../items/factory';
+import { ScrollItem } from '../../items/consumables';
 import { ZapWandAction, ReadScrollAction, DrinkPotionAction } from '../../actions/spell-actions';
 import { useTestSpells } from '../../__fixtures__/testHelpers';
 
@@ -77,6 +78,27 @@ describe('Consumables Activation (Wands, Scrolls, Potions)', () => {
     expect(player.inventory.primaryPack.getItems()).toHaveLength(0);
     // No player mana consumed
     expect(player.mana).toBe(initialMana);
+  });
+
+  it('names the spent item, so a slate-like scroll never turns to parchment ash', () => {
+    const { player, engine } = setupTestWorld();
+    const tablet = new ScrollItem({
+      id: 'tablet-1',
+      name: 'Rune Tablet of Leaping',
+      value: 100,
+      spellId: 'phase_door',
+      weight: 50,
+      bulk: 40,
+      identified: true,
+    });
+    player.inventory.primaryPack.addItem(tablet);
+
+    const result = new ReadScrollAction(player, tablet).perform(engine);
+
+    expect(result.success).toBe(true);
+    const spent = engine.messages[engine.messages.length - 1];
+    expect(spent).toContain('Rune Tablet of Leaping');
+    expect(spent).not.toContain('parchment');
   });
 
   it('drinks health potion to heal and removes potion from pack', () => {

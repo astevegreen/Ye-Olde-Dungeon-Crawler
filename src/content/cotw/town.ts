@@ -211,12 +211,14 @@ export const COTW_TOWN: TownLayoutDefinition = {
       {
         id: 'rally_howl',
         name: 'Rally Howl',
-        description: 'On command, heals your companion and hastens you.',
+        description: 'On command, heals your companion and hastens you. Ready again 50 turns later.',
         effect: {
           companionHealPercent: 0.2,
           heroStatus: { type: 'haste', duration: 3 },
           message: '{companion} lets out a rallying howl! (+{healed} HP to {companion}, you feel hastened for 3 turns)',
         },
+        // An order costs the hero's turn; the wait keeps it from healing the companion to full for free.
+        cooldown: 50,
       },
     ],
     // Q10 "A" + Q47 "A": Gunther raises +N a step at a time to +3 (250, 750, 2,000 CP); Ivalda's

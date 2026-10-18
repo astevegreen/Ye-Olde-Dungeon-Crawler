@@ -5,6 +5,7 @@ import { TILES } from '../../grid/tile';
 import { Player } from '../../entities/player';
 import { Companion } from '../../entities/companion';
 import { EngineCommandBus } from '../commandBus';
+import { WaitAction } from '../../actions/wait';
 import { addCurrencyToPlayer } from '../../economy/currency';
 import { ItemFactory } from '../../items/factory';
 import { TEST_COMPANION_ID as TEST_DEF_ID, useTestCompanion } from '../../__fixtures__/testHelpers';
@@ -111,6 +112,34 @@ describe('Companion commands via EngineCommandBus (docs/architecture/content-com
       engine.attachCompanion(companion);
 
       expect(bus.dispatch({ type: 'use_companion_skill', payload: { skillId: 'test_howl' } }).success).toBe(false);
+    });
+
+    // Rally Howl cost nothing and had no wait, so a few presses healed the companion to full
+    // for free: it is an order now, spending the hero's turn, and waits out its cooldown.
+    it("spends the hero's turn, then is refused at no cost until its cooldown has passed", () => {
+      const pack = { ...SKILL_PACK, town: { services: { trainerSkills: [{ ...SKILL_PACK.town.services.trainerSkills[0], cooldown: 50 }] } } };
+      const engine = buildEngine(pack);
+      const bus = new EngineCommandBus(engine);
+      const companion = Companion.fromDefinition(TEST_DEF_ID, 'skill-comp-4', { x: 11, y: 10 })!;
+      companion.unlockSkill('test_howl');
+      companion.hp = 1;
+      engine.attachCompanion(companion);
+      const howl = () => bus.dispatch({ type: 'use_companion_skill', payload: { skillId: 'test_howl' } });
+
+      const turn = engine.turnCount;
+      expect(howl().success).toBe(true);
+      expect(engine.turnCount).toBe(turn + 1);
+
+      const hp = companion.hp;
+      const refused = howl();
+      expect(refused).toEqual({ success: false, message: 'Test Howl is ready in 49 turns.' });
+      expect(engine.turnCount).toBe(turn + 1);
+      expect(companion.hp).toBe(hp);
+
+      while (engine.turnCount < turn + 49) engine.handlePlayerAction(new WaitAction(engine.player));
+      expect(howl().message).toBe('Test Howl is ready in 1 turn.');
+      engine.handlePlayerAction(new WaitAction(engine.player));
+      expect(howl().success).toBe(true);
     });
   });
 

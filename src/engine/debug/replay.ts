@@ -63,6 +63,7 @@ import { IdentifyAction } from '../actions/identificationActions';
 import { PerformAltarRiteAction } from '../magic/altars';
 import { ReadLearningStoneAction } from '../magic/learningStones';
 import { ChannelRuneOfReturnAction } from '../magic/runeOfReturn';
+import { UseCompanionSkillAction } from '../actions/companionSkill';
 import type { ReplayData, TrailEntry, TrailValue } from './types';
 
 type Params = Record<string, TrailValue>;
@@ -90,6 +91,10 @@ const BUILDERS: Record<string, Builder> = {
   SearchAction: (e, p) => new SearchAction(e.player, e.rng, num(p, 'radius') ?? 2),
   RestTurnAction: (e) => new RestTurnAction(e.player),
   ChannelRuneOfReturnAction: (e) => new ChannelRuneOfReturnAction(e.player),
+  UseCompanionSkillAction: (e, p) => {
+    const skillId = str(p, 'skillId');
+    return skillId ? new UseCompanionSkillAction(e.player, skillId) : null;
+  },
   DisarmTrapAction: (e, p) => new DisarmTrapAction(e.player, num(p, 'targetX'), num(p, 'targetY')),
   OpenDoorAction: (e, p) => new OpenDoorAction(e.player, num(p, 'x') ?? 0, num(p, 'y') ?? 0),
   CloseDoorAction: (e, p) => new CloseDoorAction(e.player, num(p, 'x') ?? 0, num(p, 'y') ?? 0),

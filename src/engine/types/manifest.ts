@@ -320,6 +320,8 @@ export interface TrainerSkillDefinition {
   description: string;
   /** What it does when the hero commands it (`use_companion_skill`). */
   effect: CompanionSkillEffect;
+  /** Turns after a use before it can be used again; absent, it is always ready. */
+  cooldown?: number;
 }
 
 /** What a companion skill does when used: the engine applies these and nothing else. */

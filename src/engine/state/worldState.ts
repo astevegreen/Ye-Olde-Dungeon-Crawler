@@ -63,6 +63,14 @@ export function incrementCounter(state: WorldState, counter: string, delta: numb
 }
 
 /**
+ * Sets an integer counter to a value.
+ */
+export function setCounter(state: WorldState, counter: string, value: number): WorldState {
+  state.counters[counter] = value;
+  return state;
+}
+
+/**
  * Retrieves the current value of an integer counter (defaults to 0).
  */
 export function getCounter(state: WorldState, counter: string): number {

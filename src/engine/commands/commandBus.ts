@@ -33,6 +33,7 @@ import { flightRecorder } from '../debug/flightRecorder';
 import type { Action } from '../actions/action';
 import type { ActionResult } from '../types';
 import { growCompanion } from '../combat/lastStand';
+import { UseCompanionSkillAction } from '../actions/companionSkill';
 
 /** Commands that change nothing a replay depends on: no checkpoint after them. */
 const READ_ONLY_COMMANDS = new Set(['open_container', 'sage_advisory']);
@@ -551,34 +552,10 @@ export class EngineCommandBus implements GameCommandBus {
 
       // Companions & Pet Progression, Phase 2 (docs/architecture/content-companions.md): a skill
       // the companion learned from the trainer ('trainer_teach_skill'), doing what the pack's
-      // `TrainerSkillDefinition.effect` says. Instant utility (no player turn cost), matching
-      // 'sage_advisory''s existing pattern above.
+      // `TrainerSkillDefinition.effect` says. An order, so it spends the hero's turn.
       case 'use_companion_skill': {
-        const skillId = p.skillId as string;
-        const companion = this.engine.companion;
-        if (!companion) {
-          return { success: false, message: 'You have no companion here to command.' };
-        }
-        if (!companion.unlockedSkills.includes(skillId)) {
-          return { success: false, message: `${companion.name} has not learned that skill.` };
-        }
-        const skill = this.engine.manifest.town?.services?.trainerSkills?.find((s) => s.id === skillId);
-        if (!skill) {
-          return { success: false, message: `Unknown companion skill: '${skillId}'` };
-        }
-        const { effect } = skill;
-        const healed = effect.companionHealPercent ? companion.heal(Math.ceil(companion.maxHp * effect.companionHealPercent)) : 0;
-        if (effect.heroStatus) {
-          this.engine.player.statusManager.applyStatus(
-            { type: effect.heroStatus.type, duration: effect.heroStatus.duration },
-            this.engine.player.statusImmunities,
-            this.engine.player,
-            this.engine
-          );
-        }
-        const msg = effect.message.replace(/\{companion\}/g, companion.name).replace(/\{healed\}/g, String(healed));
-        this.engine.log(msg);
-        return { success: true, message: msg };
+        const res = this.act(new UseCompanionSkillAction(this.engine.player, p.skillId as string));
+        return { success: res.success, message: res.message };
       }
 
       // Loose coins from the pack into the purse; `data` says how many stacks and how much.

@@ -410,15 +410,27 @@ function trainerPanel(engine: GameEngine): ServicePanel {
     heading: 'Companion training',
     facts: `<div class="ui-note">${escapeHtml(status)}</div>`,
     offers: [
-      { act: 'revive', key: 'R', label: 'Revive your companion', detail: 'Brings a fallen companion back.', priceCp: TrainerService.REVIVE_COST_CP },
+      {
+        act: 'revive',
+        key: 'R',
+        label: 'Revive your companion',
+        detail: fallen && !companion ? 'Brings a fallen companion back.' : 'Only a fallen companion can be revived.',
+        priceCp: TrainerService.REVIVE_COST_CP,
+        disabled: !fallen || Boolean(companion),
+      },
       // The pack's skills (`TownServicesDefinition.trainerSkills`), each on a key of its own.
       ...(engine.manifest.town?.services?.trainerSkills ?? []).slice(0, TEACH_KEYS.length).map((skill, i) => ({
         act: 'teach' as const,
         key: TEACH_KEYS[i],
         arg: skill.id,
         label: `Teach ${skill.name}`,
-        detail: skill.description,
+        detail: !companion
+          ? 'You need a companion at your side to teach.'
+          : companion.unlockedSkills.includes(skill.id)
+            ? `${companion.name} already knows this.`
+            : skill.description,
         priceCp: TrainerService.TEACH_SKILL_COST_CP,
+        disabled: !companion || companion.unlockedSkills.includes(skill.id),
       })),
     ],
   };

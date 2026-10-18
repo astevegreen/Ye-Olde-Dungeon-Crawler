@@ -60,6 +60,9 @@ export interface GameCommandResult {
  */
 export interface GameCommandBus {
   dispatch(command: GameCommand): GameCommandResult;
+  /** A player action an open menu or card takes outside a command (a Spellbook edit, a
+   *  learned offer): its turn is answered by the monsters, as a command's is (`act`). */
+  performAction(action: Action): ActionResult;
 }
 
 /**
@@ -102,6 +105,10 @@ export class EngineCommandBus implements GameCommandBus {
    * (a potion drunk, armour swapped) lets the monsters answer it, as it would with the menu
    * closed and as the replay, never paused, does.
    */
+  public performAction(action: Action): ActionResult {
+    return this.act(action);
+  }
+
   private act(action: Action): ActionResult {
     this.acted = true;
     const paused = this.engine.isPaused;

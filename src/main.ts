@@ -543,12 +543,12 @@ window.addEventListener('DOMContentLoaded', () => {
   let afterOfferClosed: (() => void) | undefined;
   const spellOfferCard = new SpellOfferCard({
     onLearn: (spellId) => {
-      if (activeEngine) activeEngine.handlePlayerAction(new AcceptSpellOfferAction(activeEngine.player, spellId));
+      if (activeEngine) activeEngine.commandBus.performAction(new AcceptSpellOfferAction(activeEngine.player, spellId));
     },
     onForgetAndLearn: (forgetId, spellId) => {
       if (!activeEngine) return;
-      const forgot = activeEngine.handlePlayerAction(new ForgetSpellAction(activeEngine.player, forgetId));
-      if (forgot.success) activeEngine.handlePlayerAction(new AcceptSpellOfferAction(activeEngine.player, spellId));
+      const forgot = activeEngine.commandBus.performAction(new ForgetSpellAction(activeEngine.player, forgetId));
+      if (forgot.success) activeEngine.commandBus.performAction(new AcceptSpellOfferAction(activeEngine.player, spellId));
     },
     onClose: () => {
       popModal(spellOfferCard.id);
@@ -582,7 +582,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // A learning stone's card, its shard set (or in hand after a shortcut): read a face, take the rune, or wait.
   const stoneCard = new LearningStoneCard({
     onRead: (spellId) => {
-      if (activeEngine) activeEngine.handlePlayerAction(new ReadLearningStoneAction(activeEngine.player, spellId));
+      if (activeEngine) activeEngine.commandBus.performAction(new ReadLearningStoneAction(activeEngine.player, spellId));
     },
     onClose: () => {
       popModal(stoneCard.id);
@@ -603,7 +603,7 @@ window.addEventListener('DOMContentLoaded', () => {
       return forgePreviewHtml(engine, spellId, element, forgeOfferCardFated);
     },
     onForge: (index, spellId, element) => {
-      if (activeEngine) activeEngine.handlePlayerAction(new ClaimForgeOfferAction(activeEngine.player, index, spellId, element));
+      if (activeEngine) activeEngine.commandBus.performAction(new ClaimForgeOfferAction(activeEngine.player, index, spellId, element));
     },
     onClose: () => {
       popModal(forgeOfferCard.id);
@@ -644,19 +644,19 @@ window.addEventListener('DOMContentLoaded', () => {
     },
     onPlaceGrimoireSpell: (spellId, grimoireId, x, y) => {
       if (!activeEngine) return;
-      activeEngine.handlePlayerAction(new PlaceGrimoireSpellAction(activeEngine.player, spellId, grimoireId, x, y));
+      activeEngine.commandBus.performAction(new PlaceGrimoireSpellAction(activeEngine.player, spellId, grimoireId, x, y));
       quickSpellsBar.update(activeEngine);
       void processVisualEffectsAndRender();
     },
     onForgetSpell: (spellId) => {
       if (!activeEngine) return;
-      activeEngine.handlePlayerAction(new ForgetSpellAction(activeEngine.player, spellId));
+      activeEngine.commandBus.performAction(new ForgetSpellAction(activeEngine.player, spellId));
       quickSpellsBar.update(activeEngine);
       void processVisualEffectsAndRender();
     },
     onPickGrimoireStat: (grimoireId, axis, statId) => {
       if (!activeEngine) return;
-      activeEngine.handlePlayerAction(new PickGrimoireStatAction(activeEngine.player, grimoireId, axis, statId));
+      activeEngine.commandBus.performAction(new PickGrimoireStatAction(activeEngine.player, grimoireId, axis, statId));
     },
   });
 

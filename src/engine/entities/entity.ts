@@ -170,8 +170,10 @@ export class Entity {
     this.energy += amount;
   }
 
+  /** Spends energy, into debt when an action costs more than is banked: a speed-100 actor
+   *  always acts on exactly 100, so a floor at 0 made slow, burden, water and mud free. */
   public consumeEnergy(amount: number): void {
-    this.energy = Math.max(0, this.energy - amount);
+    this.energy -= amount;
   }
 
   /** Sets the least HP damage can leave this entity at (0 removes the floor), and clears

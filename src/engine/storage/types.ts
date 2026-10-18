@@ -319,6 +319,8 @@ export interface SerializedMonster {
   lentHits?: LentHits;
   /** `Monster.deepSleep`, written only when set. */
   deepSleep?: boolean;
+  /** `Monster.struckInSleep`, written only when set: a blow woke it and it has not acted since. */
+  struckInSleep?: boolean;
 }
 
 /** Companions & Pet Progression, Phase 1 (docs/architecture/content-companions.md). Top-level in SaveData, not per-floor. */

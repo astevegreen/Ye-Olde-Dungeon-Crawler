@@ -706,6 +706,7 @@ export function serializeMapObject(map: GameMap): SerializedMap {
         faction: mon.faction !== 'hostile' ? mon.faction : undefined,
         lentHits: mon.lentHits ? structuredClone(mon.lentHits) : undefined,
         deepSleep: mon.deepSleep || undefined,
+        struckInSleep: mon.struckInSleep || undefined,
         carried: carried.length > 0 ? carried.map(serializeItem) : undefined,
       };
     });
@@ -925,6 +926,7 @@ export function deserializeMapObject(
         monster.lentHits = structuredClone(mData.lentHits);
       }
       if (mData.deepSleep) monster.deepSleep = true;
+      if (mData.struckInSleep) monster.struckInSleep = true;
       for (const node of mData.carried ?? []) monster.addItem(deserializeItem(node, definitions));
       map.addEntity(monster);
     }

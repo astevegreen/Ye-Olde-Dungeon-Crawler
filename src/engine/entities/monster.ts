@@ -121,7 +121,7 @@ export class Monster extends Actor {
   /** Sleeps deeply: seeing the hero never wakes it, only a blow or an alarm (a shard carrier, P-34; `wakesOnSight`). */
   public deepSleep = false;
   /** A blow woke it and it has not acted since: a kill now still counts as in its sleep (`killedInItsSleep`). */
-  private struckInSleep = false;
+  public struckInSleep = false;
 
   constructor(config: MonsterConfig) {
     super({

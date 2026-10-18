@@ -150,6 +150,7 @@ describe('A carried item and a deep sleep', () => {
     const saved = serializeMapObject(engine.map).monsters?.find((s) => s.id === 'plain');
     expect(saved?.carried).toBeUndefined();
     expect(saved?.deepSleep).toBeUndefined();
+    expect(saved?.struckInSleep).toBeUndefined();
   });
 
   describe('deep sleep', () => {
@@ -189,6 +190,15 @@ describe('A carried item and a deep sleep', () => {
       const m = carrier(3, 5, 40);
       m.takeDamage(5);
       expect(killRiteConditionsMet(engine, rite, m)).toBe(true);
+    });
+
+    it('still counts after a save taken before it could act', () => {
+      const m = carrier(3, 5, 40);
+      m.takeDamage(5);
+      const loaded = deserializeMapObject(JSON.parse(JSON.stringify(serializeMapObject(engine.map))));
+      const again = loaded.getAllEntities().find((e) => e.id === m.id) as Monster;
+      expect(again.aiState).not.toBe('sleeping');
+      expect(again.killedInItsSleep()).toBe(true);
     });
 
     it('does not count once it has had a turn since the blow', () => {

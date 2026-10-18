@@ -2,6 +2,7 @@ import type { Predicate, QuestArcDefinition } from '../../engine';
 import { TOWN_RETURN_POSITION } from './townLayout';
 import { ALTAR_MARK_FULL, ALTAR_MARK_HALF } from './hostageRitual';
 import { OATH_BROKEN_FLAG, OATH_HONORED_FLAG } from './oath';
+import { HEARTH_TEAR_RETURNED_FLAG } from './relic';
 import { HEARTWOOD_LAIR, LAIR_WIDTH, LAIR_HEIGHT, LAIR_PLAYER_SPAWN, LAIR_STAIRS_UP, LAIR_BOSS_SPAWN } from './lair';
 
 /**
@@ -140,28 +141,38 @@ export const COTW_QUEST: QuestArcDefinition = {
       title: 'The Root Sealed',
       narrative: [
         'You follow the path of light up out of the Heartwood. Behind you the gnawed root knits closed, and somewhere below Níðhögg licks its wounds in the dark, alive and beaten.',
-        'Bjarnarhaven’s hearths burn warm again. The snow comes in its season and goes in its season, and the children who were born this year will grow old under a tree that still stands.',
         'Ragnarök waits, as it always has. But it waits a little longer because of you, and in the long hall the skalds begin a saga that ends with a hero coming home.',
       ],
+      // The hearths, told by whether the Hearth-Tear came home (the Great Thaw's own flag).
       conditionalNarrative: [
         {
+          when: { type: 'hasFlag', flag: HEARTH_TEAR_RETURNED_FLAG },
+          before: 1,
+          text: 'Bjarnarhaven’s hearths burn warm again. The snow comes in its season and goes in its season, and the children who were born this year will grow old under a tree that still stands.',
+        },
+        {
+          when: { type: 'not', predicate: { type: 'hasFlag', flag: HEARTH_TEAR_RETURNED_FLAG } },
+          before: 1,
+          text: 'Bjarnarhaven’s hearths burn low, for the Hearth-Tear never came home, and the cold keeps its old hold on the valley. Still the snow goes in its season, and the children who were born this year will grow old, bundled and stubborn, under a tree that still stands.',
+        },
+        {
           when: OATH_HONORED,
-          before: 2,
+          before: 1,
           text: 'The skalds make much of the matriarch’s bargain: how the giant’s child kept the cold of Thrym’s line, and stood with Midgard all the same.',
         },
         {
           when: OATH_BROKEN,
-          before: 2,
+          before: 1,
           text: 'The skalds make much of the matriarch’s bargain: how the giant’s child seized the stolen sun rather than her hand, and burned their own blood to break the siphon. Some call it courage. The old folk only nod, and keep near the hearth.',
         },
         {
           when: ALTAR_MARK_HALF,
-          before: 2,
+          before: 1,
           text: 'At the hearth they name the ones who came home from the Siphon Altar, and then, more quietly, the ones who did not. Nobody says your name in the second list. Nobody has to.',
         },
         {
           when: ALTAR_MARK_FULL,
-          before: 2,
+          before: 1,
           text: 'The four the Siphon Altar took are not named at the hearth. Torvald lights a candle for each of them in the temple, and does not ask you in.',
         },
       ],

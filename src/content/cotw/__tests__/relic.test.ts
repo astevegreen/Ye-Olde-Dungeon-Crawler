@@ -6,6 +6,8 @@ import { COTW_RELIC_HOOK, HEARTH_TEAR_ID, HEARTH_TEAR_RETURNED_FLAG, RELIC_RECOV
 import { COTW_TOWN_REACTIVE_HOOK } from '../narrative';
 import { COTW_OBJECTIVES } from '../objectives';
 import { COTW_DEEPEST_FLOOR_COUNTER } from '../spellTablets';
+import { COTW_QUEST } from '../quest';
+import { endingNarrative } from '../../../engine';
 
 function context(floor: number): { engine: EngineContext; player: Player; logs: string[] } {
   const worldState = createWorldState();
@@ -77,5 +79,23 @@ describe('The Hearth-Tear: reclaimed, carried home, the thaw', () => {
     expect(town.engine.getWorldFlag(HEARTH_TEAR_RETURNED_FLAG)).toBe(true);
     expect(town.logs.some((l) => l.includes('THE GREAT THAW'))).toBe(true);
     expect(getCurrentObjective(view(town) as never)?.id).toBe('cotw_objective_act2');
+  });
+});
+
+describe('The Sealed ending, told by whether the Hearth-Tear came home', () => {
+  const told = (returned: boolean): string => {
+    const { engine } = context(50);
+    if (returned) engine.setWorldFlag(HEARTH_TEAR_RETURNED_FLAG, true);
+    return endingNarrative(COTW_QUEST.endings!.sealed, engine.worldState).join(' ');
+  };
+
+  it('says the hearths burn warm only after the Great Thaw', () => {
+    expect(told(true)).toContain('hearths burn warm again');
+    expect(told(true)).not.toContain('never came home');
+  });
+
+  it('says the Tear never came home when it did not', () => {
+    expect(told(false)).toContain('never came home');
+    expect(told(false)).not.toContain('burn warm');
   });
 });

@@ -179,7 +179,8 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
 
     it('the endings tell the mark before their last paragraph, half and full apart', () => {
       const sealed = COTW_QUEST.endings!.sealed;
-      expect(endingNarrative(sealed, engine.worldState)).toEqual(sealed.narrative);
+      // No Great Thaw in this state, so the hearths are told as burning low; no mark adds nothing else.
+      expect(endingNarrative(sealed, engine.worldState)).toHaveLength(3);
 
       settle(2);
       const half = endingNarrative(sealed, engine.worldState);

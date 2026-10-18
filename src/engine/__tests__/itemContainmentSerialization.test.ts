@@ -237,6 +237,15 @@ describe('Item Containment Scalar ID Normalization & Serialization Hardening', (
       expect(parsed.child.parent).toBe('[Circular]');
     });
 
+    it('writes an object reached by two separate paths twice: only a cycle is [Circular]', () => {
+      const shared = { goblin: { kills: 2 } };
+      const parsed = JSON.parse(safeJsonStringify({ profile: { compendium: shared }, compendium: shared, list: [shared, shared] }));
+
+      expect(parsed.profile.compendium).toEqual(shared);
+      expect(parsed.compendium).toEqual(shared);
+      expect(parsed.list).toEqual([shared, shared]);
+    });
+
     it('handles BigInt and undefined values properly', () => {
       const complexData = {
         bigNumber: BigInt(9007199254740991) + 100n,

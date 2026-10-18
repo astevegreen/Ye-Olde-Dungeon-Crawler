@@ -6,17 +6,20 @@
 
 /**
  * Creates a circular-safe JSON replacer function.
- * Replaces circular references with '[Circular]'.
+ * Replaces circular references with '[Circular]'. Only an object's own ancestors count: an
+ * object reached twice by separate paths (a save holds its compendium twice) is written twice.
  */
 function createSafeJsonReplacer(): (key: string, value: unknown) => unknown {
-  const seen = new WeakSet<object>();
+  const ancestors: unknown[] = [];
 
   return function (this: unknown, _key: string, value: unknown): unknown {
     if (typeof value === 'object' && value !== null) {
-      if (seen.has(value)) {
+      // `this` holds `value`: drop the ancestors whose subtrees are already written.
+      while (ancestors.length > 0 && ancestors[ancestors.length - 1] !== this) ancestors.pop();
+      if (ancestors.includes(value)) {
         return '[Circular]';
       }
-      seen.add(value);
+      ancestors.push(value);
     }
     if (typeof value === 'bigint') {
       return value.toString();

@@ -110,3 +110,25 @@ describe('R-dbg-10 · a replay of a god-mode session loads an invulnerable hero'
     expect(loaded.ok && loaded.value.engine.player.isInvulnerable).toBe(false);
   });
 });
+
+// The save holds the compendium twice (under `profile` and at the top level); the
+// checkpoint's writer took the second copy for a cycle and wrote "[Circular]", which won on load.
+describe('a replay checkpoint keeps the bestiary and mastery perks', () => {
+  it("a checkpoint loads back with the hero's compendium", () => {
+    const map = new GameMap(12, 12, TILES.FLOOR);
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 2, y: 2 } });
+    const engine = new GameEngine({ map, player, floor: 1, seed: 1 });
+    engine.compendium.recordEncounter('goblin', 'Goblin', 1);
+    flightRecorder.requestCheckpoint('review');
+    engine.handlePlayerAction(new WaitAction(player));
+
+    const rd = flightRecorder.getReplayData(engine)!;
+    const save = rd.checkpoint.save as Record<string, unknown>;
+    expect(save.compendium).toEqual(engine.compendium.serialize());
+    expect(save.compendiumCategoryPerks).toEqual(engine.compendium.serializeCategoryPerks());
+
+    const loaded = loadReplayState(JSON.stringify(rd));
+    expect(loaded.ok).toBe(true);
+    if (loaded.ok) expect(loaded.value.engine.compendium.serialize()).toEqual(engine.compendium.serialize());
+  });
+});

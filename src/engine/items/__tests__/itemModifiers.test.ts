@@ -387,6 +387,25 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       new MovementAction(player, -1, 0).perform(engine);
       expect(player.hp).toBe(40);
     });
+
+    // A burn Einherjar refused returned "consumed" with a cost but spent no energy: a free turn.
+    it('a burn the Einherjar refuses leaves the swing to land and spends its turn (§4)', () => {
+      player.inventory.paperdoll.equip(helTouchedDagger(), 'mainHand');
+      player.grantPerk({ id: 'einherjar', name: 'Einherjar', description: 'einherjar', source: 'saga', effects: { lastStandPerFloor: true } });
+      map.setTile(5, 5, { ...TILES.FLOOR, type: 'shrine_floor', name: 'Shrine Floor', sacred: true });
+      player.hp = 3;
+      player.gainEnergy(100);
+      const energyBefore = player.energy;
+      const wolf = foe('wolf', 6, ['undead']);
+
+      const result = new MeleeAttackAction(player, wolf).perform(engine);
+
+      expect(player.hp).toBe(1);
+      expect(result.message ?? '').not.toMatch(/consumed/);
+      expect(wolf.hp).toBeLessThan(100);
+      expect(result.cost).toBeGreaterThan(0);
+      expect(player.energy).toBe(energyBefore - result.cost);
+    });
   });
 
   describe('Hexed Damage Amplification', () => {

@@ -228,13 +228,12 @@ export class MeleeAttackAction implements Action {
       }
     }
 
-    // 3. Sacred ground burns a bearer who strikes from it (Hel-touched).
-    if (burnOnSacredGround(engine, this.attacker).killed) {
-      return {
-        success: true,
-        cost: this.attacker.getActionCost(BASE_ACTION_COST),
-        message: `${this.attacker.name} was consumed by holy ground!`,
-      };
+    // 3. Sacred ground burns a bearer who strikes from it (Hel-touched). A death the hero
+    // refuses (Einherjar) leaves the hero standing: the swing still lands and spends the turn.
+    if (burnOnSacredGround(engine, this.attacker).killed && !this.attacker.isAlive()) {
+      const cost = this.followUp ? 0 : this.attacker.getActionCost(BASE_ACTION_COST);
+      this.attacker.consumeEnergy(cost);
+      return { success: true, cost, message: `${this.attacker.name} was consumed by holy ground!` };
     }
 
     // Damage the defender takes is scaled by what it wears (Hexed, Glass Fury) in Actor.takeDamage.

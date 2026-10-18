@@ -219,7 +219,7 @@ export class MovementAction implements Action {
     }
 
     // 5b2. Holy ground burns a bearer of a `sacredGroundBurn` item (Hel-touched) on arrival.
-    if (burnOnSacredGround(engine, this.entity).killed) {
+    if (burnOnSacredGround(engine, this.entity).killed && !this.entity.isAlive()) {
       return { success: true, cost, message: `${this.entity.name} was consumed by holy ground!` };
     }
 

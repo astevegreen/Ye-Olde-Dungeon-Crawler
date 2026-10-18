@@ -453,6 +453,7 @@ export class MovementAction implements Action {
         const fleeCounterKey = `boss_flee_turns:${watcher.monsterDefinitionId}`;
         if (boss && boss.aiState === 'fleeing') {
           const turnsFled = engine.modifyWorldCounter(fleeCounterKey, 1);
+          if (turnsFled === 1 && watcher.fleeBeginMessage) engine.log(watcher.fleeBeginMessage);
           if (turnsFled >= watcher.fleeTurnsRequired) {
             engine.setWorldFlag(watcher.sealedFlag, true);
             const portal = watcher.portalTileId ? getTileDefinition(watcher.portalTileId) : undefined;

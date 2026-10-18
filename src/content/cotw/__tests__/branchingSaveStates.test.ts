@@ -159,6 +159,26 @@ describe('Branching save-states — Níðhögg’s two endings (real cotwManifes
     expect(eligibleEnding).toBe('sealed');
   });
 
+  it('the log says once, when Níðhögg first flees, that pressing it drives it off', () => {
+    const { engine, player } = buildRealEngine(50);
+    engine.addEntity(
+      new Monster({
+        id: 'nidhogg-5',
+        name: 'Níðhögg, the Root-Gnawer',
+        definitionId: 'nidhogg',
+        position: { x: player.x + 3, y: player.y },
+        stats: { hp: 100, maxHp: 400, attack: 30, defense: 14 },
+        fleeHealthPercent: 0.9,
+        aiState: 'fleeing',
+      })
+    );
+
+    engine.handlePlayerAction(new MovementAction(player, 0, 1));
+    engine.handlePlayerAction(new MovementAction(player, 0, -1));
+
+    expect(engine.messages.filter((m) => m.includes('flee for good'))).toHaveLength(1);
+  });
+
   it('a driven-off Níðhögg leaves the turn order too, so it acts no more', () => {
     const { engine, player } = buildRealEngine(50);
     const nidhogg = new Monster({

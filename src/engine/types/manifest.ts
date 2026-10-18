@@ -579,6 +579,8 @@ export interface BossFleeResolution {
   monsterDefinitionId: string;
   fleeTurnsRequired: number;
   sealedFlag: string;
+  /** Logged the first turn the boss is seen fleeing: tells the player that pressing on drives it off. */
+  fleeBeginMessage?: string;
   /** A tile (e.g. a portal) opened where the boss stood when it was driven off. */
   portalTileId?: string;
   /** Logged when that tile opens. */

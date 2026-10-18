@@ -28,3 +28,4 @@
 ## Verification
 - gates (lint, unit 3294, tooling, sim, schema, build, Playwright Chromium): green on c7453539 before rebase; gate-stamp green after rebase (3316 tests)
 - pre-push (three browsers) and ci:watch: green on 2af973ab, deployed
+Resumed: 2026-10-18 22:17 UTC

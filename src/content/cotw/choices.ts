@@ -20,7 +20,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
     id: 'oath_hearth',
     title: "The Matriarch's Blood-Oath",
     description:
-      "The Sun-Chariot Warden lies still, and the Hearth-Tear burns warm in your hand. From the forge-smoke steps an ancient troll-wife: the coven's matriarch. “Your blood runs with Thrym's own,” she rasps, “as does mine, once. My daughters bound your village to that shard's stolen fire. I can sever the siphon that binds it still — but the choice of how will cost you something lasting. Hot, and you strike harder, your own flesh straining against everything you are. Cold, and you stand firm, as your blood always has.” The forge groans. There is no third door.",
+      "The Sun-Chariot Warden lies still, and the Hearth-Tear burns warm in your hand. From the forge-smoke steps an ancient troll-wife: the coven's matriarch. “Your blood runs with Thrym's own,” she rasps, “as mine did, once. My daughters bound your village to that shard's stolen fire. I can sever the siphon that binds it still — but the choice of how will cost you something lasting. Hot, and you strike harder, your own flesh straining against everything you are. Cold, and you stand firm, as your blood always has.” The forge groans. There is no third door.",
     options: [
       {
         id: 'honor',

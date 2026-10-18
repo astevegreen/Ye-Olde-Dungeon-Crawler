@@ -120,6 +120,12 @@ export class NavigationController {
           this.cancel('Path interrupted: player took damage!');
           return;
         }
+
+        // A blink or a teleport carried the hero off the route: the rest of it starts elsewhere.
+        if (this.engine.player.x !== next.x || this.engine.player.y !== next.y) {
+          this.cancel('Travel halted: you were carried off your path.');
+          return;
+        }
       }
 
       this.currentPath.shift();

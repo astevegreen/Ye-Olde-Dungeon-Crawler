@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { GameEngine, GameMap, TILES, Player, Monster } from '../../engine';
+import { GameEngine, GameMap, TILES, Player, Monster, Item } from '../../engine';
+import type { ItemModifier } from '../../engine';
 import { NavigationController } from '../navigation';
 
 // R-main-1: a click-to-travel must hand every step, and whatever stops it, to the HUD's
@@ -58,5 +59,47 @@ describe('click-to-travel reports to the post-action refresh', () => {
     vi.advanceTimersByTime(500);
 
     expect(stopped).toBe(1);
+  });
+});
+
+// A click-to-travel moves the hero one tile a step: it never jumps back onto its route after a
+// blink or a teleport carried the hero off it.
+describe('click-to-travel moves one tile a step', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.stubGlobal('window', { setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  const trickster: ItemModifier = {
+    id: "c-Trickster's Step",
+    name: "Trickster's Step",
+    alignment: 'chaotic',
+    category: 'chaotic',
+    evasionBonus: 0.25,
+    blinkEverySteps: 10,
+    blinkRange: [2, 4],
+  };
+
+  it("stops where Trickster's Step flings the hero, rather than stepping back through the wall", () => {
+    const engine = buildEngine();
+    // A wall column between the blink's landing spot (0,6) and the route along y = 10.
+    for (let y = 0; y < 10; y++) engine.map.setTile(2, y, TILES.WALL);
+    engine.rng = () => 0;
+    const ring = new Item({ id: 'ring', name: 'Ring', category: 'ring', slot: 'fingerLeft', weight: 100, bulk: 100, identified: true });
+    ring.addModifier(trickster);
+    engine.player.inventory.paperdoll.equip(ring, 'fingerLeft');
+    engine.modifyWorldCounter(`steps:${trickster.id}`, 9); // the trip's first step blinks
+    const reasons: string[] = [];
+    const nav = new NavigationController(engine);
+    nav.navigatePlayerTo(14, 10, { stepDelayMs: 10, onCancel: (r) => reasons.push(r) });
+    vi.advanceTimersByTime(500);
+
+    expect({ x: engine.player.x, y: engine.player.y }).toEqual({ x: 0, y: 6 });
+    expect(nav.isNavigating).toBe(false);
+    expect(reasons).toHaveLength(1);
   });
 });

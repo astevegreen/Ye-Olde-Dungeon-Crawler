@@ -110,7 +110,8 @@ export class AutoRestManager {
   }
 
   /**
-   * Scans player's field of view for any visible hostile monsters.
+   * Scans player's field of view for any visible hostile monster that is not fleeing: a foe
+   * running away does not keep the hero from resting (rest still stops on any damage).
    */
   public static findVisibleHostile(engine: GameEngine): Entity | null {
     const fov = engine.fov;
@@ -118,6 +119,7 @@ export class AutoRestManager {
       if (
         entity instanceof Monster &&
         entity.isAlive() &&
+        entity.aiState !== 'fleeing' &&
         fov.isVisible(entity.x, entity.y) &&
         engine.player.isHostileTo(entity)
       ) {

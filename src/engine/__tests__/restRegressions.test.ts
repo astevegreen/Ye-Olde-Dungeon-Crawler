@@ -106,3 +106,33 @@ describe('R-ai-3 · the world moves on while the hero rests', () => {
     expect(engine.surfaces.getCell(10, 10)?.surface?.type).not.toBe('fire');
   });
 });
+
+describe('a fleeing foe in sight does not keep the hero from resting', () => {
+  function build(aiState: 'fleeing' | 'hunting') {
+    const map = new GameMap(20, 9, TILES.FLOOR);
+    const player = new Player({ id: 'hero', position: { x: 3, y: 4 }, stats: { hp: 10, maxHp: 40, attack: 1, defense: 0 } });
+    const engine = new GameEngine({ map, player, seed: 3 });
+    engine.addEntity(
+      new Monster({
+        id: 'runner',
+        name: 'Wolf',
+        position: { x: 6, y: 4 },
+        stats: { hp: 1, maxHp: 10, attack: 1, defense: 0 },
+        aiState,
+        fleeHealthPercent: 0,
+        xpValue: 1,
+        lootTable: [],
+      })
+    );
+    engine.updateFov();
+    return engine;
+  }
+
+  it('a fleeing hostile in sight allows the rest', () => {
+    expect(AutoRestManager.startRefusal(build('fleeing'))).toBeNull();
+  });
+
+  it('a hunting hostile in sight still refuses it', () => {
+    expect(AutoRestManager.startRefusal(build('hunting'))).toMatch(/in sight/);
+  });
+});

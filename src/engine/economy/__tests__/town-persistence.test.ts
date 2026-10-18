@@ -4,7 +4,8 @@ import { COTW_TOWN } from '../../../content/cotw/town';
 import { cotwManifest } from '../../../content/cotw';
 import { ProfileManager, MemoryStorage } from '../../storage/profile-manager';
 import { ItemFactory } from '../../items/factory';
-import { getPlayerTotalCp, getPlayerCurrencyBreakdown } from '../currency';
+import { addCurrencyToPlayer, getPlayerTotalCp, getPlayerCurrencyBreakdown } from '../currency';
+import { WandItem } from '../../items/consumables';
 
 describe('Town Hub Generation & Multi-Floor Persistence', () => {
   let storage: MemoryStorage;
@@ -135,5 +136,21 @@ describe('Town Hub Generation & Multi-Floor Persistence', () => {
     manager.saveCharacter(engine, profile);
     const restored = manager.loadCharacter(profile.id)!.engine.merchants.get('merchant-astrid')!;
     for (const item of gated) expect(restored.stock.find((i) => i.id === item.id)?.predicate).toEqual(item.predicate);
+  });
+
+  it("keeps a shop item the hero sold back as sold: Astrid's spent wand stays spent across a reload", () => {
+    const { profile, engine } = manager.createCharacter('Hilda');
+    addCurrencyToPlayer(engine.player, 100000);
+    const astrid = engine.merchants.get('merchant-astrid')!;
+    expect(astrid.buyItem(engine.player, 'astrid-wand-1').success).toBe(true);
+    const wand = engine.player.inventory.primaryPack.getItem('astrid-wand-1') as WandItem;
+    while (wand.useCharge()) { /* zap it dry */ }
+    expect(astrid.sellItem(engine.player, wand.id).success).toBe(true);
+    manager.saveCharacter(engine, profile);
+
+    const restored = manager.loadCharacter(profile.id)!.engine.merchants.get('merchant-astrid')!;
+    const back = restored.stock.find((i) => i.id === 'astrid-wand-1');
+    expect(back).toBeInstanceOf(WandItem);
+    expect((back as WandItem).charges).toBe(0);
   });
 });

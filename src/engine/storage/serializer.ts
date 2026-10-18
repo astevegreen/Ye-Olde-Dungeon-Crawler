@@ -957,10 +957,10 @@ export function deserializeMapObject(
 }
 
 /**
- * A merchant's stock from the save: an item the shop was authored with comes back as a
- * fresh copy from the manifest's factory (its availability `predicate` isn't saved),
- * anything else, such as what the hero sold, from its saved form. No saved stock = the
- * authored stock.
+ * A merchant's stock from the save: every item comes back from its saved form, so one the
+ * hero bought and sold back keeps its charges and count. An item the shop was authored with
+ * takes its availability `predicate`, which isn't saved, from the manifest's fresh copy.
+ * No saved stock = the authored stock.
  */
 function restoreMerchantStock(
   authored: Item[],
@@ -969,7 +969,12 @@ function restoreMerchantStock(
 ): Item[] {
   if (!saved) return authored;
   const byId = new Map(authored.map((item) => [item.id, item]));
-  return saved.map((node) => byId.get(node.id) ?? deserializeItem(node, definitions));
+  return saved.map((node) => {
+    const item = deserializeItem(node, definitions);
+    const predicate = byId.get(node.id)?.predicate;
+    if (predicate) (item as { predicate?: Item['predicate'] }).predicate = predicate;
+    return item;
+  });
 }
 
 function restoreMonsterDefinitionFields(map: GameMap, registries: EngineRegistries): void {

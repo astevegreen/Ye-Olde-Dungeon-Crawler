@@ -341,6 +341,8 @@ export class MovementAction implements Action {
         } else if (!engine.getWorldFlag(`${handlerId}_resolved`)) {
           if (engine.onChoiceInteract) {
             choiceTriggered = true;
+            // Stepping away keeps the step a paid turn: it already advanced the world, and a
+            // refund let the hero act again before the monsters answered it (and broke replay).
             openChoice(engine, 
               choiceDef,
               (optionId: string) => {
@@ -348,9 +350,6 @@ export class MovementAction implements Action {
                   engine.setWorldFlag(`${handlerId}_resolved`, true);
                 }
                 engine.handlePlayerAction(new ExecuteChoiceAction(this.entity as Player, choiceDef, optionId));
-              },
-              () => {
-                this.entity.energy += cost;
               }
             );
           } else {

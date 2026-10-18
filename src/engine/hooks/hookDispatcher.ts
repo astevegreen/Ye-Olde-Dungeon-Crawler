@@ -11,6 +11,7 @@ import type { ElementType } from '../magic/elements';
 import type { Position } from '../types';
 import { DeathResolver } from '../combat/deathResolver';
 import { shrugsAffliction } from '../compendium/familyPerks';
+import { statusDisplayName } from '../status/statusName';
 
 export type HookEvent =
   | 'onHit'
@@ -243,7 +244,7 @@ function executeApplyStatus(
       engine
     );
     if (applied) {
-      const msg = description ?? `[PROC: ${sourceName}] ${dest.name} is afflicted with ${action.status}!`;
+      const msg = description ?? `[PROC: ${sourceName}] ${dest.name} is afflicted with ${statusDisplayName(engine.manifest, action.status)}!`;
       engine.log(msg);
       summary.messages.push(msg);
     }

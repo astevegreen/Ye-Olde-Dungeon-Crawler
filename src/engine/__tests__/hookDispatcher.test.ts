@@ -74,6 +74,8 @@ describe('Event-Driven Hook Engine', () => {
     expect(engine.messages.some((m) => m.includes('Frostbite pierces deep!'))).toBe(true);
     expect(monster.statusManager.hasStatus('slow')).toBe(true);
     expect(monster.hp).toBeLessThan(initialMonsterHp - 8);
+    // The proc names the status in words, never by its id ("afflicted with slow!").
+    expect(engine.messages).toContain('[PROC: Frost Blade] Goblin is afflicted with Slow!');
   });
 
   it('triggers onKill hook and restores attacker HP on lethal strike', () => {

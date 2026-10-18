@@ -38,3 +38,4 @@ Sonnet 5.5 at medium thinking — each approved change is a small, specified eng
 ## Verification
 - gate-stamp (lint, test, tooling): green on e1810bc3
 - pre-push (sim, build, Playwright 3 browsers): passed; ci:watch: deploy.yml success on e1810bc3
+Resumed: 2026-10-18 23:06 UTC

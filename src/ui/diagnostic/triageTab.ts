@@ -243,6 +243,7 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
         ${btn('btn-triage-kill-visible', 'Kill visible monsters')}
         ${btn('btn-triage-grant-level', `Grant a level (now ${p.level})`)}
         ${btn('btn-triage-identify-all', 'Identify everything carried')}
+        ${btn('btn-triage-outfit-floor', 'Outfit for this floor')}
         ${btn('btn-triage-end-prologue', 'End the opening scene')}
       </div>
     </div>
@@ -497,6 +498,13 @@ export function renderTriageTab(ctx: DiagnosticTabContext, engine: GameEngine): 
   on('#btn-triage-end-prologue', () => {
     const ended = engine.diagnostics.endPrologue();
     ctx.showToast(ended ? 'The opening scene is over.' : 'No opening scene is under way.');
+    ctx.refresh();
+  });
+
+  on('#btn-triage-outfit-floor', () => {
+    const floor = Math.max(1, engine.currentFloor);
+    const out = engine.diagnostics.outfitForFloor(floor);
+    ctx.showToast(`Outfitted for floor ${floor}: level ${out.level}, wearing ${out.worn.length} piece(s).`);
     ctx.refresh();
   });
 

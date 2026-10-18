@@ -761,6 +761,14 @@ describe('DiagnosticModal - Categorized Sub-Menus & Triage Tool', () => {
       expect(ring.identified).toBe(true);
     });
 
+    it('outfits the hero for the floor it stands on', () => {
+      const outfit = vi.spyOn(engine.diagnostics, 'outfitForFloor');
+      modal.open();
+      modal.setActiveTab('triage');
+      mockDoc.getElementById('btn-triage-outfit-floor')?.click();
+      expect(outfit).toHaveBeenCalledWith(Math.max(1, engine.currentFloor));
+    });
+
     it('sets the PRNG state', () => {
       modal.open();
       modal.setActiveTab('triage');

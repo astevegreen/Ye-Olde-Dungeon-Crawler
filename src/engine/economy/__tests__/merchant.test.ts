@@ -99,6 +99,26 @@ describe('Merchant Economy & Trading Engine', () => {
     expect(getPlayerTotalCp(player)).toBe(10);
   });
 
+  it('names an unidentified item as the shelf shows it, never by what it hides', () => {
+    const gunther = createGuntherArmory();
+    const sword = ItemFactory.createBroadsword('mystery-sword');
+    sword.identified = false;
+    gunther.stock.push(sword);
+    const shown = sword.unitDisplayName;
+    expect(shown).not.toContain('Steel Broadsword');
+
+    const broke = gunther.buyItem(player, sword.id);
+    expect(broke.success).toBe(false);
+    expect(broke.message).toContain(shown);
+    expect(broke.message).not.toContain('Steel Broadsword');
+
+    addCurrencyToPlayer(player, { copper: 0, silver: 0, gold: 500 });
+    const bought = gunther.buyItem(player, sword.id);
+    expect(bought.success).toBe(true);
+    expect(bought.message).toBe(`Purchased ${shown} for ${bought.message?.split(' for ')[1]}`);
+    expect(bought.message).not.toContain('Steel Broadsword');
+  });
+
   it('allows player to sell items from inventory to merchant', () => {
     const gunther = createGuntherArmory();
     // Seed dagger into player pack

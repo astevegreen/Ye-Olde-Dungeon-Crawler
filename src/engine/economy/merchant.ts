@@ -208,7 +208,7 @@ export class Merchant {
     if (playerFundsCp < costCp) {
       return {
         success: false,
-        message: `You cannot afford ${item.name}. Cost: ${formatCurrency(costCp)}, Funds: ${formatCurrency(playerFundsCp)}.`,
+        message: `You cannot afford ${item.unitDisplayName}. Cost: ${formatCurrency(costCp)}, Funds: ${formatCurrency(playerFundsCp)}.`,
         costInCp: costCp,
       };
     }
@@ -218,7 +218,7 @@ export class Merchant {
     if (!canContain.allowed) {
       return {
         success: false,
-        message: `Cannot carry ${item.name}: ${canContain.reason ?? 'Exceeds capacity'}.`,
+        message: `Cannot carry ${item.unitDisplayName}: ${canContain.reason ?? 'Exceeds capacity'}.`,
         costInCp: costCp,
       };
     }
@@ -237,7 +237,7 @@ export class Merchant {
       for (const { container, item: coins } of coinsBefore) container.placeItem(coins);
       return {
         success: false,
-        message: `Cannot carry ${item.name}: your change would take the room it needs.`,
+        message: `Cannot carry ${item.unitDisplayName}: your change would take the room it needs.`,
         costInCp: costCp,
       };
     }
@@ -245,7 +245,7 @@ export class Merchant {
 
     return {
       success: true,
-      message: `Purchased ${item.name} for ${formatCurrency(costCp)}.`,
+      message: `Purchased ${item.unitDisplayName} for ${formatCurrency(costCp)}.`,
       costInCp: costCp,
       changeGiven: deduction.changeGiven,
     };
@@ -279,7 +279,7 @@ export class Merchant {
       if (isEquipped) {
         return {
           success: false,
-          message: `${item.name} is cursed and bound to your body! Cleanse the curse at a town temple first.`,
+          message: `${item.displayName} is cursed and bound to your body! Cleanse the curse at a town temple first.`,
         };
       }
     }
@@ -297,7 +297,7 @@ export class Merchant {
     }
 
     if (!removed) {
-      return { success: false, message: `Could not locate ${item.name} in your inventory.` };
+      return { success: false, message: `Could not locate ${item.displayName} in your inventory.` };
     }
 
     // 3. The price is settled before the merchant looks the item over: an unidentified

@@ -22,7 +22,7 @@ describe('the line a spell logs when its status takes hold', () => {
     const engine = new GameEngine({
       map,
       player,
-      manifest: { id: 'test', name: 'Test', monsters: [], items: [], spells: [], statusHandlers: { scorched, dazed } } as never,
+      manifest: { id: 'test', name: 'Test', monsters: [], items: [], spells: [], statusHandlers: { scorched, dazed, frost_bitten: dazed }, statusEffects: [{ id: 'frost_bitten', name: 'Frostbite' }] } as never,
     });
     return { engine, player, foe };
   }
@@ -38,6 +38,13 @@ describe('the line a spell logs when its status takes hold', () => {
     const { engine, player, foe } = setup();
     const before = engine.messages.length;
     SpellPipeline.applyStatusEffect(engine, player, foe, { type: 'applyStatus', statusId: 'dazed', duration: 3 });
-    expect(engine.messages.slice(before)).toEqual(['Draugr is afflicted with dazed!']);
+    expect(engine.messages.slice(before)).toEqual(['Draugr is afflicted with Dazed!']);
+  });
+
+  it("names the status as the pack does, never by its id", () => {
+    const { engine, player, foe } = setup();
+    const before = engine.messages.length;
+    SpellPipeline.applyStatusEffect(engine, player, foe, { type: 'applyStatus', statusId: 'frost_bitten', duration: 3 });
+    expect(engine.messages.slice(before)).toEqual(['Draugr is afflicted with Frostbite!']);
   });
 });

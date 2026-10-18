@@ -44,6 +44,7 @@ import { sensesThroughWalls } from '../fov/sensing';
 import { hasLineOfSight } from '../ai/perception';
 import { leastResistedElement } from './elements';
 import { StatusHandlerRegistry } from '../status/statusHandlers';
+import { statusDisplayName } from '../status/statusName';
 
 function getElementDefaultColor(element?: string): string {
   switch (element) {
@@ -839,7 +840,7 @@ export class SpellPipeline {
     );
     if (applied) {
       // The status's own handler may already have said it took hold ("X is wreathed in holy fire!").
-      if (!message) engine.log(`${target.name} is afflicted with ${effect.statusId}!`);
+      if (!message) engine.log(`${target.name} is afflicted with ${statusDisplayName(engine.manifest, effect.statusId as StatusType)}!`);
     } else {
       engine.log(`${target.name} resists the affliction!`);
     }

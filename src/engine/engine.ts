@@ -861,8 +861,7 @@ export class GameEngine {
       }
     }
 
-    this.updateFov();
-
+    // The arrival line is logged before the first FOV pass, so it precedes what the hero sees.
     const effectiveMaxFloor =
       (this.manifest.quest?.allowsDifficultyScaling
         ? (this.player.maxFloor ?? this.manifest.quest.maxFloor)
@@ -874,9 +873,13 @@ export class GameEngine {
       if (this.manifest.quest?.bossEntryMessage) {
         this.log(this.manifest.quest.bossEntryMessage);
       }
+    } else if (targetFloor < prevFloor) {
+      this.log(`You climb back up to Floor ${targetFloor}.`);
     } else {
       this.log(`You descend into the cold darkness of Floor ${targetFloor}...`);
     }
+
+    this.updateFov();
 
     if (this.onFloorChanged) {
       const notify = this.onFloorChanged;

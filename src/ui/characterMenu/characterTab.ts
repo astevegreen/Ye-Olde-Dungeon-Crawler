@@ -18,7 +18,6 @@ import {
   getTotalRuneMasteryPoints,
   levelUpHealShare,
   meleeHitPercent,
-  productWorn,
   rangedDexterityBonus,
   resolveManaTerms,
   spellPowerMultiplier,
@@ -85,7 +84,7 @@ const ATTRIBUTES: AttributeMeta[] = [
       if (scaling.meleeDamagePerStrength) {
         parts.push(`Melee damage ${fromTo(signed(strengthMeleeBonus(at(p, 'strength', v - n), scaling)), signed(strengthMeleeBonus(at(p, 'strength', v), scaling)))}`);
       }
-      const carryWith = (strength: number) => formatKg(getMaxCarryWeight(Math.round(strength * productWorn(p, 'carryMultiplier'))));
+      const carryWith = (strength: number) => formatKg(getMaxCarryWeight(at(p, 'strength', strength).carryStrength));
       parts.push(`Carry ${fromTo(carryWith(v - n), carryWith(v), ' kg')}`);
       return parts.join(' · ');
     },
@@ -567,7 +566,7 @@ export class CharacterTab implements MenuTab {
       if (scaling.meleeDamagePerStrength) {
         rows.push(['Melee damage', signed(strengthMeleeBonus(player, scaling)), signed(strengthMeleeBonus(at(player, 'strength', player.strength + str), scaling))]);
       }
-      const carryWith = (strength: number) => formatKg(getMaxCarryWeight(Math.round(strength * productWorn(player, 'carryMultiplier'))));
+      const carryWith = (strength: number) => formatKg(getMaxCarryWeight(at(player, 'strength', strength).carryStrength));
       rows.push(['Carry limit', carryWith(player.strength), carryWith(player.strength + str), ' kg']);
     }
     const dex = this.draft.get('dexterity');

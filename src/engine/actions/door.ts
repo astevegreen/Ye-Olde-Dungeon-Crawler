@@ -7,6 +7,7 @@ import type { Action } from './action';
 import { TILES } from '../grid/tile';
 import type { Item } from '../items/item';
 import { harm } from '../combat/deathResolver';
+import { strengthOf } from '../stats/attributeCalculator';
 
 export class OpenDoorAction implements Action {
   public readonly entity: Entity;
@@ -251,7 +252,7 @@ export class BashDoorAction implements Action {
       return { success: true, cost: BASE_ACTION_COST, message: msg };
     }
 
-    const str = this.entity.strength ?? 10;
+    const str = strengthOf(this.entity) ?? 10;
     const lockDC = tile.lockDifficulty ?? 14;
     const roll = engine.prng.nextInt(1, 20) + Math.floor(str / 4);
 

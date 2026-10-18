@@ -4,6 +4,7 @@ import type { Entity } from '../entities/entity';
 import { Monster } from '../entities/monster';
 import type { Position } from '../types';
 import { DeathResolver, harm } from './deathResolver';
+import { strengthOf } from '../stats/attributeCalculator';
 
 /** The trap type used when an entity lands on a trap tile during impulse resolution. */
 const DEFAULT_IMPULSE_TRAP_TYPE = 'pit';
@@ -275,7 +276,7 @@ function resolveWallSplat(
   remainingDist: number,
   distanceTraveled: number
 ): ImpulseResult {
-  const strBonus = Math.floor(((source?.strength ?? target.strength ?? 10)) / 2);
+  const strBonus = Math.floor(((source ? strengthOf(source) : undefined) ?? strengthOf(target) ?? 10) / 2);
   const impactDamage = Math.max(3, remainingDist * 4 + strBonus);
 
   // Stunned first, as before: the splat line says so, and a kill resolves after it.

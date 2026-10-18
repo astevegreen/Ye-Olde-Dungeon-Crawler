@@ -113,6 +113,10 @@ export function calculateAttribute(
   } else if (attributeKey === 'defense') {
     value += actor.inventory?.getEquipmentStats().defenseBonus ?? 0;
     value += actor.pactMutatorsSupplier?.().playerDefenseBonus ?? 0;
+  } else if (attributeKey === 'speed') {
+    value += actor.inventory?.getEquipmentStats().speedBonus ?? 0;
+  } else if (attributeKey === 'strength') {
+    value += actor.inventory?.getEquipmentStats().strengthBonus ?? 0;
   }
 
   // Execute custom flat modifiers
@@ -192,4 +196,9 @@ export function calculateAttribute(
   }
 
   return value;
+}
+
+/** An actor's Strength with what it wears added, or undefined for one with no Strength (most monsters). */
+export function strengthOf(actor: Entity): number | undefined {
+  return actor.strength === undefined ? undefined : calculateAttribute(actor, 'strength');
 }

@@ -376,9 +376,9 @@ export class Player extends Actor {
     return true;
   }
 
-  /** The Strength the hero carries with: Strength scaled by what it wears (`carryMultiplier`). */
+  /** The Strength the hero carries with: Strength as worn, scaled by what it wears (`carryMultiplier`). */
   public get carryStrength(): number {
-    return Math.round(this.strength * productWorn(this, 'carryMultiplier'));
+    return Math.round(calculateAttribute(this, 'strength') * productWorn(this, 'carryMultiplier'));
   }
 
   /** The share of max HP what the hero wears and holds adds (`maxHpPercent`; read by `calculateAttribute`). */

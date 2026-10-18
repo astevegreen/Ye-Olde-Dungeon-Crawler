@@ -1,4 +1,5 @@
 import type { Entity } from '../entities/entity';
+import { strengthOf } from '../stats/attributeCalculator';
 import type { AttributeScalingConfig } from '../types/config';
 import type { GameContentManifest } from '../types/manifest';
 
@@ -24,7 +25,7 @@ function above(value: number | undefined, config: AttributeScalingConfig): numbe
 
 /** Flat melee damage the attacker's Strength adds, or takes away below the baseline. */
 export function strengthMeleeBonus(attacker: Entity, config: AttributeScalingConfig): number {
-  return Math.round(above(attacker.strength, config) * (config.meleeDamagePerStrength ?? 0));
+  return Math.round(above(strengthOf(attacker), config) * (config.meleeDamagePerStrength ?? 0));
 }
 
 /** A melee blow's chance to land, in percent, before the defender's evasion. 100 means no roll. */

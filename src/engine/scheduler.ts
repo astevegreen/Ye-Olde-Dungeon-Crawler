@@ -1,5 +1,6 @@
 import type { Entity } from './entities/entity';
 import { flightRecorder } from './debug/flightRecorder';
+import { calculateAttribute } from './stats/attributeCalculator';
 
 export class EnergyScheduler {
   private entities: Entity[];
@@ -86,6 +87,8 @@ export class EnergyScheduler {
     if (living.length === 0) {
       return null;
     }
+    // Speed as worn (a gear bonus or penalty), read once: nothing changes it between ticks.
+    const speeds = living.map((e) => calculateAttribute(e, 'speed'));
 
     let iterations = 0;
     while (iterations < maxTicks) {
@@ -93,10 +96,7 @@ export class EnergyScheduler {
       iterations += 1;
 
       // Distribute energy to all living entities with positive speed
-      for (const entity of living) {
-        const effSpeed = Math.max(0, entity.speed);
-        entity.gainEnergy(effSpeed);
-      }
+      living.forEach((entity, i) => entity.gainEnergy(speeds[i]));
 
       const ready = this.getReadyActor();
       if (ready) {

@@ -805,12 +805,16 @@ export class SpellPipeline {
     }
   }
 
-  /** Lifts `target`'s longest-lasting affliction, or with `all` every one. */
+  /**
+   * Lifts `target`'s longest-lasting affliction, or with `all` every one. Silent when there is
+   * none: a lend cleanses on every cast of its neighbour, and a line each time was noise.
+   */
   public static cleanse(engine: GameEngine, target: Entity, all: boolean): void {
     if (!target.isAlive()) return;
     const lifted = afflictionsOf(target).slice(0, all ? undefined : 1);
+    if (lifted.length === 0) return;
     for (const type of lifted) target.statusManager.removeStatus(type);
-    engine.log(lifted.length > 0 ? `${target.name} is cleansed of ${lifted.join(', ')}.` : `${target.name} has nothing to cleanse.`);
+    engine.log(`${target.name} is cleansed of ${lifted.join(', ')}.`);
   }
 
   /** Moves the caster's afflictions to `target`; one it is immune to stays with the caster. */

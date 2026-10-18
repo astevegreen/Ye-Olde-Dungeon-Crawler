@@ -22,6 +22,7 @@ import { addCurrencyToPlayer } from '../../economy/currency';
 import { serializeItem, deserializeItem, itemDefinitionLookup } from '../../storage/serializer';
 import type { GameEvent, UncurseEvent } from '../../events';
 import type { SpellDefinition } from '../../magic/types';
+import { effectiveManaCost } from '../../magic/castNumbers';
 
 /** The cotw family's modifier for an item found on `floor` (tier 1 on floor 1, tier 2 on floor 10/15, tier 3 on 25). */
 const mod = (category: ModifierCategory, floor: number) => familyModifier(COTW_ITEM_FAMILIES, category, floor, 'test')!;
@@ -171,6 +172,15 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       const cast = new CastSpellAction(player, 'test_spark', target.x, target.y);
       cast.perform(engine);
       expect(player.mana).toBe(10); // Exactly 10 MP consumed, 0 discount
+    });
+
+    it('stacked discounts leave a mana spell costing 1, and a free spell free (owner, P-36)', () => {
+      const staff = new Item({ id: 'staff-deep', name: 'Deep Staff', category: 'weapon', slot: 'mainHand', weight: 1200, bulk: 1800, identified: true });
+      staff.addModifier(owned('enchanted', { manaCostDiscount: 50 }));
+      player.inventory.paperdoll.equip(staff, 'mainHand');
+
+      expect(effectiveManaCost(player, { manaCost: 4 })).toBe(1);
+      expect(effectiveManaCost(player, { manaCost: 0 })).toBe(0);
     });
 
     it('Enchanted strictly scales spell damage and discounts mana without affecting melee damage', () => {

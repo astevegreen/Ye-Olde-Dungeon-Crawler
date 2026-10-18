@@ -157,12 +157,15 @@ export function heroCastPreview(engine: GameEngine, spell: SpellDefinition): Spe
 
 /**
  * What `spell` costs this caster in mana: through what it wears and its perks, a share off
- * first (its slot's Thrift too), then flat.
+ * first (its slot's Thrift too), then flat; never below 1 while it costs any (owner, P-36:
+ * stacked discounts made Heal free, unlimited healing).
  */
 export function effectiveManaCost(caster: Entity, spell: Pick<SpellDefinition, 'manaCost'> & Partial<Pick<SpellDefinition, 'id'>>): number {
+  const base = spell.manaCost ?? 0;
+  if (base <= 0) return 0;
   const multiplier = productWorn(caster, 'manaCostMultiplier') * castSlotStats(caster, spell.id).costMultiplier * learnedCostShare(caster, spell.id);
   const discount = sumWorn(caster, 'manaCostDiscount');
-  return Math.max(0, Math.round((spell.manaCost ?? 0) * multiplier) - discount);
+  return Math.max(1, Math.round(base * multiplier) - discount);
 }
 
 /**

@@ -53,7 +53,7 @@ export class PickUpAction implements Action {
           const removedName = removed.displayName;
           const subStore = this.player.inventory.storeItem(removed);
           if (subStore.success) {
-            const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
+            const cost = this.player.getActionCost(BASE_ACTION_COST);
             this.player.consumeEnergy(cost);
             const msg = `Took ${removedName} from ${itemToPick.displayName} (stored in ${subStore.destination}).`;
             engine.log(msg);
@@ -75,7 +75,7 @@ export class PickUpAction implements Action {
     // Remove from map ground
     engine.map.removeItemAt(this.player.x, this.player.y, itemToPick.id);
 
-    const cost = this.freeAction ? 0 : this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
+    const cost = this.freeAction ? 0 : this.player.getActionCost(BASE_ACTION_COST);
     if (cost > 0) {
       this.player.consumeEnergy(cost);
     }
@@ -126,7 +126,7 @@ export class DropAction implements Action {
     }
     engine.map.addItemAt(this.player.x, this.player.y, this.item);
 
-    const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
+    const cost = this.player.getActionCost(BASE_ACTION_COST);
     this.player.consumeEnergy(cost);
 
     const msg = `Dropped ${this.item.displayName} onto the floor.`;
@@ -166,7 +166,7 @@ export class EquipAction implements Action {
     // Wearing reveals everything at once (Q21): the family, the +N, the affix.
     item.identified = true;
 
-    const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
+    const cost = this.player.getActionCost(BASE_ACTION_COST);
     this.player.consumeEnergy(cost);
 
     let msg = `Equipped ${item.displayName}.`;
@@ -204,7 +204,7 @@ export class UnequipAction implements Action {
       return { success: false, cost: 0, message: result.reason };
     }
 
-    const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
+    const cost = this.player.getActionCost(BASE_ACTION_COST);
     this.player.consumeEnergy(cost);
 
     const msg = `Unequipped ${item.displayName} to pack.`;
@@ -282,7 +282,7 @@ export class QuickLootAction implements Action {
       return { success: false, cost: 0, message: msg };
     }
 
-    const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
+    const cost = this.player.getActionCost(BASE_ACTION_COST);
     this.player.consumeEnergy(cost);
 
     const names = lootedItems.join(', ');
@@ -327,7 +327,7 @@ export class LootFromContainerAction implements Action {
       return { success: false, cost: 0, message: msg };
     }
 
-    const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
+    const cost = this.player.getActionCost(BASE_ACTION_COST);
     this.player.consumeEnergy(cost);
 
     const msg = `Took ${takenName} from ${this.container.displayName} (stored in ${storeResult.destination}).`;
@@ -368,7 +368,7 @@ export class StoreInContainerAction implements Action {
 
     this.container.addItem(this.item);
 
-    const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
+    const cost = this.player.getActionCost(BASE_ACTION_COST);
     this.player.consumeEnergy(cost);
 
     const msg = `Placed ${this.item.displayName} into ${this.container.displayName}.`;
@@ -423,7 +423,7 @@ export class LootAllFromContainerAction implements Action {
       return { success: false, cost: 0, message: msg };
     }
 
-    const cost = this.player.inventory.calculateActionCost(BASE_ACTION_COST, this.player.strength);
+    const cost = this.player.getActionCost(BASE_ACTION_COST);
     this.player.consumeEnergy(cost);
 
     const names = looted.join(', ');

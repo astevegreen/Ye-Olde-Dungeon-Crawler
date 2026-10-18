@@ -5,7 +5,7 @@
  */
 
 .inv-root { position: relative; height: 100%; }
-.inv-grid { grid-template-columns: minmax(270px, 300px) minmax(0, 1fr) minmax(0, 1fr) minmax(250px, 300px); }
+.inv-grid { grid-template-columns: minmax(270px, 300px) minmax(150px, 1fr) minmax(150px, 1fr) minmax(250px, 300px); }
 
 .inv-panel {
   display: flex;

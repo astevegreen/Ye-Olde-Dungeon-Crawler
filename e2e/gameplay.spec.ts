@@ -190,6 +190,27 @@ test('planning a point keeps the Character tab where it was scrolled', async ({ 
   expect(after).toEqual(before);
 });
 
+// On a narrow window the character menu's side columns took their full width first and
+// crushed the middle ones: Backpack and Ground 19px with their text overlapping, the
+// Character tab's point rows 15px, the Spellbook's middle 0px (playtest, 18 Oct). They keep
+// a usable width, and the menu scrolls sideways to reach them.
+test('the character menu keeps every column usable on a narrow window', async ({ page }) => {
+  await page.setViewportSize({ width: 760, height: 900 });
+  await embarkNewHero(page);
+  const columns = (grid: string) =>
+    page.evaluate((sel) => {
+      const el = document.querySelector(`#character-menu-tab-content ${sel}`)!;
+      return getComputedStyle(el).gridTemplateColumns.split(' ').map((w) => Math.round(parseFloat(w)));
+    }, grid);
+  await page.keyboard.press('i');
+  await expect(page.locator('#character-menu-tab-content .inv-grid')).toBeVisible();
+  for (const w of await columns('.inv-grid')) expect(w, 'an inventory column').toBeGreaterThanOrEqual(150);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('e');
+  await expect(page.locator('#character-menu-tab-content .ch-grid')).toBeVisible();
+  for (const w of await columns('.ch-grid')) expect(w, 'a character column').toBeGreaterThanOrEqual(200);
+});
+
 // The open map (M) redraws when the window changes size: its backing store was set once
 // per floor shown, so the floor stayed squashed until reopened (tracker 0.22).
 test('the open map redraws to fit when the window is resized', async ({ page }) => {

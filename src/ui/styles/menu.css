@@ -116,6 +116,8 @@
   min-height: 0;
   position: relative;
   overflow: hidden;
+  /* A window too narrow for a tab's columns scrolls sideways rather than crush them. */
+  overflow-x: auto;
 }
 
 .cm-foot {
@@ -319,6 +321,7 @@ canvas.it-frame { box-shadow: 0 0 0 2px var(--it-frame); border-radius: 3px; }
   gap: var(--ui-space-4);
   padding: var(--ui-space-4);
   overflow: hidden;
+  min-width: min-content;
 }
 
 /* One accent glow when something is newly earned (motion tokens honor reduced motion). */
@@ -330,7 +333,7 @@ canvas.it-frame { box-shadow: 0 0 0 2px var(--it-frame); border-radius: 3px; }
 
 /* ---- Character tab (identity · allocation · what changes) ------------------ */
 
-.ch-grid { grid-template-columns: minmax(240px, 300px) minmax(0, 1fr) minmax(260px, 340px); }
+.ch-grid { grid-template-columns: minmax(240px, 300px) minmax(260px, 1fr) minmax(260px, 340px); }
 .ch-name { font: bold var(--ui-text-xl) var(--ui-font-display); color: var(--ui-title); }
 .ch-xp { display: flex; justify-content: space-between; margin: var(--ui-space-3) 0 var(--ui-space-1); }
 .ch-subh { margin-top: var(--ui-space-3); }
@@ -428,7 +431,7 @@ canvas.it-frame { box-shadow: 0 0 0 2px var(--it-frame); border-radius: 3px; }
 
 /* ---- Story tab (descent · saga · lore, standing, pacts) -------------------- */
 
-.st-grid { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(280px, 380px); }
+.st-grid { grid-template-columns: minmax(220px, 280px) minmax(200px, 1fr) minmax(280px, 380px); }
 
 .st-descent { position: relative; flex: 1; min-height: 240px; padding: 0 var(--ui-space-3); overflow: hidden; }
 /* The pack's descent art (`ui~descent`, tracker 4.10): a square as tall as the card, faint
@@ -685,7 +688,7 @@ canvas.it-frame { box-shadow: 0 0 0 2px var(--it-frame); border-radius: 3px; }
 /* ---- Spellbook tab ----------------------------------------------------------------- */
 
 .sb-grid { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); }
-.sb-grid.has-grimoire { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(300px, 380px); }
+.sb-grid.has-grimoire { grid-template-columns: minmax(220px, 280px) minmax(200px, 1fr) minmax(300px, 380px); }
 .sb-views { margin-bottom: var(--ui-space-2); }
 .sb-where { margin-top: var(--ui-space-2); }
 .sb-mana { color: var(--ui-mana); }

@@ -28,6 +28,7 @@ export const SIZES = {
   2560: [2560, 1080],
   '5x4': [1280, 1024],
   portrait: [1200, 1600],
+  narrow: [760, 900],
 };
 
 // Holds Date.now still from page load until startRun has created the hero: the title

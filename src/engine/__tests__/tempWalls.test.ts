@@ -11,6 +11,9 @@ import { serializeMapObject, deserializeMapObject } from '../storage/serializer'
 import { MovementAction } from '../actions/movement';
 import { CastSpellAction } from '../actions/spell-actions';
 import { useTestSpells } from '../__fixtures__/testHelpers';
+import { TrapInstance } from '../dungeon/traps';
+import { WaitAction } from '../actions/wait';
+import { SearchAction } from '../actions/search';
 
 // The P-35 spike (plan risk 7): a timed wall across a corridor, checked for paths, sight,
 // shots, an occupant, its turns, its HP and a save.
@@ -186,5 +189,50 @@ describe('striking a temporary wall', () => {
     new CastSpellAction(player, 'blast', 9, 2).perform(engine);
     expect(behind.hp).toBe(10);
     expect(map.tempWalls.hpAt(5, 2)).toBe(16);
+  });
+});
+
+// A hidden trap under a wall, spotted while the wall stands: the wall holds for its turns
+// and HP, and the trap shows once it falls.
+describe('a trap spotted under a temporary wall', () => {
+  function build() {
+    const map = GameMap.createBoxRoom(20, 20);
+    const player = new Player({
+      id: 'hero',
+      name: 'Hero',
+      position: { x: 5, y: 5 },
+      stats: { hp: 50, maxHp: 50, attack: 10, defense: 4 },
+      intelligence: 55, // trapSpotChance 1.0
+      dexterity: 15,
+    });
+    const engine = new GameEngine({ map, player, floor: 1 });
+    const trap = new TrapInstance({ id: 't', type: 'pit', x: 7, y: 5 });
+    map.addTrap(trap);
+    expect(map.tempWalls.raise(map, 7, 5, { hp: 30, turns: 15, name: 'cairn' })).toBe(true);
+    engine.updateFov();
+    return { engine, map, player, trap };
+  }
+
+  it('passive trap sense on a turn leaves the wall standing', () => {
+    const { engine, map, player, trap } = build();
+    engine.handlePlayerAction(new WaitAction(player));
+    expect(trap.revealed).toBe(true);
+    expect(map.getTile(7, 5)?.type).toBe('wall');
+    expect(map.isTransparent(7, 5)).toBe(false);
+  });
+
+  it('a search leaves the wall standing', () => {
+    const { engine, map, player, trap } = build();
+    new SearchAction(player, () => 0.99).perform(engine);
+    expect(trap.revealed).toBe(true);
+    expect(map.getTile(7, 5)?.type).toBe('wall');
+  });
+
+  it('the wall, once fallen, leaves the spotted trap showing', () => {
+    const { engine, map, player, trap } = build();
+    engine.handlePlayerAction(new WaitAction(player));
+    expect(trap.revealed).toBe(true);
+    map.tempWalls.fell(engine, 7, 5);
+    expect(map.getTile(7, 5)?.type).toBe('trap');
   });
 });

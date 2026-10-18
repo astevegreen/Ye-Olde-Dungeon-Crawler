@@ -23,7 +23,8 @@ export function revealSecretDoor(engine: GameEngine, x: number, y: number, messa
 /** Reveals a hidden trap, and counts the find: the log line and the `hidden_trap_found` milestone. */
 export function revealTrap(engine: GameEngine, trap: TrapInstance, message: string): void {
   trap.revealed = true;
-  engine.map.setTile(trap.x, trap.y, TILES.TRAP);
+  // A trap spotted under a temporary wall shows once the wall falls; the wall stands meanwhile.
+  if (!engine.map.tempWalls.setUnder(trap.x, trap.y, TILES.TRAP)) engine.map.setTile(trap.x, trap.y, TILES.TRAP);
   engine.log(message);
   recordMilestone(engine, 'hidden_trap_found');
 }

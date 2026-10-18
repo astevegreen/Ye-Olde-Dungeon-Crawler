@@ -72,6 +72,17 @@ export class TempWallTable {
   }
 
   /**
+   * Changes the floor beneath a standing wall (a trap spotted under it), which it gives back
+   * when it falls. Returns false when no wall stands there.
+   */
+  public setUnder(x: number, y: number, tile: TileDefinition): boolean {
+    const wall = this.walls.get(this.key(x, y));
+    if (!wall) return false;
+    wall.under = tile;
+    return true;
+  }
+
+  /**
    * Raises a wall on a walkable cell. A creature standing there is shoved to a free walkable
    * neighbour; with none free, the wall is refused. Items stay under the wall; surfaces and gas
    * on the cell are cleared. Returns whether the wall rose.

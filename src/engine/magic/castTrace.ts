@@ -28,6 +28,18 @@ export function targetingModeOf(spell: SpellDefinition): TargetingMode {
   return spell.targetingMode ?? (spell.targetType as TargetingMode);
 }
 
+/**
+ * How far a flight aimed from `from` at `to` may travel, as `traceProjectile` measures it
+ * (along the ray), for a range of `steps` grid steps: a spell's range counts tiles the way a
+ * hero walks them, so 5 diagonal steps are 5, not 7.1, and a "Range 6" bolt reaches them.
+ */
+function flightLength(steps: number, from: Position, to: Position): number {
+  const dx = Math.abs(to.x - from.x);
+  const dy = Math.abs(to.y - from.y);
+  const grid = Math.max(dx, dy);
+  return grid === 0 ? steps : (steps * Math.hypot(dx, dy)) / grid;
+}
+
 /** The geometry of `spell` cast by `caster` at `target` on the engine's map as it stands. */
 export function castGeometry(
   engine: GameEngine,
@@ -40,7 +52,7 @@ export function castGeometry(
 
   if (spell.shape === 'outAndBack') {
     // It flies through creatures to its range or a wall, then back along the same tiles.
-    const ray = traceProjectile(engine.map, caster.x, caster.y, target.x, target.y, spell.range, false, caster.id, true);
+    const ray = traceProjectile(engine.map, caster.x, caster.y, target.x, target.y, flightLength(spell.range, caster, target), false, caster.id, true);
     const back = [...ray.path].reverse().map(({ x, y }) => ({ x, y }));
     back.push({ x: caster.x, y: caster.y });
     return { ray, reflects: false, back };
@@ -49,7 +61,7 @@ export function castGeometry(
 
   if (mode === 'ray' || mode === 'bounce_ray') {
     const reflects = Boolean(spell.reflects) || mode === 'bounce_ray' || engine.affinityMatrix.canReflect(spell.element);
-    const ray = traceProjectile(engine.map, caster.x, caster.y, target.x, target.y, spell.range, reflects, caster.id);
+    const ray = traceProjectile(engine.map, caster.x, caster.y, target.x, target.y, flightLength(spell.range, caster, target), reflects, caster.id);
     const bursts = spell.areaOfEffect > 0 || spell.visual?.archetype === 'projectile_burst';
     return { ray, reflects, burst: bursts ? { epicenter: ray.impactTile, radius } : undefined };
   }
@@ -59,8 +71,8 @@ export function castGeometry(
     let epicenter: Position = { x: target.x, y: target.y };
     let ray: ProjectilePathResult | undefined;
     if (spell.visual?.archetype === 'projectile_burst' || (spell.range > 0 && spell.visual?.archetype !== 'direct_burst')) {
-      const distToTarget = Math.hypot(target.x - caster.x, target.y - caster.y);
-      ray = traceProjectile(engine.map, caster.x, caster.y, target.x, target.y, Math.min(spell.range, distToTarget), false, caster.id);
+      const stepsToTarget = Math.max(Math.abs(target.x - caster.x), Math.abs(target.y - caster.y));
+      ray = traceProjectile(engine.map, caster.x, caster.y, target.x, target.y, flightLength(Math.min(spell.range, stepsToTarget), caster, target), false, caster.id);
       if (ray.path.length > 0) epicenter = ray.impactTile;
       // A wall at the caster's side stops it at once: it bursts there, as a ray's burst does.
       else if (ray.hitWall) epicenter = { x: caster.x, y: caster.y };

@@ -156,3 +156,31 @@ describe('R-rend-4 · the aim preview and the cast share one geometry (castGeome
     expect(geo.ray?.reflectionsCount).toBeGreaterThan(0);
   }, 30_000);
 });
+
+// Playtest 2026-10-18: a "Range 6" Magic Arrow faded short of a foe five diagonal steps away
+// (7.1 as a circle measures it) that the aim offered. A bolt's range counts grid steps.
+describe('a bolt reaches as far as its range in grid steps, diagonals included', () => {
+  const arrow = { ...firebolt, id: 'arrow', range: 6 };
+  function setup(at: { x: number; y: number }) {
+    const map = new GameMap(16, 16, TILES.FLOOR);
+    const player = new Player({ position: { x: 1, y: 1 }, stats: { hp: 100, maxHp: 100, attack: 10, defense: 0 } });
+    const foe = new Monster({ id: 'foe', name: 'Draugr', position: at, stats: { hp: 30, maxHp: 30, attack: 1, defense: 0 } });
+    map.addEntity(player);
+    map.addEntity(foe);
+    return { engine: new GameEngine({ map, player }), player, foe };
+  }
+
+  it('strikes a foe five and six diagonal steps away', () => {
+    for (const d of [5, 6]) {
+      const { engine, player, foe } = setup({ x: 1 + d, y: 1 + d });
+      expect(castGeometry(engine, arrow as never, player, foe).ray?.hitEntityId).toBe('foe');
+    }
+  });
+
+  it('falls short of one seven diagonal steps away', () => {
+    const { engine, player, foe } = setup({ x: 8, y: 8 });
+    const ray = castGeometry(engine, arrow as never, player, foe).ray!;
+    expect(ray.hitEntityId).toBeUndefined();
+    expect(ray.impactTile).toEqual({ x: 7, y: 7 });
+  });
+});

@@ -533,6 +533,17 @@ describe('Declarative Item Enchantment, Affliction, and Chaotic Alignment System
       expect(emittedEvents.some((e) => e.type === 'chaotic_proc')).toBe(true);
     });
 
+    it("two Trickster's pieces still fling once in ten steps, not once in five (owner, P-36)", () => {
+      wear(player, 'fingerLeft', chaotic("Trickster's Step", { evasionBonus: 0.25, blinkEverySteps: 10, blinkRange: [2, 4] }));
+      wear(player, 'head', chaotic("Trickster's Step", { evasionBonus: 0.25, blinkEverySteps: 10, blinkRange: [2, 4] }));
+      for (let i = 0; i < 10; i++) {
+        player.gainEnergy(100);
+        new MovementAction(player, i % 2 === 0 ? 1 : -1, 0).perform(engine);
+        if (i < 9) expect(emittedEvents.filter((e) => e.type === 'chaotic_proc')).toHaveLength(0);
+      }
+      expect(emittedEvents.filter((e) => e.type === 'chaotic_proc')).toHaveLength(1);
+    });
+
     it('Wildfire gives a damaging spell a random element of the pack, at +40% power', () => {
       const fire = new GameEngine({ map: GameMap.createBoxRoom(20, 20), player: new Player({ id: 'p2', name: 'Caster', position: { x: 5, y: 5 }, stats: { hp: 100, maxHp: 100, attack: 10, defense: 0 } }), manifest: cotwManifest });
       fire.player.gainEnergy(100);

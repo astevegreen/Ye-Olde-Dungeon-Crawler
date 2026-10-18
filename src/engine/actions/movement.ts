@@ -224,13 +224,16 @@ export class MovementAction implements Action {
     }
 
     // 5b3. Trickster's Step: every Nth step blinks the bearer 2–4 tiles. The count lives in a
-    // world counter keyed by the modifier, so it survives a save.
-    for (const mod of wornModifiers(this.entity)) {
-      if (!mod.blinkEverySteps || !mod.blinkRange) continue;
+    // world counter keyed by the modifier, so it survives a save. Several pieces count each
+    // step once, the most frequent piece's count (owner, P-36: two pieces flung twice as often).
+    const blinker = wornModifiers(this.entity)
+      .filter((mod) => mod.blinkEverySteps && mod.blinkRange)
+      .sort((a, b) => a.blinkEverySteps! - b.blinkEverySteps!)[0];
+    for (const mod of blinker ? [blinker] : []) {
       const key = `steps:${mod.id}`;
-      if (engine.modifyWorldCounter(key, 1) < mod.blinkEverySteps) continue;
+      if (engine.modifyWorldCounter(key, 1) < mod.blinkEverySteps!) continue;
       engine.modifyWorldCounter(key, -engine.getWorldCounter(key));
-      const [lo, hi] = mod.blinkRange;
+      const [lo, hi] = mod.blinkRange!;
       const spots: Array<{ x: number; y: number }> = [];
       for (let dy = -hi; dy <= hi; dy++) {
         for (let dx = -hi; dx <= hi; dx++) {

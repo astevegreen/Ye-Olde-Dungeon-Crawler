@@ -185,7 +185,8 @@ export class GameStateManager {
     }
 
     engine.log(`*** FALLEN IN BATTLE: ${this.causeOfDeath} ***`);
-    engine.log(`Your name is etched in the Hall of Legends with ${score} Points.`);
+    const hall = engine.manifest?.branding?.hallOfFameName ?? 'Hall of Legends';
+    engine.log(`Your name is etched in the ${hall} with ${score.toLocaleString()} points.`);
 
     const notify = this.onStateChanged;
     if (notify) {

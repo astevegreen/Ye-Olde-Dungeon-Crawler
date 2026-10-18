@@ -33,12 +33,12 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           { type: 'recordMilestone', milestoneId: 'matriarch_bargain' },
           { type: 'modifyPermanentStat', stat: 'attack', delta: -2 },
           { type: 'modifyPermanentStat', stat: 'defense', delta: 3 },
-          { type: 'grantCompanion', companionId: 'hearth_frost_hound' },
           {
             type: 'logMessage',
             message:
               'You grip the matriarch’s frost-rimed hand. The siphon shatters like winter glass — the cold in you deepens, steady and sure. A Frost-Ward Hound pads to your side.',
           },
+          { type: 'grantCompanion', companionId: 'hearth_frost_hound' },
         ],
       },
       {
@@ -52,12 +52,12 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           { type: 'recordMilestone', milestoneId: 'matriarch_bargain' },
           { type: 'modifyPermanentStat', stat: 'attack', delta: 3 },
           { type: 'modifyPermanentStat', stat: 'defense', delta: -2 },
-          { type: 'grantCompanion', companionId: 'ember_fang_wolf' },
           {
             type: 'logMessage',
             message:
               'You seize the stolen chariot-fire instead of her hand. It burns — your own giant-blood curdling against the heat — but the siphon breaks all the same. An Ember-Fang Wolf answers the flame.',
           },
+          { type: 'grantCompanion', companionId: 'ember_fang_wolf' },
         ],
       },
     ],

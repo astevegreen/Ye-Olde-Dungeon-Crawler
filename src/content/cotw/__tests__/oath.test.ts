@@ -129,6 +129,22 @@ describe("The Matriarch's Blood-Oath (real cotw manifest)", () => {
     expect(engine.companion?.name).toBe('Ember-Fang Wolf');
   });
 
+  it("tells the matriarch's line before the companion answers the call", () => {
+    for (const [option, name] of [['honor', 'Frost-Ward Hound'], ['break', 'Ember-Fang Wolf']] as const) {
+      const { engine, player, map, choose } = buildEngine();
+      winTheHearthTear(engine, map);
+      engine.handlePlayerAction(new MovementAction(player, 0, 1));
+      const before = engine.messages.length;
+      choose(option);
+
+      const log = engine.messages.slice(before);
+      const story = log.findIndex((m) => m.includes(name) && !m.includes('answers your call'));
+      const call = log.indexOf(`${name} answers your call!`);
+      expect(story).toBeGreaterThanOrEqual(0);
+      expect(call).toBeGreaterThan(story);
+    }
+  });
+
   it('holds the stairs and the Rune of Return until the matriarch has made her offer', () => {
     const { engine, player, map } = buildEngine();
     winTheHearthTear(engine, map);

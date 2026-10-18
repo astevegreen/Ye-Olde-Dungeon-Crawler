@@ -634,6 +634,21 @@ test('the other-pack save warning holds the keys until answered', async ({ page 
   expect(await stackIds(page)).toEqual([]);
 });
 
+// The hero-creation screen is built in index.html under the main menu: until New game opens
+// it, none of its controls may take keyboard focus.
+test('Tab on the main menu reaches its buttons, not the hidden hero-creation screen', async ({ page }) => {
+  expect(existsSync(BUNDLE), `${BUNDLE} is missing; run \`npm run build\` first`).toBe(true);
+  await page.goto(pathToFileURL(BUNDLE).href);
+  await expect(page.locator('#main-menu-screen')).toBeVisible();
+
+  await expect(page.locator('#title-screen')).toBeHidden();
+  await page.keyboard.press('Tab');
+  const focusedInMenu = await page.evaluate(
+    () => !!document.activeElement && !!document.getElementById('main-menu-screen')?.contains(document.activeElement)
+  );
+  expect(focusedInMenu).toBe(true);
+});
+
 // On the main menu InputHandler is disabled, so settings takes keys only through its own
 // focus-holding overlay: rebinding by keyboard and Escape must work with no game running.
 test('settings on the main menu rebinds and closes by keyboard', async ({ page }) => {

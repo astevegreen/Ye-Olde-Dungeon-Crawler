@@ -2263,7 +2263,9 @@ window.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('visibilitychange', () => sessionGuard.setVisible(document.visibilityState === 'visible'));
   window.addEventListener('pagehide', () => sessionGuard.end());
 
-  // Show Main Menu on start
+  // Show Main Menu on start. The hero-creation overlay is laid out under it by default:
+  // hide it, or Tab walks its controls unseen before reaching the menu.
+  titleScreen.hide();
   mainMenu.show();
 
   // The last session stopped responding: offer a pre-filled report for it.

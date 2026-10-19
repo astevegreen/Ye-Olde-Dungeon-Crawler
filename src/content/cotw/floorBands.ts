@@ -68,9 +68,17 @@ export const COTW_FLOOR_HAZARDS: FloorHazardAdvisory[] = [
   },
   {
     minFloor: 43,
+    maxFloor: 49,
     element: 'poison',
     title: 'Vulnerable to Wyrm Venom',
     message: 'Floor {floor} lies in the Maw of Malice, where Níðhögg’s brood spit corrosive bile.',
     recommendation: `Nothing worn turns venom: carry ${itemName('supreme_health_potion')}s and ${itemName('urdr_cleansing_water')} to outlast the bile.`,
+  },
+  {
+    minFloor: 50,
+    element: 'poison',
+    title: 'Vulnerable to Wyrm Venom',
+    message: 'Floor {floor} is the Heartwood, where Níðhögg’s own wounds weep venom onto the root.',
+    recommendation: `Nothing worn turns venom: carry ${itemName('supreme_health_potion')}s and ${itemName('urdr_cleansing_water')} to outlast it.`,
   },
 ];

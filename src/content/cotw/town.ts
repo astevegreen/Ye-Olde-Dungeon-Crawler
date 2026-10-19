@@ -55,7 +55,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       shopId: 'merchant-gunther',
       position: { x: 42, y: 6 },
       greeting: 'Need cold steel or sturdy plate? Gunther’s forge provides!',
-      dialogText: 'Mind your guard down there. Those hill giants strike hard enough to splinter oak.',
+      dialogText: 'Mind your guard down there. Those cave trolls strike hard enough to splinter oak.',
       merchantConfig: {
         id: 'merchant-gunther',
         name: "Gunther's Armory",
@@ -147,8 +147,8 @@ export const COTW_TOWN: TownLayoutDefinition = {
       role: 'guard',
       position: { x: 26, y: 14 },
       greeting: 'Halt! Keep your weapons sheathed in Bjarnarhaven, adventurer.',
-      dialogText: 'The dungeon cellar to the north-east leads into the depths. Many go down; few return.',
-      advice: 'Bjarnarhaven is peaceful, but the cellar entrance north-east holds terrors from old myths. Buy sturdy armor and healing draughts before you venture down, and a torch from Olaf: past the fire-rift, they say, something drinks the light. And call on Sage Mimir before you go: a pact sealed at his well pays its bonus on every kill after, so the sooner you swear one, the more it gives.',
+      dialogText: 'The cellar to the north-east leads into the depths. Nobody went down it in living memory, till the troll-wives. Now you will.',
+      advice: 'The raid is over, but the cellar entrance north-east holds terrors from old myths. Buy sturdy armor and healing draughts before you venture down, and a torch from Olaf: past the fire-rift, they say, something drinks the light. And call on Sage Mimir before you go: a pact sealed at his well pays its bonus on every kill after, so the sooner you swear one, the more it gives.',
     },
     {
       id: 'npc-trainer',
@@ -183,7 +183,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
     bankerTitle: 'Banker Haakon',
     compactionMessageTemplate: 'Banker Haakon exchanged your {oldCount} coins for {newCount}, worth the same {coins}.',
     templeRefusalMessage:
-      "The High Priest of Thor scowls with righteous fury: 'Desecrator of sacred altars! You have betrayed the gods and are unwelcome in Thor's sacred hall!'",
+      "The High Priest of Thor scowls with righteous fury: 'The gods have turned their faces from you, and so does Thor's hall. Make amends before you seek its healing!'",
     templeShunnedMessage:
       "The High Priest of Thor recoils from what you wear: 'Hel's mark is on you. I will burn it from you for twice the donation, and lay no other hand on you until then.'",
     // Q9 "A", Q49 "A", Q50 "A": cursed, hexed and Hel-touched things from the pack, for

@@ -38,6 +38,7 @@ import { HEARTWOOD_LAIR, LAIR_WIDTH, LAIR_HEIGHT, LAIR_PLAYER_SPAWN, LAIR_STAIRS
  */
 const OATH_HONORED: Predicate = { type: 'hasFlag', flag: OATH_HONORED_FLAG };
 const OATH_BROKEN: Predicate = { type: 'hasFlag', flag: OATH_BROKEN_FLAG };
+const SOME_CAPTIVE_CAME_HOME: Predicate = { type: 'minCounter', counter: 'hostages_rescued', value: 1 };
 
 export const COTW_QUEST: QuestArcDefinition = {
   id: 'cotw_blood_of_thrym',
@@ -101,7 +102,7 @@ export const COTW_QUEST: QuestArcDefinition = {
       title: 'Ragnarök',
       narrative: [
         'You step through the split root, and the world beyond it is already burning. Níðhögg is dead, and the tree it gnawed for an age gives way all at once: Yggdrasil groans, and the nine worlds feel it.',
-        'In Midgard the winter that was promised comes early. Heimdall’s horn sounds over the mountains, the wolf slips its chain, and the gods ride out to a battle the skalds always said would come. Fate was patient. You were not.',
+        'In Midgard the winter that was promised comes early. Heimdall’s horn sounds over the mountains, the wolf slips its chain, and the gods ride out to a battle the skalds always said would come. Fate was patient. Your saga was not.',
         'Bjarnarhaven remembers you as the hero who ended the Root-Gnawer, and the one who ended the age with it. Whether that is praise, no one living can yet say.',
       ],
       // The Oath's side, then the altar's mark, told before the last paragraph; neither says
@@ -166,9 +167,14 @@ export const COTW_QUEST: QuestArcDefinition = {
           text: 'The skalds make much of the matriarch’s bargain: how the giant’s child seized the stolen sun rather than her hand, and burned their own blood to break the siphon. Some call it courage. The old folk only nod, and keep near the hearth.',
         },
         {
-          when: ALTAR_MARK_HALF,
+          when: { type: 'and', predicates: [ALTAR_MARK_HALF, SOME_CAPTIVE_CAME_HOME] },
           before: 1,
           text: 'At the hearth they name the ones who came home from the Siphon Altar, and then, more quietly, the ones who did not. Nobody says your name in the second list. Nobody has to.',
+        },
+        {
+          when: { type: 'and', predicates: [ALTAR_MARK_HALF, { type: 'not', predicate: SOME_CAPTIVE_CAME_HOME }] },
+          before: 1,
+          text: 'At the hearth they name the ones the Siphon Altar kept. Nobody says whose hand gave them. Nobody has to.',
         },
         {
           when: ALTAR_MARK_FULL,
@@ -176,7 +182,7 @@ export const COTW_QUEST: QuestArcDefinition = {
           text: 'The four the Siphon Altar took are not named at the hearth. Torvald lights a candle for each of them in the temple, and does not ask you in.',
         },
       ],
-      banner: 'The root holds, and Bjarnarhaven sleeps warm.',
+      banner: 'The root holds, and Midgard’s age goes on.',
       victoryDialogue: 'The root is sealed, not severed. Níðhögg withdraws, wounded but alive: the World Tree holds, and Ragnarök waits a little longer.',
       victoryEpitaph: 'Drove Níðhögg from the root of Yggdrasil.',
       championProclamation: 'Elder Olaf proclaims you Champion of Bjarnarhaven, and the world’s quiet reprieve.',

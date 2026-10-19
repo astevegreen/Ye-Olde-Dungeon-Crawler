@@ -39,6 +39,7 @@ export const IVALDA_ID = 'npc-ivalda';
 const IVALDA_CHOICE_ID = 'ivalda_forge';
 const IVALDA_TOWN_CHOICE_ID = 'ivalda_forge_town';
 const IVALDA_TOWN_PLUNDERED_CHOICE_ID = 'ivalda_forge_town_plundered';
+const IVALDA_TOWN_SHUNNED_CHOICE_ID = 'ivalda_forge_town_shunned';
 export const IVALDA_IN_TOWN_FLAG = 'ivalda_in_town';
 const IVALDA_TEMPERED_FLAG = 'ivalda_tempered';
 const DWARVEN_HEARTH_FLOOR = 13;
@@ -112,7 +113,7 @@ export const IVALDA_TOWN_CHOICE: ChoiceDefinition = {
   ...IVALDA_CHOICE,
   id: IVALDA_TOWN_CHOICE_ID,
   description:
-    'Ivalda has set her own anvil at the back of Gunther’s armory, and the two of them argue about quench-water in two languages. She looks up as you come in.\n\n“You kept faith with our dead, Thrym’s blood or no. The forges below are warming; mine came up to meet the trade your grandfathers kept. Now: steel. Show me the piece across Gunther’s counter, at his forge.”',
+    'Ivalda has set her own anvil at the back of Gunther’s armory, and the two of them argue about quench-water in two languages. She looks up as you come in.\n\n“You kept faith with our dead, Thrym’s blood or no. The forges below are warming; mine came up to meet the trade your grandfathers kept. Now: steel. If my hammer has not been on yours yet, bring it across Gunther’s counter, at his forge.”',
   options: IVALDA_CHOICE.options.filter((o) => o.id !== 'temper'),
   cancelLabel: 'Leave her to her anvil',
 };
@@ -122,7 +123,15 @@ export const IVALDA_TOWN_PLUNDERED_CHOICE: ChoiceDefinition = {
   ...IVALDA_TOWN_CHOICE,
   id: IVALDA_TOWN_PLUNDERED_CHOICE_ID,
   description:
-    'Ivalda has set her own anvil at the back of Gunther’s armory, and the two of them argue about quench-water in two languages. She looks up as you come in, and the argument stops.\n\n“The clans count their barrows, Thrym’s blood, and the count comes up short. You have done my kin enough good that they call the debt settled, and I keep the Accord my fathers swore. But I know whose hands were in the silver. Show me the piece across Gunther’s counter, at his forge, and we will speak of steel and nothing else.”',
+    'Ivalda has set her own anvil at the back of Gunther’s armory, and the two of them argue about quench-water in two languages. She looks up as you come in, and the argument stops.\n\n“The clans count their barrows, Thrym’s blood, and the count comes up short. You have done my kin enough good that they call the debt settled, and I keep the Accord my fathers swore. But I know whose hands were in the silver. If my hammer has not been on your steel yet, bring it across Gunther’s counter, at his forge, and we will speak of steel and nothing else.”',
+};
+
+/** Her forge in town once a plundered barrow has cost the hero the clans' trust: she keeps the Accord, and nothing more. */
+export const IVALDA_TOWN_SHUNNED_CHOICE: ChoiceDefinition = {
+  ...IVALDA_TOWN_CHOICE,
+  id: IVALDA_TOWN_SHUNNED_CHOICE_ID,
+  description:
+    'Ivalda has set her own anvil at the back of Gunther’s armory, and the two of them argue about quench-water in two languages. She looks up as you come in, and the argument stops.\n\n“The clans count their barrows, Thrym’s blood, and the count comes up short. So does my trust. I keep the Accord my fathers swore, and that is all I keep. Come back when the clans speak for you.”',
 };
 
 /**
@@ -283,7 +292,7 @@ function moveIvaldaToTown(engine: Parameters<ActionHook['execute']>[0]['engine']
     engine.removeEntity(here);
   } else if (engine.currentFloor === 0) {
     const plundered = BARROWS.some((b) => getFlag(ws, `duergar_barrow_${b.n}_plundered`));
-    const choiceId = plundered ? IVALDA_TOWN_PLUNDERED_CHOICE_ID : IVALDA_TOWN_CHOICE_ID;
+    const choiceId = !plundered ? IVALDA_TOWN_CHOICE_ID : isTrusted ? IVALDA_TOWN_PLUNDERED_CHOICE_ID : IVALDA_TOWN_SHUNNED_CHOICE_ID;
     if (here instanceof NPC && here.choiceId === choiceId) return;
     const { x, y } = here ?? IVALDA_TOWN_POSITION;
     if (here) engine.removeEntity(here);

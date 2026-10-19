@@ -231,7 +231,7 @@ export const PROLOGUE_OBJECTIVES: ObjectiveDefinition[] = [
   {
     // Time left once all are free: the coven itself, for a hero who wants a parting blow.
     id: 'cotw_objective_prologue_coven',
-    text: 'The villagers are safe. The troll-wives still work at the fountain: strike them before they finish.',
+    text: 'The villagers are safe. The coven still works at the fountain: strike before it finishes.',
     availableWhenFlag: FLAG_ALL_SAVED,
     doneWhenAnyFlag: [PROLOGUE_ENDED_FLAG],
     pointTo: {
@@ -277,7 +277,7 @@ function freeVillager(ctx: EngineContext, npc: NPC): void {
     setFlag(ctx.worldState, FLAG_ALL_SAVED, true);
     // A rescue short-circuits the move, so the raid hook won't see this turn: end it here.
     if (covenSlain(ctx)) endRaid(ctx);
-    else ctx.log('Every villager the thralls held is free. At the fountain the troll-wives work on, faster now.');
+    else ctx.log('Every villager the thralls held is free. At the fountain the coven works on.');
   }
 }
 
@@ -362,7 +362,7 @@ function endRaid(ctx: EngineContext): void {
       : covenSlain(ctx)
         ? // The matriarch the Oath later bargains with (choices.ts), seen once here.
           'Over her sisters’ bodies a third troll-wife, older and taller, steps out of the fountain’s shadow. She tears the Hearth-Tear loose with her bare hands, looks at you once, and sinks down the cellar stairs with it. The thralls melt into the dark after her.'
-        : 'The chant breaks off. The troll-wives sink down the cellar stairs with the Hearth-Tear blazing between them, and their thralls melt into the dark after them.'
+        : 'The chant breaks off. What is left of the coven sinks down the cellar stairs with the Hearth-Tear blazing, and the thralls melt into the dark after it.'
   );
   for (const villager of PROLOGUE_VILLAGERS) {
     if (isAccountedFor(ctx, villager.id)) continue;

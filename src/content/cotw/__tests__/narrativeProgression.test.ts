@@ -234,6 +234,10 @@ describe('CotW Narrative Progression & Skaldic Runestones', () => {
 
     setFlag(worldState, 'siphon_ritual_resolved', true);
     visit();
+    expect(olaf.greeting).toContain('none of our folk came home');
+
+    worldState.counters['hostages_rescued'] = 2;
+    visit();
     expect(olaf.greeting).toContain('Not all of them');
 
     setFlag(worldState, 'savior_of_jarnvidr', true);

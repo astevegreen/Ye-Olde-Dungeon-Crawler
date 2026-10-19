@@ -72,7 +72,7 @@ export const SIPHON_CORE_CHOICE: ChoiceDefinition = {
         {
           type: 'logMessage',
           message:
-            'The core cracks with a sound like ice giving way on a lake, and the light it drank pours back out of it. The dark draws off. Below, the Siphon itself still drinks.',
+            'The core cracks with a sound like ice giving way on a lake, and the light it drank pours back out of it. The dark draws off.',
         },
       ],
     },

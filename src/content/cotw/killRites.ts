@@ -70,13 +70,13 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   miniboss_frost_warden: {
     essenceElement: 'cold',
     requiredDamageElement: 'arcane',
-    hintVerse: 'No slowness binds Gálmr, but pure galdr pierces his frost.\nFell him with a rune-bolt, and his freezing beam is yours.',
+    hintVerse: 'No slowness binds Gálmr, but pure galdr pierces his frost.\nFell him with a rune-bolt, and the rite is kept.',
   },
   kobold_shaman: {
     essenceElement: 'fire',
     requiredDamageElement: 'physical',
     requiredVictimStatus: 'slow',
-    hintVerse: "Slow the shaman's chanting tongue,\nthen end him with honest iron to wrest the firebolt from his hands.",
+    hintVerse: "Slow the shaman's chanting tongue,\nthen end him with honest iron, and the rite is kept.",
   },
   nisse: {
     essenceElement: 'healing',
@@ -86,7 +86,7 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   wolf: {
     essenceElement: 'physical',
     requiredDamageElement: 'fire',
-    hintVerse: 'Every wolf of the north remembers the campfire.\nLet flame be its last sight, and the pack will answer your howl.',
+    hintVerse: 'Every wolf of the north remembers the campfire.\nLet flame be its last sight, and the rite is kept.',
   },
   winter_hag: {
     essenceElement: 'cold',
@@ -168,7 +168,7 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     essenceElement: 'shadow',
     requiredDamageElement: 'fire',
     requiredVictimStatus: 'slow',
-    hintVerse: 'Slow the troll-wife, then burn her,\nand the storm she stole from the sky is yours.',
+    hintVerse: 'Slow the troll-wife, then burn her,\nand what she guards is yours.',
   },
   fylgja: {
     essenceElement: 'healing',
@@ -179,7 +179,7 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   cave_troll: {
     essenceElement: 'physical',
     requiredDamageElement: 'lightning',
-    hintVerse: 'Trolls fear the Thunderer above all things.\nStrike this one down with lightning, and carry his clap in your fist.',
+    hintVerse: 'Trolls fear the Thunderer above all things.\nStrike this one down with lightning, and the rite is kept.',
   },
 
   // ─── Obsidian Siphon (18-25) ───────────────────────────────────────────
@@ -302,7 +302,7 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
   miniboss_rot_matriarch: {
     essenceElement: 'shadow',
     requiredDamageElement: 'lightning',
-    hintVerse: 'Split the taproot matriarch with lightning,\nand wield the storm she drank from the sky.',
+    hintVerse: 'Split the taproot matriarch with lightning,\nand what she guards is yours.',
   },
   rotwood_crawler: {
     essenceElement: 'healing',
@@ -352,7 +352,7 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     essenceElement: 'lightning',
     requiredDamageElement: 'cold',
     requiredVictimStatus: 'slow',
-    hintVerse: "Slow the Wyrm's herald, then freeze his tongue before he speaks.",
+    hintVerse: "Slow the Wyrm's herald, then freeze the venom in his throat.",
   },
   shadow_fiend: {
     essenceElement: 'shadow',

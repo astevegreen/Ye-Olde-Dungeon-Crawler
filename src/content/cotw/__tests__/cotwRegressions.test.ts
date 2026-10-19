@@ -102,7 +102,7 @@ describe('R-cotw-3 · a "monster"-tagged radial consumable afflicts the hero’s
 });
 
 describe('R-cotw-9 · the Sage’s elemental advisories follow the zones and recommend what the pack has', () => {
-  const ZONE_STARTS = [1, 10, 18, 26, 34, 43];
+  const ZONE_STARTS = [1, 10, 18, 26, 34, 43, 50];
   const spellElement = new Map((cotwManifest.spells as Array<{ id: string; element?: string }>).map((s) => [s.id, s.element]));
   type MonsterDef = {
     minFloor?: number;
@@ -133,6 +133,7 @@ describe('R-cotw-9 · the Sage’s elemental advisories follow the zones and rec
       18: ['ring_of_the_slag_walker', 'zealots_seared_crown', 'obsidian_scale_cuirass'],
       26: ['birch_tar_poultice', 'cure_poison_potion', 'urdr_cleansing_water'],
       43: ['supreme_health_potion', 'urdr_cleansing_water'],
+      50: ['supreme_health_potion', 'urdr_cleansing_water'],
     };
     for (const band of COTW_FLOOR_HAZARDS) {
       const ids = hazardItems[band.minFloor] ?? [];

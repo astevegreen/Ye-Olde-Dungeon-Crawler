@@ -49,7 +49,7 @@ const HOMECOMERS: Record<RaidVillagerId | string, Homecomer> = {
   'prologue-eir': {
     cameHome: {
       greeting: 'You found me in the black glass. I can still smell the pyres.',
-      says: 'Father Torvald says I slept two days after the recall ward brought me home. Now I tend the others who came back. It is a better use for my hands than shaking.',
+      says: 'Father Torvald says I slept two days after the recall ward brought me home. Now I tend whoever the dark sends home. It is a better use for my hands than shaking.',
     },
     lines: {
       home: {

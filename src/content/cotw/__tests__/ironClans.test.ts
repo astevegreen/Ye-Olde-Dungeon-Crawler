@@ -174,6 +174,23 @@ describe('The Iron Clans', () => {
     expect(engine.map.getEntityById(IVALDA_ID)).toBeNull();
   });
 
+  it('does not call the debt settled once a plundered barrow has cost the clans’ trust', () => {
+    const { engine, player } = engineOn(1);
+    engine.worldState.factions[IRON_CLANS_FACTION] = 0;
+    engine.changeFloor(0);
+    engine.handlePlayerAction(new WaitAction(player));
+    engine.handlePlayerAction(new WaitAction(player));
+
+    engine.setWorldFlag('duergar_barrow_2_plundered', true);
+    engine.worldState.factions[IRON_CLANS_FACTION] = -5;
+    engine.handlePlayerAction(new WaitAction(player));
+    const ivalda = engine.map.getEntityById(IVALDA_ID) as NPC;
+    expect(ivalda.choiceId).toBe('ivalda_forge_town_shunned');
+    const shunned = cotwManifest.choices!['ivalda_forge_town_shunned'];
+    expect(shunned.description).not.toContain('debt settled');
+    expect(shunned.description).toContain('So does my trust');
+  });
+
   it('thanks the hero for keeping faith with the dead only while no barrow is plundered', () => {
     const { engine, player } = engineOn(1);
     engine.worldState.factions[IRON_CLANS_FACTION] = 0;

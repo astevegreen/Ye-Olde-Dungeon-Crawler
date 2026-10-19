@@ -88,7 +88,7 @@ export const cotwManifest: GameContentManifest = {
     worldName: 'Midgard',
     victoryTitle: 'Victory in Midgard!',
     victoryBanner: 'The Hearth-Tear is home, and the root is answered!',
-    fallenBanner: 'Your soul departs Midgard for the eternal halls of Valhalla.',
+    fallenBanner: 'Your soul departs Midgard, and the Norns cut your thread.',
     xpName: 'Megin',
     // Seiðr: the Norse practice of magic, the spell resource under the blue orb.
     manaName: 'Seiðr',

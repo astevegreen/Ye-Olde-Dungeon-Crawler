@@ -6,7 +6,7 @@ import { URDR_POOL_FLOOR } from './vaults';
 import { COTW_DEEPEST_FLOOR_COUNTER } from './spellTablets';
 import { HEARTH_TEAR_RETURNED_FLAG, RELIC_RECOVERED_FLAG } from './relic';
 import { prologueVillagerSaved } from './prologue';
-import { altarMark, captiveNamesForThanks, listNames, raidVillagersStillCaptive } from './hostageRitual';
+import { altarMark, captiveNamesForThanks, listNames, raidVillagersStillCaptive, ritualOutcome } from './hostageRitual';
 import { ZEALOT_CLAIM_HEARD_FLAG } from './siphonPylon';
 import { OATH_BROKEN_FLAG, OATH_HONORED_FLAG } from './oath';
 
@@ -231,6 +231,11 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
           'You... you returned. The dark stench of the blood-siphon clings to you.',
           'Our folk look upon you in dread. Your gold is accepted in our shops, but no skald in Bjarnarhaven will sing of your deeds.'
         );
+      } else if (engine.getWorldFlag('siphon_ritual_resolved') && getCounter(engine.worldState, 'hostages_rescued') === 0) {
+        olaf.setDialogue(
+          'The warlocks finished their rite, and none of our folk came home from the siphon altar.',
+          'We light candles for all four in the longhouse. Whatever you need for the road, take it, and make the coven pay.'
+        );
       } else if (engine.getWorldFlag('siphon_ritual_resolved')) {
         olaf.setDialogue(
           'Some of our folk came home from the siphon altar. Not all of them.',
@@ -242,7 +247,7 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
           taken.length
             ? `${listNames(taken)} ${taken.length > 1 ? 'are' : 'is'} still down there in the obsidian depths! Save them, champion!`
             : 'The troll-wives took folk from the outlying farms as well! Save them, champion!',
-          'The troll-wives have bound four of our kin at the siphon altar. Cut their bonds before the dark chanting completes!'
+          'The troll-wives have our kin bound at the siphon altar. Cut their bonds before the dark chanting completes!'
         );
       } else if (deepest >= 10) {
         olaf.setDialogue(
@@ -300,7 +305,7 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
       } else if (hasRelic) {
         astrid.setDialogue(
           'The herbs in our garden are sprouting through the melted frost!',
-          'I have brewed new catch-up rune tablets for your journey into the World-Bark. Prepare yourself against decay.'
+          'Go on past the silver veins, and I will have new rune tablets on my shelf for the World-Bark. Prepare yourself against decay.'
         );
       }
     }
@@ -322,21 +327,28 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
           'The mystery unknots itself: diverting the sun’s fire scorched the frost-wards of Yggdrasil!',
           'Níðhögg has awakened in the deep root! It is chewing through the taproot of the world. Reclaiming the sun was only the first chapter—you must save the World Tree!'
         );
-      } else if (deepest >= 18) {
+      } else if (deepest >= 18 && ritualOutcome(engine) === 'pending') {
         mimir.setDialogue(
           'The coven’s siphon taps into cosmic chariot fire. Take care not to let their blood rites taint your soul.',
-          'Sacrificing innocent lives opens the forbidden Grimoire of Blood Magic, but the gods of Valhalla will turn their faces from you.'
+          'Sacrificing innocent lives buys spells written in blood, but the gods of Valhalla will turn their faces from you.'
+        );
+      } else if (deepest >= 18 && isTainted) {
+        mimir.setDialogue(
+          'The altar’s blood runs in your spells now. My well shows it plainly.',
+          'What is given cannot be taken back. Carry it down to the forge where the Hearth-Tear burns, and make it count for something.'
+        );
+      } else if (deepest >= 18) {
+        mimir.setDialogue(
+          'The siphon’s altar lies cold, and the coven bleeds no more of our kin.',
+          'The stolen fire still burns in the forge below, where the Sun-Chariot Warden keeps the Hearth-Tear. Bring it home.'
         );
       }
     }
 
     if (torvald) {
-      if (vidnirSlain) {
-        torvald.setDialogue(
-          'Thor’s holy thunder attend your final duel in the Heartwood!',
-          'May the gods grant you the strength to vanquish evil and the divine wisdom to preserve the World Tree from ruin.'
-        );
-      } else if (isTainted) {
+      // What the hero did to the gods' own outranks the stage of the saga: the temple
+      // does not forget an altar's blood or a broken stone because the Herald fell.
+      if (isTainted) {
         torvald.setDialogue(
           'The stench of sacrificial blood follows you like a shroud...',
           'You chose dark power over innocent lives. Thor sees the altar’s mark on you, and so does his temple.'
@@ -347,6 +359,11 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
           'Word came up from the crypts: Tyr’s altar lies shattered, and the hand that broke it stands in Thor’s hall.',
           'Tyr gave his hand to bind the wolf, and you broke his stone for a dagger. This temple will not tend you until you have given something back. Bring the cursed things you find below to this fire: the gods keep count.'
         );
+      } else if (vidnirSlain) {
+        torvald.setDialogue(
+          'Thor’s holy thunder attend your final duel in the Heartwood!',
+          'May the gods grant you the strength to vanquish evil and the divine wisdom to preserve the World Tree from ruin.'
+        );
       } else if (hasRelic) {
         torvald.setDialogue(
           'Thor’s lightning cleared the blizzard skies, yet the chapel bells ring of their own accord from subterranean quakes.',
@@ -354,7 +371,7 @@ export const COTW_TOWN_REACTIVE_HOOK: ActionHook = {
         );
       } else if (tyrDesecrated) {
         torvald.setDialogue(
-          'Tyr’s altar is still broken, but the temple has counted what you gave back.',
+          'Tyr’s altar is still broken, but the temple has weighed what you have done since.',
           'No rite of mine mends the stone you shattered. Thor’s door is open to you again all the same. Walk softer among the gods below than you did in the crypts.'
         );
       } else if (prologueVillagerSaved(engine, 'prologue-eir')) {

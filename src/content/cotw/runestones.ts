@@ -91,7 +91,7 @@ export const SKALDIC_RUNESTONE_LORE: LoreEntryDefinition[] = [
   {
     flag: 'skaldic_runestone_1_resolved',
     title: 'Lay of the Frost King',
-    verse: 'When the Aesir stole the Hammer, King Thrym’s frost turned to brittle stone.\nYet in his children’s veins, the winter never died—it waited.\nWoe to the crawler who walks the rime without respect for the cold!',
+    verse: 'When Thor took back his Hammer, King Thrym’s frost turned to brittle stone.\nYet in his children’s veins, the winter never died—it waited.\nWoe to the crawler who walks the rime without respect for the cold!',
     lore: 'The frost of a cold spell passes to the damaging spells beside it in your grimoires, and they slow their targets. Flame answers the rime-folk: the Winter Hag melts to a fire spell, and a broken runestone gives up its shard to whoever fells its carrier!',
   },
   {
@@ -111,7 +111,7 @@ export const SKALDIC_RUNESTONE_LORE: LoreEntryDefinition[] = [
   {
     flag: 'skaldic_runestone_4_resolved',
     title: 'The Scorched Root’s Lament',
-    verse: 'Hear, traveler of the silver lode: the sun-chariot’s fire has done its work.\nThe permafrost wards that held the Root-Gnawer in torpor have boiled away.\nNíðhögg has awakened. Its jaws drip necrotic venom into Yggdrasil’s taproot.\nReclaiming the Hearth-Tear was only the prelude—the dying World Tree calls below!',
+    verse: 'Hear, traveler of the silver lode: the sun-chariot’s fire has done its work.\nThe permafrost wards that held the Root-Gnawer in torpor have boiled away.\nNíðhögg has awakened. Its jaws drip necrotic venom into Yggdrasil’s taproot.\nWhoever holds the Hearth-Tear holds only the prelude—the dying World Tree calls below!',
     lore: 'At Odin’s Gallows-Stone, forge Arcane onto Cold Ray (or Cold onto Magic Arrow) for a rime-forged spell: it strikes as whichever of arcane and cold its target fears more, and lends both to its grimoire neighbours!',
     forgePair: ['arcane', 'cold'],
   },
@@ -138,7 +138,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     id: 'skaldic_runestone_1',
     title: 'Skaldic Runestone: Lay of the Frost King',
     description:
-      'Elder Futhark runes are chipped into the permafrost monolith:\n\n“When the Aesir stole the Hammer, King Thrym’s frost turned to brittle stone.\nYet in his children’s veins, the winter never died—it waited.\nWoe to the crawler who walks the rime without respect for the cold!”\n\nBeneath the poem, runic diagrams reveal how the frost passes between spells.',
+      'Elder Futhark runes are chipped into the permafrost monolith:\n\n“When Thor took back his Hammer, King Thrym’s frost turned to brittle stone.\nYet in his children’s veins, the winter never died—it waited.\nWoe to the crawler who walks the rime without respect for the cold!”\n\nBeneath the poem, runic diagrams reveal how the frost passes between spells.',
     options: [
       {
         id: 'commune_frost',
@@ -287,7 +287,7 @@ export const SKALDIC_RUNESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     id: 'skaldic_runestone_4',
     title: 'Skaldic Runestone: The Scorched Root’s Lament',
     description:
-      'Tarnished silver veining wraps around a cracked stele weeping pungent mercury:\n\n“Hear, traveler of the silver lode: the sun-chariot’s fire has done its work.\nThe permafrost wards that held the Root-Gnawer in torpor have boiled away.\nNíðhögg has awakened. Its jaws drip necrotic venom into Yggdrasil’s taproot.\nReclaiming the Hearth-Tear was only the prelude—the dying World Tree calls below!”\n\nSilvered runes spell out warding frost-arcana.',
+      'Tarnished silver veining wraps around a cracked stele weeping pungent mercury:\n\n“Hear, traveler of the silver lode: the sun-chariot’s fire has done its work.\nThe permafrost wards that held the Root-Gnawer in torpor have boiled away.\nNíðhögg has awakened. Its jaws drip necrotic venom into Yggdrasil’s taproot.\nWhoever holds the Hearth-Tear holds only the prelude—the dying World Tree calls below!”\n\nSilvered runes spell out warding frost-arcana.',
     options: [
       {
         id: 'ward_root',

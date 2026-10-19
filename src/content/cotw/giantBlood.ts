@@ -5,7 +5,10 @@ import {
   type StatusTickOutput,
   type ActionHook,
   type Entity,
+  type GameEngine,
+  getFlag,
   isPrologueRunning,
+  setFlag,
 } from '../../engine';
 import { COTW_PROLOGUE } from './prologue';
 
@@ -53,6 +56,14 @@ const GIANT_BLOOD_TIERS: GiantBloodTier[] = [
 const FADE_FLOOR = 26;
 const REMOVAL_MESSAGE =
   'The last warmth of your giant forebear’s blood gutters out as the depths turn to root and rot.';
+
+/** Each line is told once a run: a trip home and back must not tell the fading again. */
+function tellOnce(engine: GameEngine, key: string, message: string | undefined): string | undefined {
+  const flag = `giant_blood_told:${key}`;
+  if (!message || getFlag(engine.worldState, flag)) return undefined;
+  setFlag(engine.worldState, flag, true);
+  return message;
+}
 
 function resolveTier(floor: number): GiantBloodTier | undefined {
   let result: GiantBloodTier | undefined;
@@ -103,7 +114,7 @@ export const giantBloodHandler: StatusHandler = {
       // Return's interrupt-fizzle uses (statusManager.ts) — no engine change needed
       // for a status to end itself mid-tick instead of expiring naturally.
       entity.statusManager.removeStatus(GIANT_BLOOD_STATUS);
-      return { damageTaken: 0, killed: false, message: REMOVAL_MESSAGE };
+      return { damageTaken: 0, killed: false, message: tellOnce(engine, 'faded', REMOVAL_MESSAGE) };
     }
 
     const isFirstTick = effect.data === undefined;
@@ -122,9 +133,9 @@ export const giantBloodHandler: StatusHandler = {
 
     let message: string | undefined;
     if (isFirstTick) {
-      message = APPLY_MESSAGE;
+      message = tellOnce(engine, 'stirs', APPLY_MESSAGE);
     } else if (tier !== undefined && tier.floor !== previousTierFloor) {
-      message = tier.onEnterMessage;
+      message = tellOnce(engine, `tier_${tier.floor}`, tier.onEnterMessage);
     }
 
     return { damageTaken: 0, killed: false, message };

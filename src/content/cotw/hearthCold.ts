@@ -51,7 +51,7 @@ export const HEARTH_COLD_STAGES: ColdStage[] = [
 ];
 
 const THAW_GREETING = 'The ice let go of the gate-hinges the day you brought the shard home. I can feel my fingers again.';
-const THAW_DIALOG = 'The cellar to the north-east still leads into the depths, and whatever shakes the ground now comes from below them. Many go down; few return.';
+const THAW_DIALOG = 'The cellar to the north-east still leads into the depths, and whatever shakes the ground now comes from below them. You know that better than anyone.';
 
 /** Counts the turns spent below; at home, tells the deepest stage reached and sets Bjorn's talk. */
 export const HEARTH_COLD_HOOK: ActionHook = {

@@ -3,7 +3,7 @@ import { ALTAR_MARKED, BLOOD_ALTAR_CHOICE, SIPHON_GIFT_CHOICES } from './hostage
 import { SIPHON_CORE_CHOICE, ZEALOT_LEADER_LAST_WORDS } from './siphonPylon';
 import { SKALDIC_RUNESTONE_CHOICES } from './runestones';
 import { VIDNIR_REVELATION_CHOICE } from './narrative';
-import { IRON_CLANS_BARROW_CHOICES, IVALDA_CHOICE, IVALDA_TOWN_CHOICE, IVALDA_TOWN_PLUNDERED_CHOICE } from './ironClans';
+import { IRON_CLANS_BARROW_CHOICES, IVALDA_CHOICE, IVALDA_TOWN_CHOICE, IVALDA_TOWN_PLUNDERED_CHOICE, IVALDA_TOWN_SHUNNED_CHOICE } from './ironClans';
 import { GATEWARD_CHOICE } from './prologue';
 import { OATH_BROKEN_FLAG, OATH_HONORED_FLAG } from './oath';
 import { COTW_MILESTONE_CHOICES, COTW_SAGA_CHOICES } from './perks';
@@ -158,6 +158,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
   [IVALDA_CHOICE.id]: IVALDA_CHOICE,
   [IVALDA_TOWN_CHOICE.id]: IVALDA_TOWN_CHOICE,
   [IVALDA_TOWN_PLUNDERED_CHOICE.id]: IVALDA_TOWN_PLUNDERED_CHOICE,
+  [IVALDA_TOWN_SHUNNED_CHOICE.id]: IVALDA_TOWN_SHUNNED_CHOICE,
   [GATEWARD_CHOICE.id]: GATEWARD_CHOICE,
 
   choice_dwarven_hearth: {
@@ -396,7 +397,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
           {
             type: 'logMessage',
             message:
-              'You cup your hands and drink of the bitter deep. A flash of silver clarity ignites your mind: you know now how to see the stone and all that moves in it (Hliðskjálf; Haste).',
+              'You cup your hands and drink of the bitter deep. A flash of silver clarity ignites your mind: you know now how to see the stone and all that moves in it (Hliðskjálf, or Ansuz if you knew it already; Haste).',
           },
         ],
       },
@@ -431,7 +432,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
     options: [
       {
         id: 'reinforce_bark',
-        label: 'Reinforce the Bark — Weave Living Sap into Plate',
+        label: 'Reinforce the Bark — Weave Living Sap into a Mantle',
         description: 'Weave the loom’s living sap into a mantle: the Sap-Sealed Cape.',
         consequences: [
           { type: 'setFlag', flag: 'verdandi_loom_resolved', value: true },
@@ -559,7 +560,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
     id: 'skuld_mirror_choice',
     title: "Skuld's Mirror — The Portents of What Shall Be",
     description:
-      'A frame of ancient dragon ribs holds a tall slab of polished obsidian on the edge of the Náströnd precipice. The surface of the mirror is liquid and dark as the void. In its depth, Skuld—youngest Norn and chooser of the slain—turns to face you, revealing the portent of the choice you swore to Víðnir on Floor 45.',
+      'A frame of ancient dragon ribs holds a tall slab of polished obsidian on the edge of the Náströnd precipice. The surface of the mirror is liquid and dark as the void. In its depth, Skuld—youngest Norn and chooser of the slain—turns to face you, ready to show what your road through the deep has bound you to.',
     options: [
       {
         id: 'gaze_renewal',
@@ -632,11 +633,11 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
     resolvedStates: [
       {
         flag: 'skuld_aegis_preserver',
-        message: 'Skuld’s mirror glows with serene emerald light. The portent of renewal shields your soul.',
+        message: 'Skuld’s mirror glows with serene emerald light. The mending it showed you lives in your spell now.',
       },
       {
         flag: 'skuld_fury_einherjar',
-        message: 'Skuld’s mirror smolders with fiery embers. The fury of the Einherjar burns within your heart.',
+        message: 'Skuld’s mirror smolders with fiery embers. The black fire it showed you burns in your spell now.',
       },
       {
         flag: 'skuld_mirror_resolved',

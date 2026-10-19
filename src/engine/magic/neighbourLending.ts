@@ -96,7 +96,7 @@ function flavourById(lending: NeighbourLendingConfig, id: string): LendFlavour |
  * The slot's cast as it resolves: its own stats, and what each neighbour lends.
  * - The same flavour from several neighbours counts once; doubled if any of them doubles it.
  * - A flavour from an element the spell has itself comes doubled, as does all a doubled slot
- *   lends (Týr, Loki); doubling happens once, never twice.
+ *   lends (a doubling altar's rite); doubling happens once, never twice.
  * - A neighbour holding an opposite of one of the spell's elements, or a spell forged with
  *   its own opposite, adds `oppositeBonus` once.
  * - A forged element's flavour rides the spell's own effect, as if lent, plain unless a

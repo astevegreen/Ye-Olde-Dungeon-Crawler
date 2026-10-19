@@ -40,7 +40,7 @@ export const COTW_RINGS: ItemDefinition[] = [
       },
     ],
     identified: false,
-    description: 'Glacier-chilled silver bearing runic snowflakes. Imbues attacks with frostbite and slows the movement of foes.',
+    description: 'Glacier-chilled silver bearing runic snowflakes. Its chill can numb a struck foe, slowing them.',
     value: 70,
   },
   {

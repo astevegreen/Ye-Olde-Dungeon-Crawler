@@ -104,7 +104,7 @@ export const COTW_TORSO: ItemDefinition[] = [
       },
     ],
     identified: false,
-    description: 'Heavy plate mail encrusted in boiling venom from the roots of Níðhögg. It spits corrosive tar at whoever strikes its wearer, and its blight drags at their limbs; once donned, only a cleansing takes it off.',
+    description: 'Heavy plate mail encrusted in boiling venom from the roots of Níðhögg. It spits corrosive tar at whoever strikes its wearer, and once donned, only a cleansing takes it off.',
     value: 600,
   },
 ];

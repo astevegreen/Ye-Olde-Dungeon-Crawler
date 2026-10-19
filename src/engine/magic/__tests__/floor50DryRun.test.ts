@@ -150,7 +150,7 @@ describe('the floor-50 grimoire, resolved (dry run)', () => {
     }
   });
 
-  it('Týr’s doubled Firebolt burns Magic Arrow and Heal blue (F4)', () => {
+  it('Tyr’s doubled Firebolt burns Magic Arrow and Heal blue (F4)', () => {
     expect(of('Magic Arrow').lends.find((l) => l.flavourId === 'fire')).toMatchObject({ doubled: true, name: 'Blue fire' });
     expect(of('Heal').lends.find((l) => l.flavourId === 'fire')).toMatchObject({ doubled: true, name: 'Blue fire' });
   });

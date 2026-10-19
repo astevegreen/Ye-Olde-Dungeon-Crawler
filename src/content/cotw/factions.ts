@@ -24,7 +24,7 @@ export const COTW_MERCHANT_PRICING: MerchantPricingRules = {
 export const COTW_FACTIONS: FactionDefinition[] = [
   { id: 'townsfolk', name: 'Townsfolk', metAtStart: true },
   // One name over Thor's temple in town and the altars of Tyr and the other gods below.
-  { id: 'temple_standing', name: 'Temple of the Æsir', metFlag: TEMPLE_MET_FLAG },
+  { id: 'temple_standing', name: 'Temple of the Aesir', metFlag: TEMPLE_MET_FLAG },
   // Met by reading the Smithy's Accord or speaking with Ivalda (ironClans.ts).
   { id: 'iron_clans', name: 'Iron Clans', metFlag: IRON_CLANS_MET_FLAG },
 ];

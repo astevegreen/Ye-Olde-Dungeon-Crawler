@@ -224,7 +224,7 @@ export const COTW_WEAPONS: ItemDefinition[] = [
       },
     ],
     identified: false,
-    description: 'Corrupted great axe saturated in root rot. It cleaves armor like bark, but the rot in its haft saps the strength and sureness of whoever takes it up, and it will not leave their hands until a cleansing.',
+    description: 'Corrupted great axe saturated in root rot. Its blows can seep the rot into a wound, and once taken up it will not leave its wielder’s hands until a cleansing.',
     value: 400,
   },
   {

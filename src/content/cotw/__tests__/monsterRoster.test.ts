@@ -121,7 +121,7 @@ describe('Castle of the Winds Monster Roster (37 entries)', () => {
     expect(COTW_ROSTER_BESTIARY.huldra_hollow_back.name).toBe('Huldra Hollow-Back');
     expect(COTW_ROSTER_BESTIARY.kirkegrim.name).toBe('Kirkegrim (Tomb-Vættir)');
     expect(COTW_ROSTER_BESTIARY.myling.name).toBe('Myling');
-    expect(COTW_ROSTER_BESTIARY.fylgja.name).toBe('Fylgja');
+    expect(COTW_ROSTER_BESTIARY.fylgja.name).toBe('Death-Fylgja');
     expect(COTW_ROSTER_BESTIARY.nacken.name).toBe('Näcken');
 
     // Tarnished Silver Veins

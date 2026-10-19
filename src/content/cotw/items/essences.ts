@@ -39,7 +39,7 @@ export const COTW_ESSENCE_RUNES: ItemDefinition[] = [
   ),
   essence(
     'essence_nauthiz', 'Nauthiz', 'need and darkness (shadow)',
-    "Nauthiz, need. It is heavy with everything the dead were owed. Hel keeps a reckoning of such debts, and she takes payment in kind."
+    "Nauthiz, need. It is heavy with everything the dead were owed. Hel keeps a reckoning of such debts."
   ),
   essence(
     'essence_berkano', 'Berkano', 'the birch-mother’s renewal (healing)',

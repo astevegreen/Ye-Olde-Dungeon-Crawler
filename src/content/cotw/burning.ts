@@ -21,7 +21,7 @@ export const burningHandler: StatusHandler = {
     };
   },
   onApply(entity) {
-    return `${entity.name} is wreathed in holy fire!`;
+    return `${entity.name} bursts into flame!`;
   },
   onExpire(entity) {
     return `The flames on ${entity.name} gutter out.`;

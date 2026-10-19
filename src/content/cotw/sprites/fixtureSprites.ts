@@ -25,7 +25,7 @@ const RUNESTONES = ['frost', 'smithy', 'dawn', 'lament', 'norns', 'twilight'] as
 
 /**
  * The fixtures from the style bible (`FixtureArt`). Altars are keyed by tile type, each god's
- * by its own look (both Týr altars share one, as do the three barrows); the Siphon Altar and its
+ * by its own look (both Tyr altars share one, as do the three barrows); the Siphon Altar and its
  * core had no mark at all.
  */
 export const COTW_FIXTURE_ART: FixtureArt = {

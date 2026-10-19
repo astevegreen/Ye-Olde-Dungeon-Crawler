@@ -359,7 +359,7 @@ export const LEGACY_COTW_MONSTERS: Record<string, MonsterDefinition> = {
   },
   jotun_champion: {
     id: 'jotun_champion',
-    name: 'Jotun Champion',
+    name: 'Jötunn Champion',
     minFloor: 40,
     stats: { hp: 175, maxHp: 175, attack: 26, defense: 12 },
     speed: 90,

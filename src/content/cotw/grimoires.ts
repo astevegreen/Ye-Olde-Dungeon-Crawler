@@ -4,7 +4,7 @@ import { COTW_ESSENCE_BY_ELEMENT } from './items/essences';
 /**
  * What touching slots lend each other, after the magic plan's neighbour rules (15 Oct): one
  * flavour per element, arcane by school, Blood-price, and a doubled form for each, lent to
- * a spell of the flavour's own element or from a slot doubled at Týr's Oath-Stone.
+ * a spell of the flavour's own element or from a slot doubled at Tyr's Oath-Stone.
  */
 const COTW_LENDING: NeighbourLendingConfig = {
   lendBySchool: ['arcane'],
@@ -148,7 +148,7 @@ export const COTW_GRIMOIRES: GrimoireSystemConfig = {
       detect_monsters: 'hlidskjalf',
       detect_objects: 'hlidskjalf',
       clairvoyance: 'hlidskjalf',
-      // Þórr's hammer takes the bolt's place for a hero; the wand and the monsters keep the bolt.
+      // Thor's hammer takes the bolt's place for a hero; the wand and the monsters keep the bolt.
       lightning_bolt: 'hammer_throw',
       // Scroll-only now: a hero who knew it lets it go.
       identify: null,

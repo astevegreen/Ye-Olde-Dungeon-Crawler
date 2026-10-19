@@ -173,7 +173,7 @@ describe('neighbour lending: the rules', () => {
     expect(lendIds(cast(state))).toEqual(['arcane', 'fire']);
   });
 
-  it('a doubled slot (Týr, Loki) lends its doubled form; doubling happens once', () => {
+  it('a doubled slot (Tyr, Loki) lends its doubled form; doubling happens once', () => {
     const doubled = grid([[0, 0, 'call'], [1, 0, 'bolt']], (s) => s.doubledSlots.push(at(1, 0)));
     expect(cast(doubled).lends[0]).toMatchObject({ doubled: true, name: 'Blue fire' });
     const twice = grid([[0, 0, 'ember'], [1, 0, 'bolt']], (s) => s.doubledSlots.push(at(1, 0)));

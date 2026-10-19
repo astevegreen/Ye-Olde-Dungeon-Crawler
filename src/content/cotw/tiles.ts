@@ -143,7 +143,7 @@ export const COTW_TILES: TileDefinition[] = [
     // Spell altar (COTW_MAGIC.altars): one rite, then spent.
     type: 'galdr_altar_tyr',
     sacred: true,
-    name: "Týr's Oath-Stone",
+    name: "Tyr's Oath-Stone",
     passable: true,
     walkable: true,
     transparent: true,
@@ -151,7 +151,7 @@ export const COTW_TILES: TileDefinition[] = [
     glyph: 'ᛏ',
     description: 'A runestone carved with a wolf and a severed hand. It hums with oaths.',
     interactionHandlerId: 'galdr_altar_tyr',
-    landmarkLabel: "Týr's Oath-Stone ᛏ",
+    landmarkLabel: "Tyr's Oath-Stone ᛏ",
   },
   {
     // Spell altar (COTW_MAGIC.altars): one rite, then spent.

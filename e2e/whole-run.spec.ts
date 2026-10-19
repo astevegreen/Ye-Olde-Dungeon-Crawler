@@ -260,7 +260,7 @@ test.describe('a whole run', () => {
     await expect.poll(ratHp).toBeLessThan(1);
     expect(await messagesSince(page, castLog)).toMatch(/Giant Rat/i);
 
-    // An altar rite: Týr's Oath-Stone on floor 4 burns a spell to double another slot's lend.
+    // An altar rite: Tyr's Oath-Stone on floor 4 burns a spell to double another slot's lend.
     await triage(page, 'jumpToFloor', 4);
     await closeAll(page);
     const altar = await page.evaluate(() => {

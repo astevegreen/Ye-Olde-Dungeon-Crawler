@@ -276,7 +276,7 @@ describe('Spell altars', () => {
     });
   });
 
-  it('Týr waits while no two spells touch: it says so, opens nothing and stays unspent', () => {
+  it('Tyr waits while no two spells touch: it says so, opens nothing and stays unspent', () => {
     for (const id of ['firebolt', 'slow']) player.forgetSpell(id);
     giveEssence('essence_isa');
     const tile = { ...TILES.FLOOR, type: 'galdr_altar_tyr', interactionHandlerId: 'galdr_altar_tyr' };

@@ -861,7 +861,7 @@ export class SpellPipeline {
       engine
     );
     if (applied) {
-      // The status's own handler may already have said it took hold ("X is wreathed in holy fire!").
+      // The status's own handler may already have said it took hold ("X bursts into flame!").
       if (!message) engine.log(`${target.name} is afflicted with ${statusDisplayName(engine.manifest, effect.statusId as StatusType)}!`);
     } else {
       engine.log(`${target.name} resists the affliction!`);

@@ -8,10 +8,10 @@ import { SpellPipeline } from '../spellPipeline';
 import type { StatusHandler } from '../../status/statusHandlers';
 
 // A spell's status logged "X is afflicted with Y!" even when the status's own handler had
-// already said it took hold (cotw's burning: "X is wreathed in holy fire!"), so the log
+// already said it took hold (cotw's burning: "X bursts into flame!"), so the log
 // carried both lines. The generic line now stands in only for a handler that says nothing.
 describe('the line a spell logs when its status takes hold', () => {
-  const scorched: StatusHandler = { onApply: (entity) => `${entity.name} is wreathed in holy fire!` };
+  const scorched: StatusHandler = { onApply: (entity) => `${entity.name} bursts into flame!` };
   const dazed: StatusHandler = { onExpire: () => undefined };
 
   function setup() {
@@ -31,7 +31,7 @@ describe('the line a spell logs when its status takes hold', () => {
     const { engine, player, foe } = setup();
     const before = engine.messages.length;
     SpellPipeline.applyStatusEffect(engine, player, foe, { type: 'applyStatus', statusId: 'scorched', duration: 3 });
-    expect(engine.messages.slice(before)).toEqual(['Draugr is wreathed in holy fire!']);
+    expect(engine.messages.slice(before)).toEqual(['Draugr bursts into flame!']);
   });
 
   it('logs the generic line when the handler says nothing', () => {

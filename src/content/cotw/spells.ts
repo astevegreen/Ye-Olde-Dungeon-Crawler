@@ -35,7 +35,7 @@ export const COTW_SPELLS: SpellDefinition[] = [
     reflects: false,
     targetType: 'ray',
     targetingMode: 'ray',
-    description: 'Hurls a searing fiery bolt that burns foes on impact.',
+    description: 'Hurls a searing bolt of fire at a single foe.',
     spellType: 'damage',
     visual: { archetype: 'projectile', color: '#f97316', stepDelayMs: 25, travelMode: 'smooth' },
     effects: [{ type: 'damage', amount: 12, element: 'fire' }],

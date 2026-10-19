@@ -78,8 +78,8 @@ export const OBSIDIAN_SIPHON_MONSTERS: MonsterDefinition[] = [
     spells: ['lightning_bolt'],
     telegraphedAbility: {
       requiresSpellId: 'lightning_bolt',
-      name: 'Focused Solar Beam',
-      message: 'The {monster} aligns quartz prisms, focusing a searing solar beam!',
+      name: 'Prism-Focused Bolt',
+      message: 'The {monster} aligns quartz prisms, focusing a crackling bolt of lightning!',
       pattern: 'line',
       range: 6,
       radius: 0,

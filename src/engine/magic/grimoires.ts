@@ -55,7 +55,7 @@ export interface GrimoireState {
   statPicks: GrimoireStatPick[];
   /** Slots added beyond a layout's base cells (Hel's altars). */
   extraSlots: GrimoireSlotRef[];
-  /** Slots whose lend is doubled (Týr's Oath-Stone, Loki's Cairn), once each. */
+  /** Slots whose lend is doubled (by a pack's doubling altars), once each. */
   doubledSlots: GrimoireSlotRef[];
   /** Spells forgotten this run, which are never learned again. */
   forgotten: string[];

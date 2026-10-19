@@ -190,7 +190,7 @@ export const COTW_MILESTONE_PERKS: PerkDefinition[] = [
   { id: 'milestone_shadow_step', name: 'Shadow-Step', source: 'milestone', tagline: 'Where the blade fell, you were.', description: 'Evasion +10%, and each blow you evade lets you slip a tile aside.', effects: { evasionBonus: 0.1, evadeBlinkRange: 1 } },
   { id: 'milestone_deadly_precision', name: 'Deadly Precision', source: 'milestone', tagline: 'You strike where the armour isn’t.', description: 'One melee blow in five is a critical, for half again the damage.', effects: { critChanceBonus: 0.2, critMultiplier: 1.5 } },
   // ── Constitution 30 ──
-  { id: 'milestone_undying', name: 'Undying', source: 'milestone', tagline: 'Every step down makes you whole.', description: 'A level-up heals you in full.', effects: { levelUpFullHeal: true } },
+  { id: 'milestone_undying', name: 'Undying', source: 'milestone', tagline: 'Every rise in power makes you whole.', description: 'A level-up heals you in full.', effects: { levelUpFullHeal: true } },
   { id: 'milestone_juggernaut', name: 'Juggernaut', source: 'milestone', tagline: 'More of you than any blade can reach.', description: 'Max health +25%.', effects: { maxHpPercent: 0.25 } },
   // ── Intelligence 30 ──
   { id: 'milestone_arch_seidkona', name: 'Arch-Seiðkona', source: 'milestone', tagline: 'The void obeys before it bites.', description: 'Overflow surges come a tier milder; the mildest never comes at all.', effects: { overflowTierShift: -1 } },
@@ -245,7 +245,7 @@ export const COTW_MILESTONE_CHOICES: Record<string, ChoiceDefinition> = {
     id: 'milestone_str_20',
     title: 'Strength Milestone: Might of the Mountain Giant',
     description:
-      'Your muscles surge with the brute vigor of the hill giants. Stone breaks beneath your grip. Will you bear the weight of a wagon, break what you strike, or throw your foes like rockfalls?',
+      'Your muscles surge with the brute vigor of your giant forebears. Stone breaks beneath your grip. Will you bear the weight of a wagon, break what you strike, or throw your foes like rockfalls?',
     options: [milestoneOption(perk('milestone_ox_shoulders')), milestoneOption(perk('milestone_bone_breaker')), milestoneOption(perk('milestone_landslide'))],
     cancelable: false,
   },

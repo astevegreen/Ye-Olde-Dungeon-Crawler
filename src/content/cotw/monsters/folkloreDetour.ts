@@ -74,7 +74,7 @@ export const FOLKLORE_DETOUR_MONSTERS: MonsterDefinition[] = [
   },
   {
     id: 'fylgja',
-    name: 'Fylgja',
+    name: 'Death-Fylgja',
     minFloor: 15,
     stats: { hp: 45, maxHp: 45, attack: 8, defense: 4 },
     speed: 110,

@@ -121,11 +121,11 @@ export const COTW_MAGIC: MagicSystemConfig = {
   altars: [
     {
       id: 'galdr_altar_tyr',
-      name: "Týr's Oath-Stone",
+      name: "Tyr's Oath-Stone",
       description:
-        'Týr gave his hand to bind the wolf. Burn an offering here, a spell you know or an Essence-Rune, and one grimoire slot you choose lends its neighbours twice as much.',
+        'Tyr gave his hand to bind the wolf. Burn an offering here, a spell you know or an Essence-Rune, and one grimoire slot you choose lends its neighbours twice as much.',
       rite: 'double',
-      performedMessage: 'Týr accepts {offering}. What {spell} lends its neighbours is doubled.',
+      performedMessage: 'Tyr accepts {offering}. What {spell} lends its neighbours is doubled.',
       spentMessage: '{altar} stands cold; its oath is already sworn.',
     },
     {

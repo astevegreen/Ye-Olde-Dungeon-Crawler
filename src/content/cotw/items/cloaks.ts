@@ -56,7 +56,7 @@ export const COTW_CLOAKS: ItemDefinition[] = [
     minFloor: 34,
     weight: 1800,
     bulk: 1400,
-    stats: { defenseBonus: 5, speedBonus: -1 },
+    stats: { defenseBonus: 5, speedBonus: -3 },
     identified: false,
     description: 'Heavy mantle stiffened with translucent golden Yggdrasil tree sap: stout protection, though its weight slows the wearer.',
     value: 240,

@@ -95,7 +95,7 @@ export const COTW_OFFHAND: ItemDefinition[] = [
     minFloor: 34,
     weight: 7500,
     bulk: 6500,
-    stats: { defenseBonus: 11, speedBonus: -2 },
+    stats: { defenseBonus: 11, speedBonus: -5 },
     identified: false,
     description: 'An impenetrable slab of fossilized Yggdrasil taproot. Unsurpassed defense, though its weight slows the bearer.',
     value: 380,

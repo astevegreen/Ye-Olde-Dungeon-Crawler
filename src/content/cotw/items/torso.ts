@@ -72,7 +72,7 @@ export const COTW_TORSO: ItemDefinition[] = [
     minFloor: 28,
     weight: 4000,
     bulk: 3000,
-    stats: { defenseBonus: 10, speedBonus: 3 },
+    stats: { defenseBonus: 10, speedBonus: 6 },
     identified: false,
     description: 'Woven from cold liquid-mercury filaments that shift with the wearer’s body, granting remarkable agility.',
     value: 350,

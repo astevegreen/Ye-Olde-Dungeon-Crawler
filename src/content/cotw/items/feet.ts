@@ -41,7 +41,7 @@ export const COTW_FEET: ItemDefinition[] = [
     minFloor: 14,
     weight: 3200,
     bulk: 2500,
-    stats: { defenseBonus: 5, speedBonus: -2 },
+    stats: { defenseBonus: 5, speedBonus: -5 },
     identified: false,
     description: 'Armored iron sabatons salvaged from dwarven mining automatons. Grants extreme lower-body defense but significantly reduces stride speed.',
     value: 90,
@@ -71,7 +71,7 @@ export const COTW_FEET: ItemDefinition[] = [
     minFloor: 36,
     weight: 900,
     bulk: 1100,
-    stats: { defenseBonus: 6, speedBonus: 2 },
+    stats: { defenseBonus: 6, speedBonus: 5 },
     // "Rooting magic" is paralysis here (the World-Bark's Grasping Roots); snares are traps.
     wornEffects: { grantsStatusImmunities: ['paralysis'], trapImmune: true },
     quality: 'artifact',

@@ -12,7 +12,7 @@ export const COTW_CONTAINERS: ItemDefinition[] = [
     minFloor: 12,
     weight: 3000,
     bulk: 3500,
-    stats: { speedBonus: -1 },
+    stats: { speedBonus: -2 },
     // A pack has nothing to hide, and the sage does not identify containers.
     identified: true,
     description: 'An engineered external frame forged from lightweight iron truss-work. Greatly expands pack capacity, though heavily loaded trips hinder agility.',

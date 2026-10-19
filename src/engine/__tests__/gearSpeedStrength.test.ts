@@ -28,14 +28,14 @@ function setup(): { engine: GameEngine; player: Player } {
 
 // The paperdoll summed these, but nothing read the sums: gear Speed and Strength did nothing.
 describe('gear Speed and Strength reach the hero', () => {
-  it('a worn Rime-Bit Chisel (+4 speed) makes the hero faster', () => {
+  it('a worn Rime-Bit Chisel (+8 speed) makes the hero faster', () => {
     const { engine, player } = setup();
     const def = COTW_WEAPONS.find((d) => d.id === 'rime_bit_chisel')!;
     const chisel = createScaledItem(def, 'c1', 2, () => 0.5);
     player.inventory.primaryPack.addItem(chisel);
     expect(new EquipAction(player, 'c1').perform(engine).success).toBe(true);
     // The paperdoll sums it...
-    expect(player.inventory.getEquipmentStats().speedBonus).toBe(4);
+    expect(player.inventory.getEquipmentStats().speedBonus).toBe(8);
 
     // ...and the hero's speed and the energy the scheduler grants carry it.
     const scheduler = new EnergyScheduler();
@@ -45,23 +45,23 @@ describe('gear Speed and Strength reach the hero', () => {
     expect({
       speed: calculateAttribute(player, 'speed'),
       energyPerTick: player.energy,
-    }).toEqual({ speed: 104, energyPerTick: 104 });
+    }).toEqual({ speed: 108, energyPerTick: 108 });
   });
 
-  it('a worn Sanctified helmet (+1 strength) adds to Strength and carry Strength', () => {
+  it('a worn Sanctified helmet (+2 strength) adds to Strength and carry Strength', () => {
     const { engine, player } = setup();
     const helm = new Item({ id: 'h1', name: 'Cap', category: 'helmet', slot: 'head', weight: 500, bulk: 400, identified: true });
     const sanctified = familyModifier(COTW_ITEM_FAMILIES, 'blessed', 10, 'test')!;
-    expect(sanctified.statDeltas).toMatchObject({ strengthBonus: 1 });
+    expect(sanctified.statDeltas).toMatchObject({ strengthBonus: 2 });
     helm.addModifier(sanctified);
     player.inventory.primaryPack.addItem(helm);
     expect(new EquipAction(player, 'h1').perform(engine).success).toBe(true);
-    expect(player.inventory.getEquipmentStats().strengthBonus).toBe(1);
+    expect(player.inventory.getEquipmentStats().strengthBonus).toBe(2);
 
     expect({
       strength: calculateAttribute(player, 'strength'),
       carryStrength: player.carryStrength,
-    }).toEqual({ strength: 11, carryStrength: 11 });
+    }).toEqual({ strength: 12, carryStrength: 12 });
   });
 
   it('a worn Blighted item (-10 speed) slows the hero', () => {

@@ -119,6 +119,16 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
       expect(engine.getWorldCounter('hostages_sacrificed')).toBe(0);
     });
 
+    it('offers "Take Only What Was Offered" only while one who offered is still bound', () => {
+      const balance = cotwManifest.choices!['blood_altar_ritual'].options.find((o) => o.id === 'balance_path')!;
+      const offered = () => evaluatePredicate(balance.predicate!, engine.worldState);
+      expect(offered()).toBe(true);
+      rescueCaptiveVillager(engine, 'captive_villager_1'); // Ingrid offered herself
+      expect(offered()).toBe(true);
+      rescueCaptiveVillager(engine, 'captive_villager_3'); // and so did Sigrid
+      expect(offered()).toBe(false);
+    });
+
     it('4 saved: savior, +10 town, +25 temple, both frith spells, no mark', () => {
       settle(4);
       expect(engine.getWorldFlag('siphon_ritual_resolved')).toBe(true);

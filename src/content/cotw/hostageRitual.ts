@@ -83,7 +83,7 @@ export const ALTAR_MARK_HALF: Predicate = {
 export const ALTAR_MARKED: Predicate = { type: 'minCounter', counter: COUNTER_SACRIFICED, value: 1 };
 
 export const ALTAR_MARKS: HeroMarkDefinition[] = [
-  { id: 'altar_mark_half', label: 'Blood-marked', when: ALTAR_MARK_HALF, hudColor: 'var(--ui-warn)', detail: 'the altar took a captive for you' },
+  { id: 'altar_mark_half', label: 'Blood-marked', when: ALTAR_MARK_HALF, hudColor: 'var(--ui-warn)', detail: 'the altar took some of the captives for you' },
   { id: 'altar_mark_full', label: 'Blood-marked, wholly', when: ALTAR_MARK_FULL, hudColor: 'var(--ui-bad)', detail: 'the altar took all four captives for you' },
 ];
 
@@ -442,11 +442,25 @@ function applyAltarOption(engine: EngineContext, optionId: string): void {
   }
 }
 
+/** A captive who offered themselves is still bound: neither freed, given, nor lost. */
+const A_WILLING_CAPTIVE_REMAINS: Predicate = {
+  type: 'or',
+  predicates: Object.keys(CAPTIVE_STANCES)
+    .filter(isWilling)
+    .map((id): Predicate => ({
+      type: 'not',
+      predicate: {
+        type: 'or',
+        predicates: ['rescued', 'sacrificed', 'lost'].map((fate): Predicate => ({ type: 'hasFlag', flag: `${id}_${fate}` })),
+      },
+    })),
+};
+
 /** How each altar option answers Vigdís, for a hero who heard her. */
 const ANSWERS_TO_HER_CLAIM: Record<string, string> = {
-  rescue_all: 'You overrule the ones who offered and send them home with the rest. Let Vigdís’s word die with her.',
+  rescue_all: 'You send every one of them home, whatever they offered. Let Vigdís’s word die with her.',
   balance_path: 'You take what was offered, as the old way asks, and not one life more on Vigdís’s word.',
-  harvest_all: 'Only blood will, Vigdís said. You take her at her word, and the unwilling with the willing.',
+  harvest_all: 'Only blood will, Vigdís said. You take her at her word, and every life still bound with it.',
 };
 
 /**
@@ -463,7 +477,7 @@ export const BLOOD_ALTAR_CHOICE: ChoiceDefinition = {
       id: 'rescue_all',
       label: 'Shatter the Siphon — Prioritize Rescuing Every Captive',
       description:
-        'Sunder the bindings and send every remaining captive home, the willing too. Every two saved give you a frith spell; the temple and the town will remember it.',
+        'Sunder the bindings and send every remaining captive home, willing or not. Every two saved give you a frith spell; the temple and the town will remember it.',
       consequences: [
         { type: 'logMessage', message: 'You smash the warded runes of the siphon! The warlocks scream in frustration!' },
       ],
@@ -473,15 +487,17 @@ export const BLOOD_ALTAR_CHOICE: ChoiceDefinition = {
       label: 'Take Only What Was Offered',
       description:
         'Let the altar take only those who offered themselves, and free the rest. Every two saved give a frith spell, every two taken a blood spell, and the altar marks you.',
+      predicate: A_WILLING_CAPTIVE_REMAINS,
+      disabledReason: 'None who offered themselves are left at the altar.',
       consequences: [
-        { type: 'logMessage', message: 'You cut the ropes of those who want to live, and leave the willing to the stones.' },
+        { type: 'logMessage', message: 'You leave to the stones only those who offered themselves, and cut the rest loose.' },
       ],
     },
     {
       id: 'harvest_all',
       label: 'Channel the Dark Altar — Feed It Every Captive',
       description:
-        'Let the altar take every remaining captive, the unwilling with the willing. Every two taken give you a blood spell paid for in your own HP, and the altar marks you. The temple will not forgive it.',
+        'Let the altar take every remaining captive, willing or not. Every two taken give you a blood spell paid for in your own HP, and the altar marks you. The temple will not forgive it.',
       consequences: [
         { type: 'logMessage', message: 'You give the altar every one of them. The grooves in the stone run full.' },
       ],
@@ -510,7 +526,7 @@ export const SIPHON_TIMED_EVENT: TimedEventDefinition = {
     {
       type: 'logMessage',
       message:
-        '*** Time runs out! The warlocks complete the sacrificial siphon, and a wave of dark blood lashes the chamber (-15 HP)! ***',
+        '*** Time runs out! The warlocks complete the sacrificial siphon, and its backlash finds you wherever you stand (-15 HP)! ***',
     },
   ],
 };

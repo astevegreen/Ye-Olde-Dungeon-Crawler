@@ -45,6 +45,7 @@ import { PRNG } from './dungeon/prng';
 import { WanderingMonsterSpawner } from './dungeon/wandering-spawner';
 import { createScaledMonster } from './dungeon/spawner';
 import { senseTraps } from './dungeon/trapSense';
+import { tickBossFleeResolutions } from './quest/bossFlee';
 import type { Item } from './items/item';
 import { CompendiumManager } from './compendium/compendiumManager';
 import { AffinityMatrix, DEFAULT_AFFINITY_MATRIX } from './magic/elements';
@@ -1029,6 +1030,7 @@ export class GameEngine {
     this.runEnvironmentalUpdate('wandering-spawn', () => this.wanderingSpawner.checkAndSpawn(this, this.rng));
     this.runEnvironmentalUpdate('floor-respawn', () => this.floorManager.checkClearedFloorRespawn(this));
     this.runEnvironmentalUpdate('timed-events-tick', () => this.tickTimedEvents());
+    this.runEnvironmentalUpdate('boss-flee', () => tickBossFleeResolutions(this));
 
     if (this.detectMonstersTurns > 0) this.detectMonstersTurns -= 1;
     if (this.detectObjectsTurns > 0) this.detectObjectsTurns -= 1;

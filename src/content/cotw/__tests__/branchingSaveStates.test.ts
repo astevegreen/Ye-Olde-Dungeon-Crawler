@@ -159,7 +159,7 @@ describe('Branching save-states — Níðhögg’s two endings (real cotwManifes
     expect(eligibleEnding).toBe('sealed');
   });
 
-  it('the log says once, when Níðhögg first flees, that pressing it drives it off', () => {
+  it('the log says once, when Níðhögg first flees, that sparing it drives it off', () => {
     const { engine, player } = buildRealEngine(50);
     engine.addEntity(
       new Monster({
@@ -200,6 +200,27 @@ describe('Branching save-states — Níðhögg’s two endings (real cotwManifes
     expect(engine.getWorldFlag('nidhogg_root_sealed')).toBe(true);
     expect(engine.map.getAllEntities()).not.toContain(nidhogg);
     expect(engine.scheduler.getEntities()).not.toContain(nidhogg);
+  });
+
+  it('a hero who stays the blade and waits drives Níðhögg off too: every turn it flees counts', () => {
+    const { engine, player } = buildRealEngine(50);
+    engine.addEntity(
+      new Monster({
+        id: 'nidhogg-7',
+        name: 'Níðhögg, the Root-Gnawer',
+        definitionId: 'nidhogg',
+        position: { x: player.x + 3, y: player.y },
+        stats: { hp: 100, maxHp: 400, attack: 30, defense: 14 },
+        fleeHealthPercent: 0.9,
+        aiState: 'fleeing',
+      })
+    );
+
+    for (let i = 0; i < 6 && !engine.getWorldFlag('nidhogg_root_sealed'); i++) {
+      engine.handlePlayerAction(new WaitAction(player));
+    }
+    expect(engine.getWorldFlag('nidhogg_root_sealed')).toBe(true);
+    expect(engine.compendium.getEntry('nidhogg').kills).toBe(0);
   });
 
   /** Walks the hero onto (x, y) from beside it, and returns the ending the run reached. */

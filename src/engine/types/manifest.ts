@@ -566,11 +566,11 @@ export interface EndingDefinition {
 }
 
 /**
- * Resolves a boss encounter as "driven off" rather than killed (ARCHITECTURE.md
- * §3) — a branching-finale gap: the existing `fleeHealthPercent` mechanic already
- * makes a monster flee at low HP, but nothing converts sustained fleeing into a
- * concluded encounter. Checked in `movement.ts` (full `GameEngine` access) each
- * player turn: while the named monster is alive, on the active floor, and
+ * Resolves a boss encounter as "driven off" rather than killed — a branching-finale
+ * gap: the existing `fleeHealthPercent` mechanic already makes a monster flee at low
+ * HP, but nothing converts sustained fleeing into a concluded encounter. Checked in
+ * `quest/bossFlee.ts` once per hero turn, whatever the hero did with it (waiting
+ * counts): while the named monster is alive, on the active floor, and
  * `aiState === 'fleeing'`, a turn counter accrues; once it reaches
  * `fleeTurnsRequired`, `sealedFlag` is set (once) and the monster is removed from
  * the map, so the fight cannot simply resume once it stops.
@@ -579,7 +579,7 @@ export interface BossFleeResolution {
   monsterDefinitionId: string;
   fleeTurnsRequired: number;
   sealedFlag: string;
-  /** Logged the first turn the boss is seen fleeing: tells the player that pressing on drives it off. */
+  /** Logged the first turn the boss is seen fleeing: tells the player that sparing it drives it off. */
   fleeBeginMessage?: string;
   /** A tile (e.g. a portal) opened where the boss stood when it was driven off. */
   portalTileId?: string;

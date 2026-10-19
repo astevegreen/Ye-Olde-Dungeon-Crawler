@@ -11,7 +11,6 @@ import { evaluatePredicate } from '../predicates/predicateEvaluator';
 import type { Player } from '../entities/player';
 import { Monster } from '../entities/monster';
 import { HookDispatcher } from '../hooks/hookDispatcher';
-import { getTileDefinition } from '../grid/tile';
 import { revealSecretDoor } from './search';
 import { altarWaitReason, getAltarDefinition, isAltarSpent } from '../magic/altars';
 import { stepOntoLearningStone } from '../magic/learningStones';
@@ -436,33 +435,6 @@ export class MovementAction implements Action {
           } else {
             engine.log(`You stand before ${choiceDef.title}. It awaits your decision.`);
             break;
-          }
-        }
-      }
-
-      // "Driven off" boss resolution (ARCHITECTURE.md §3, BossFleeResolution):
-      // converts sustained fleeing (the existing fleeHealthPercent mechanic) into a
-      // concluded encounter, since nothing else does.
-      for (const watcher of engine.manifest?.bossFleeResolutions ?? []) {
-        if (engine.getWorldFlag(watcher.sealedFlag)) continue;
-        const boss = engine.map
-          .getAllEntities()
-          .find(
-            (e): e is Monster => e instanceof Monster && e.definitionId === watcher.monsterDefinitionId && e.isAlive()
-          );
-        const fleeCounterKey = `boss_flee_turns:${watcher.monsterDefinitionId}`;
-        if (boss && boss.aiState === 'fleeing') {
-          const turnsFled = engine.modifyWorldCounter(fleeCounterKey, 1);
-          if (turnsFled === 1 && watcher.fleeBeginMessage) engine.log(watcher.fleeBeginMessage);
-          if (turnsFled >= watcher.fleeTurnsRequired) {
-            engine.setWorldFlag(watcher.sealedFlag, true);
-            const portal = watcher.portalTileId ? getTileDefinition(watcher.portalTileId) : undefined;
-            if (portal) {
-              engine.map.setTile(boss.x, boss.y, portal);
-              if (watcher.portalMessage) engine.log(watcher.portalMessage);
-            }
-            engine.removeEntity(boss);
-            engine.log(`${boss.name} flees into the dark, driven off for good!`);
           }
         }
       }

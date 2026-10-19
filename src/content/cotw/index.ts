@@ -215,7 +215,7 @@ export const cotwManifest: GameContentManifest = {
     {
       monsterDefinitionId: 'nidhogg',
       fleeTurnsRequired: 5,
-      fleeBeginMessage: 'Níðhögg reels, cornered and bleeding. Keep pressing it and it will flee for good.',
+      fleeBeginMessage: 'Níðhögg reels, cornered and bleeding. Stay your blade and let it run five turns, and it will flee for good.',
       sealedFlag: 'nidhogg_root_sealed',
       portalTileId: 'gateway_home',
       portalMessage: 'Where Níðhögg fled, the gnawed root knits closed and a path of light opens toward home. Step onto it to go back to Bjarnarhaven.',

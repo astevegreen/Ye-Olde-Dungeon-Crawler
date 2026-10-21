@@ -12,7 +12,7 @@ import { cotwManifest } from '../index';
 import { COTW_OBJECTIVES } from '../objectives';
 import { COTW_DEEPEST_FLOOR_COUNTER } from '../spellTablets';
 import { GATEWARD_HEARD_FLAG, PROLOGUE_ENDED_FLAG } from '../prologue';
-import { FIRST_STONE_READ_FLAG } from '../firstSpell';
+import { FIRST_STONE_READ_FLAG, FIRST_STONE_READ_TRACKED_FLAG } from '../firstSpell';
 import { COTW_LEARNING_STONES } from '../learningStones';
 
 describe('"Learn your first spell" in the HUD objective', () => {
@@ -42,30 +42,65 @@ describe('"Learn your first spell" in the HUD objective', () => {
     expect(COTW_OBJECTIVES.find((o) => o.id === 'cotw_objective_first_spell')?.text).toBe('Learn your first spell.');
   });
 
+  it('never shows before the prologue has ended', () => {
+    expect(objectiveAt(1, [])).toBe('cotw_objective_act1');
+  });
 });
 
-describe('A hero saved before the flag existed', () => {
-  /** A floor-5 save whose floor-4 stone record reads `stone`, written without FIRST_STONE_READ_FLAG. */
-  const loadedWith = (stone: { floor: number; spent?: boolean; found?: boolean }) => {
-    const player = new Player({ position: { x: 2, y: 2 }, stats: { hp: 50, maxHp: 50, attack: 5, defense: 2 } });
-    const engine = new GameEngine({ map: new GameMap(15, 15, TILES.FLOOR), player, floor: 5, manifest: cotwManifest, seed: 1337 });
-    for (const f of [PROLOGUE_ENDED_FLAG, GATEWARD_HEARD_FLAG]) engine.setWorldFlag(f, true);
-    engine.worldState.counters[COTW_DEEPEST_FLOOR_COUNTER] = 5;
-    player.learningStones.stones.push(stone);
-    const { engine: reloaded } = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine))), cotwManifest);
-    expect(reloaded.getWorldFlag(FIRST_STONE_READ_FLAG)).toBe(false);
-    return reloaded;
-  };
+type StoneRecord = { floor: number; spent?: boolean; found?: boolean };
 
+/** A floor-5 hero after the raid whose floor-4 stone record reads `stone`, saved and loaded back. */
+const savedAndLoaded = (stone: StoneRecord, { beforeTheFlag }: { beforeTheFlag: boolean }) => {
+  const player = new Player({ position: { x: 2, y: 2 }, stats: { hp: 50, maxHp: 50, attack: 5, defense: 2 } });
+  const engine = new GameEngine({ map: new GameMap(15, 15, TILES.FLOOR), player, floor: 5, manifest: cotwManifest, seed: 1337 });
+  for (const f of [PROLOGUE_ENDED_FLAG, GATEWARD_HEARD_FLAG]) engine.setWorldFlag(f, true);
+  engine.worldState.counters[COTW_DEEPEST_FLOOR_COUNTER] = 5;
+  // A save written before this change has neither flag.
+  if (beforeTheFlag) delete engine.worldState.flags[FIRST_STONE_READ_TRACKED_FLAG];
+  player.learningStones.stones.push(stone);
+  const { engine: reloaded } = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine))), cotwManifest);
+  expect(reloaded.getWorldFlag(FIRST_STONE_READ_FLAG)).toBe(false);
+  return reloaded;
+};
+
+describe('A hero saved before the flag existed', () => {
   it('is caught up on its first action when a stone was already read', () => {
-    const engine = loadedWith({ floor: 4, spent: true });
+    const engine = savedAndLoaded({ floor: 4, spent: true }, { beforeTheFlag: true });
     engine.handlePlayerAction(new WaitAction(engine.player));
     expect(engine.getWorldFlag(FIRST_STONE_READ_FLAG)).toBe(true);
     expect(getCurrentObjective(engine)?.id).toBe('cotw_objective_act1');
   });
 
+  // The owner's call (issue #33): such a save cannot tell a read stone from a shard that faded unread.
+  it('counts a shard that faded unread as read too', () => {
+    const engine = savedAndLoaded({ floor: 4, found: true, spent: true }, { beforeTheFlag: true });
+    engine.handlePlayerAction(new WaitAction(engine.player));
+    expect(engine.getWorldFlag(FIRST_STONE_READ_FLAG)).toBe(true);
+  });
+
   it('keeps "Learn your first spell" when no stone was read yet', () => {
-    const engine = loadedWith({ floor: 4, found: true });
+    const engine = savedAndLoaded({ floor: 4, found: true }, { beforeTheFlag: true });
+    engine.handlePlayerAction(new WaitAction(engine.player));
+    expect(engine.getWorldFlag(FIRST_STONE_READ_FLAG)).toBe(false);
+    expect(getCurrentObjective(engine)?.id).toBe('cotw_objective_first_spell');
+  });
+
+  it('is caught up only once: a shard fading later leaves the objective standing', () => {
+    const engine = savedAndLoaded({ floor: 4, found: true }, { beforeTheFlag: true });
+    engine.handlePlayerAction(new WaitAction(engine.player));
+    engine.player.learningStones.stones[0].spent = true;
+    engine.handlePlayerAction(new WaitAction(engine.player));
+    expect(engine.getWorldFlag(FIRST_STONE_READ_FLAG)).toBe(false);
+  });
+});
+
+describe('A new run', () => {
+  it('starts tracking the first read from its own world state', () => {
+    expect(cotwManifest.initialWorldState?.flags[FIRST_STONE_READ_TRACKED_FLAG]).toBe(true);
+  });
+
+  it('keeps "Learn your first spell" when a shard faded unread', () => {
+    const engine = savedAndLoaded({ floor: 4, found: true, spent: true }, { beforeTheFlag: false });
     engine.handlePlayerAction(new WaitAction(engine.player));
     expect(engine.getWorldFlag(FIRST_STONE_READ_FLAG)).toBe(false);
     expect(getCurrentObjective(engine)?.id).toBe('cotw_objective_first_spell');

@@ -68,7 +68,7 @@ import { COTW_MONSTER_CATEGORIES } from './monsterCategories';
 import { COTW_FACTIONS, COTW_MERCHANT_PRICING, COTW_TEMPLE_MET_HOOK } from './factions';
 import { COTW_FIRST_TIME_HINTS } from './hints';
 import { COTW_RELIC_HOOK } from './relic';
-import { COTW_FIRST_STONE_READ_HOOK } from './firstSpell';
+import { COTW_FIRST_STONE_READ_CATCH_UP_HOOK, COTW_FIRST_STONE_READ_HOOK, FIRST_STONE_READ_TRACKED_FLAG } from './firstSpell';
 import { IRON_CLANS_BARROW_PLACEMENTS, IRON_CLANS_HOOKS, IVALDA } from './ironClans';
 import { SKALDIC_RUNESTONE_LORE } from './runestones';
 import {
@@ -205,6 +205,7 @@ export const cotwManifest: GameContentManifest = {
     TEAR_LEFT_BEHIND_HOOK,
     ...IRON_CLANS_HOOKS,
     COTW_FIRST_STONE_READ_HOOK,
+    COTW_FIRST_STONE_READ_CATCH_UP_HOOK,
   ],
   storyChoiceTriggers: [OATH_TRIGGER, ZEALOT_LEADER_TRIGGER, VIDNIR_DEFEATED_TRIGGER, ...SIPHON_GIFT_TRIGGERS],
   attributeMilestones: COTW_ATTRIBUTE_MILESTONES,
@@ -226,7 +227,7 @@ export const cotwManifest: GameContentManifest = {
     },
   ],
   initialWorldState: {
-    flags: {},
+    flags: { [FIRST_STONE_READ_TRACKED_FLAG]: true },
     counters: {},
     factions: {
       townsfolk: 10,

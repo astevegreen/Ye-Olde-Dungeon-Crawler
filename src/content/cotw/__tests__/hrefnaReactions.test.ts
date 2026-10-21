@@ -138,10 +138,13 @@ describe('what Hrefna says, by what the hero has learned', () => {
     expect(engine.messages.filter((m) => m.includes('Hrefna the völva sits by the plaza fountain'))).toHaveLength(1);
 
     const { engine: loaded } = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine))), cotwManifest);
+    const loadedHrefnas = () => loaded.map.getAllEntities().filter((e) => e.id === HREFNA_ID) as NPC[];
+    // Read before any action: an action would re-seat her from the flags and hide a lost choiceId.
+    expect(loadedHrefnas()).toHaveLength(1);
+    expect(loadedHrefnas()[0]).toMatchObject({ ...HREFNA_POSITION, choiceId: HREFNA_ALTAR_CHOICE_ID });
     loaded.handlePlayerAction(new WaitAction(loaded.player));
-    const after = loaded.map.getAllEntities().filter((e) => e.id === HREFNA_ID) as NPC[];
-    expect(after).toHaveLength(1);
-    expect(after[0]).toMatchObject({ ...HREFNA_POSITION, choiceId: HREFNA_ALTAR_CHOICE_ID });
+    expect(loadedHrefnas()).toHaveLength(1);
+    expect(loadedHrefnas()[0]).toMatchObject({ ...HREFNA_POSITION, choiceId: HREFNA_ALTAR_CHOICE_ID });
   }, 30_000);
 
   it('opens her reaction when the hero walks into her, and the nod only says a line', () => {

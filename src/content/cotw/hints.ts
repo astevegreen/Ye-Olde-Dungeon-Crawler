@@ -43,6 +43,6 @@ export const COTW_FIRST_TIME_HINTS: Partial<Record<FirstTimeHintId, FirstTimeHin
   },
   unidentified: {
     title: 'Unknown things',
-    text: 'Much of what the deep gives up hides its true name: Sage Mimir in town names such things for a fee, and a Scroll of Identify names one at once. At Intelligence 20 you may take the Lore-Keeper gift, and each time you take the stairs it names what you carry.',
+    text: 'Much of what the deep gives up hides its true name: Sage Mimir in town names such things for a fee, and a Scroll of Identify names one at once. At Intelligence 20 you may take the Lore-Keeper gift: each time you take the stairs, it names what you have carried since the last stairs.',
   },
 };

@@ -103,6 +103,14 @@ describe('first-time hints', () => {
     expect(unseenHints(buildEngine({ firstTimeHints: cotwManifest.firstTimeHints }), ['unidentified'])).toEqual(['unidentified']);
   });
 
+  it('cotw tells, in two sentences at most, who names unknown things: Mimir, the scroll and Lore-Keeper', () => {
+    const text = cotwManifest.firstTimeHints?.unidentified?.text ?? '';
+    for (const name of ['Sage Mimir', 'Scroll of Identify', 'Lore-Keeper', 'Intelligence 20']) expect(text).toContain(name);
+    // Lore-Keeper names only what was carried since the previous stairs (perks.ts, identifyCarriedSinceStairs).
+    expect(text).toContain('since the last stairs');
+    expect(text.split(/[.!?](?:\s|$)/).filter((s) => s.trim()).length).toBeLessThanOrEqual(2);
+  });
+
   it("meets an item's first-pickup hint once the hero carries one, until it is shown", () => {
     const engine = buildEngine({ items: [RUNE, { ...RUNE, id: 'plain', firstPickupHint: undefined }] });
     expect(itemHintsMet(engine)).toEqual([]);

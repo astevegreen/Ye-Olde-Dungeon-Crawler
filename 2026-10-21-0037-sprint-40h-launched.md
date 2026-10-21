@@ -35,3 +35,4 @@ Complete. The sprint runs itself; progress is on pinned issue #19 "Sprint log". 
 - Guard tests: 20 passed (scripts/__tests__/sprintGuard.test.ts). gate-stamp lint+test+tooling green on each commit; pre-push green on 18e46cd1 and 9f60edcb.
 - CI: 18e46cd1 red (guard test on Linux), fixed in 4264d0e1; 91fb7f80 green and deployed (ci:watch "deploy.yml: success, deployed").
 - Remote dry runs (00:13Z, 00:23Z): supervisor would start the 4 plan sessions + research lane; guard refused push, `git switch` on main and `npm install`.
+Resumed: 2026-10-21 00:40 UTC

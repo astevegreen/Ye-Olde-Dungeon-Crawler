@@ -999,3 +999,21 @@ test('the palette stairs command off the stairs says there are none', async ({ p
     .poll(() => page.evaluate(() => window.__cotwEngine!.messages.slice(-3).join(' | ')))
     .toContain('There are no stairs here to climb.');
 });
+
+// The palette's Cast Quick Spell 1 takes the key's path: Magic Arrow, in slot 1, starts aiming (U4).
+test('the palette quick-spell cast starts aiming, and Escape cancels with nothing spent', async ({ page }) => {
+  await embarkNewHero(page);
+  const aiming = () => page.evaluate(() => window.__cotwRenderer!.targetingOverlay.isOpen);
+  const mana = () => page.evaluate(() => window.__cotwEngine!.player.mana);
+  const manaBefore = await mana();
+
+  await page.keyboard.press('Control+KeyK');
+  await expect(page.locator('#cmd-palette-input')).toBeVisible();
+  await page.locator('#cmd-palette-input').fill('cast quick');
+  await page.keyboard.press('Enter');
+  await expect.poll(aiming).toBe(true);
+
+  await page.keyboard.press('Escape');
+  await expect.poll(aiming).toBe(false);
+  expect(await mana()).toBe(manaBefore);
+});

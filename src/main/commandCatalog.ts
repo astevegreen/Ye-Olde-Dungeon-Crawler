@@ -1,3 +1,5 @@
+import { resolveManaTerms, type GameContentManifest } from '../engine';
+
 export interface CommandMetadata {
   id: string;
   title: string;
@@ -14,11 +16,13 @@ export interface CommandMetadata {
  * Decoupled from runtime DOM / closures so it can be reasoned about and tested
  * purely, while src/main.ts supplies the actual executor map. A command's key chip
  * comes from its `binding`'s current keys, so it follows a rebind and never names a
- * key that does something else.
+ * key that does something else. `{mana}` in a title or description stands for the pack's
+ * mana name, filled by `catalogForPack`.
  */
 export const COMMAND_CATALOG = [
   { id: 'inventory', title: 'Open Inventory', category: 'Action', binding: 'inventory', description: 'Inspect items, equip gear, and use consumables' },
-  { id: 'spellbook', title: 'Open Spellbook', category: 'Action', binding: 'cast_spell', description: 'Review spells, manage quick-spell bindings, and cast' },
+  { id: 'spellbook', title: 'Open Spellbook', category: 'Action', binding: 'cast_spell', description: 'Review spells, manage quick-spell bindings, and cast or aim a spell' },
+  { id: 'cast-quick-spell-1', title: 'Cast Quick Spell 1', category: 'Action', binding: 'quick_spell_1', description: 'Cast the spell in quick slot 1; one that needs a target starts aiming: Enter, Space or F casts, Esc cancels' },
   { id: 'inspect', title: 'Inspect Surroundings', category: 'Action', binding: 'inspect', description: 'Look at tiles, monsters, and items in view' },
   { id: 'compendium', title: 'Open Bestiary', category: 'Help', binding: 'compendium', description: 'View bestiary weaknesses, lore, and combat notes' },
   { id: 'allocate-stats', title: 'Allocate Stat Points', category: 'Action', fixedKeys: 'U', description: 'Spend unallocated stat points on attributes' },
@@ -31,7 +35,7 @@ export const COMMAND_CATALOG = [
   { id: 'sort-pack', title: 'Sort Inventory by Category', category: 'Action', description: 'Organize backpack by weapons, armor, potions, and scrolls' },
   { id: 'consolidate-coins', title: 'Consolidate Coinage to Purse', category: 'Action', description: 'Deposit loose coins into your total purchasing power' },
   { id: 'wait', title: 'Pass Turn (Wait)', category: 'Action', binding: 'wait', description: 'Wait one turn and let energy advance' },
-  { id: 'rest', title: 'Rest Until Healed', category: 'Action', binding: 'rest', description: 'Rest safely until fully recovered' },
+  { id: 'rest', title: 'Rest to Regain HP and {mana}', category: 'Action', binding: 'rest', description: 'Rest until HP and {mana} are both full' },
   { id: 'search', title: 'Search for Secrets & Traps', category: 'Action', binding: 'search', description: 'Examine adjacent walls and floors for hidden traps or doors' },
   { id: 'stairs', title: 'Use Stairs Up / Down', category: 'Action', binding: 'stairs', fixedKeys: '>', description: 'Descend deeper into the dungeon or return to the floor above' },
   { id: 'message-log', title: 'Message Log History', category: 'Help', binding: 'message_log', description: 'Read back the recent lines of the log' },
@@ -50,3 +54,10 @@ export const COMMAND_CATALOG = [
 ] as const satisfies readonly CommandMetadata[];
 
 export type CommandId = (typeof COMMAND_CATALOG)[number]['id'];
+
+/** The catalog as the palette shows it for a pack: `{mana}` filled with the pack's mana name. */
+export function catalogForPack(manifest?: Pick<GameContentManifest, 'branding'>): (CommandMetadata & { id: CommandId })[] {
+  const mana = resolveManaTerms(manifest).name;
+  const fill = (text: string): string => text.replaceAll('{mana}', mana);
+  return COMMAND_CATALOG.map((meta) => ({ ...meta, title: fill(meta.title), description: fill(meta.description) }));
+}

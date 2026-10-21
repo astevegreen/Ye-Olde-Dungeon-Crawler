@@ -15,6 +15,19 @@ export interface CommandItem {
 
 const chipOf = (cmd: CommandItem): string => (typeof cmd.shortcut === 'function' ? cmd.shortcut() : cmd.shortcut);
 
+/** The commands whose title, key chip, description or category holds the query (any case). */
+export function filterCommands(commands: readonly CommandItem[], query: string): CommandItem[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [...commands];
+  return commands.filter(
+    (c) =>
+      c.title.toLowerCase().includes(q) ||
+      chipOf(c).toLowerCase().includes(q) ||
+      c.description.toLowerCase().includes(q) ||
+      c.category.toLowerCase().includes(q)
+  );
+}
+
 /**
  * Registers on the modal stack while open (ARCHITECTURE.md §6), so the game pauses and
  * every key reaches the palette even when its text box loses focus.
@@ -139,19 +152,7 @@ export class CommandPalette implements UIModal {
   }
 
   private filter(query: string): void {
-    const q = query.trim().toLowerCase();
-    if (!q) {
-      this.filteredCommands = [...this.commands];
-    } else {
-      this.filteredCommands = this.commands.filter((c) => {
-        return (
-          c.title.toLowerCase().includes(q) ||
-          chipOf(c).toLowerCase().includes(q) ||
-          c.description.toLowerCase().includes(q) ||
-          c.category.toLowerCase().includes(q)
-        );
-      });
-    }
+    this.filteredCommands = filterCommands(this.commands, query);
     this.selectedIndex = 0;
     this.updateList();
   }

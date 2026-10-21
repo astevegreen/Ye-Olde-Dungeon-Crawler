@@ -140,7 +140,7 @@ import { SettingsManager } from './ui/settings/settingsManager';
 import { KeybindModal } from './ui/settings/keybindModal';
 import { MainMenu } from './ui/menus/mainMenu';
 import { isBenignResizeObserverError, isOpaqueScriptError } from './ui/opaqueScriptError';
-import { COMMAND_CATALOG, type CommandId, type CommandMetadata } from './main/commandCatalog';
+import { catalogForPack, type CommandId } from './main/commandCatalog';
 
 declare global {
   interface ImportMetaEnv {
@@ -1739,6 +1739,8 @@ window.addEventListener('DOMContentLoaded', () => {
         }
       },
       spellbook: () => openMenuTab('spellbook'),
+      // The same path as the quick-spell-1 key: an aimed spell starts aiming.
+      'cast-quick-spell-1': () => triggerQuickSpell(0),
       inventory: () => {
         openMenuTab('inventory');
         renderer?.render();
@@ -1873,7 +1875,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Each chip reads its action's keys as bound now, so it follows a rebind (R-main-4).
     commandPalette.registerCommands(
-      COMMAND_CATALOG.map((meta: CommandMetadata & { id: CommandId }) => ({
+      catalogForPack(activeManifest).map((meta) => ({
         ...meta,
         shortcut: () => [meta.binding ? codesLabel(settingsManager.getCodesForAction(meta.binding)) : '', meta.fixedKeys ?? ''].filter(Boolean).join(' / '),
         execute: commandExecutors[meta.id],

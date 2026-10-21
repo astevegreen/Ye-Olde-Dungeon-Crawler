@@ -4,6 +4,10 @@ import { join } from 'node:path';
 import type { SoakPrng } from './prng';
 import type { BoundKeys } from './oracles';
 import type { DispatchedAction } from './policies';
+import { lineOfFire } from './lineOfFire';
+
+/** `lineOfFire` as source text: the page can't import it, so each decision rebuilds it there. */
+const LINE_OF_FIRE_SRC = lineOfFire.toString();
 
 /**
  * The player bot's builds (P-36), so a soak compares play styles instead of one: the level-up
@@ -467,6 +471,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       castPlan: CastPlan | null;
       lastCast: Record<string, number>;
       altarsTried: string[];
+      lineOfFireSrc: string;
     }) => {
       const w = window as any;
       const e = w.__cotwEngine;
@@ -646,6 +651,21 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           if (!t || !t.transparent) return false;
         }
       };
+      // Whether a bolt from the hero reaches `b` within `range` steps: the engine's flight, which
+      // a corner can clip where the sight line above is clear (lineOfFire.ts, rebuilt from source).
+      const lineOfFireFn = new Function(`return (${args.lineOfFireSrc})`)() as typeof lineOfFire;
+      const fireTile = (x: number, y: number) => (e.map.inBounds(x, y) ? e.map.getTile(x, y) : null);
+      const fires = (b: { x: number; y: number }, range: number): boolean => lineOfFireFn(fireTile, p, b, range);
+      // Whether a spell flies to its target, as `castGeometry` gives it a ray: a bolt, an
+      // out-and-back throw or a thrown burst. Shapes, self casts and summons don't fly.
+      const flies = (sp: any): boolean => {
+        if (sp.shape) return sp.shape === 'outAndBack';
+        const mode = sp.targetingMode ?? sp.targetType;
+        if (mode === 'ray' || mode === 'bounce_ray') return true;
+        const arch = sp.visual?.archetype;
+        const bursts = mode === 'area_burst' || (mode === 'tile' && (sp.areaOfEffect ?? 0) > 0) || arch === 'direct_burst';
+        return bursts && (arch === 'projectile_burst' || ((sp.range ?? 0) > 0 && arch !== 'direct_burst'));
+      };
       const curesPoison = (it: any): boolean =>
         (it?.effects ?? []).some((f: any) => f.type === 'cure_status' && (f.status === 'poison' || f.status === 'all'));
       const isPhaseDoor = (it: any): boolean => it?.spellId === 'phase_door' || it?.scrollConfig?.spellId === 'phase_door';
@@ -713,14 +733,15 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
               e.fov.isVisible(m.x, m.y) &&
               cheb(m, p) >= 2 &&
               cheb(m, p) <= 6 &&
-              (m.aiState === 'fleeing' || m.hp <= m.maxHp / 2)
+              (m.aiState === 'fleeing' || m.hp <= m.maxHp / 2) &&
+              fires(m, 6)
           )
           .sort((a: any, b: any) => a.hp - b.hp || a.y - b.y || a.x - b.x || String(a.id).localeCompare(String(b.id)));
 
         const target = snipeCandidates[0];
         if (target) return aimed(target.x, target.y);
 
-        const hostileAtAim = hostiles.find((m: any) => m.x === aimX && m.y === aimY && e.fov.isVisible(m.x, m.y));
+        const hostileAtAim = hostiles.find((m: any) => m.x === aimX && m.y === aimY && e.fov.isVisible(m.x, m.y) && fires(m, 6));
         if (hostileAtAim) {
           return { action: { type: 'key' as const, key: 'Enter' }, curPos, curTurn, curFloor, targeting: true };
         }
@@ -1232,7 +1253,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
                 e.fov.isVisible(m.x, m.y) &&
                 cheb(m, p) >= 2 &&
                 cheb(m, p) <= 6 &&
-                (m.aiState === 'fleeing' || m.hp <= m.maxHp / 2)
+                (m.aiState === 'fleeing' || m.hp <= m.maxHp / 2) &&
+                fires(m, 6)
             )
             .sort((a: any, b: any) => a.hp - b.hp || cheb(a, p) - cheb(b, p) || String(a.id).localeCompare(String(b.id)))
         : [];
@@ -1276,7 +1298,10 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         .sort((a: any, b: any) => cheb(a, p) - cheb(b, p) || String(a.id).localeCompare(String(b.id)));
       // A real fight: two or more awake foes, or one worth half the hero's own life.
       const bigFight = awakeFoes.length >= 2 || awakeFoes.some((m: any) => m.maxHp >= p.maxHp * 0.5);
-      const reaches = (sp: any, t: { x: number; y: number }) => cheb(p, t) <= (sp.range ?? 0) && lineOfSight(p, t);
+      // A spell that flies must arrive (its flight, not the sight line); one that doesn't keeps
+      // the range-and-sight check.
+      const reaches = (sp: any, t: { x: number; y: number }) =>
+        cheb(p, t) <= (sp.range ?? 0) && (flies(sp) ? fires(t, sp.range ?? 0) : lineOfSight(p, t));
       const near = (t: { x: number; y: number }, radius: number) => awakeFoes.filter((m: any) => cheb(m, t) <= radius).length;
       // The reticle starts on the first visible foe (targeting-overlay.ts): Enter at once when that is the target.
       const firstSeen = e.map
@@ -2103,6 +2128,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       castPlan: state.castPlan,
       lastCast: state.lastCast,
       altarsTried: state.altarsTried,
+      lineOfFireSrc: LINE_OF_FIRE_SRC,
     }
   );
 

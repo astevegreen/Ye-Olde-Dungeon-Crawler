@@ -28,3 +28,4 @@ Complete
 - lint + unit (3442) + tooling (45): green on 04592eb4
 - pre-push (sim, schema, build, Playwright 99 passed / 12 skipped, 3 browsers): green on d35b0b74 and 04592eb4
 - deploy.yml: success on 04592eb4
+Resumed: 2026-10-21 18:42 UTC

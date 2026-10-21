@@ -24,6 +24,9 @@ Owner: "Run the supervisor now", "The supervisor should archive finished sprint 
 Sonnet 5.5 at medium thinking — reading session and trigger state, one log.
 
 ## Decisions
+- Archiving runs from the resumed session (session_01Rpe8ewgggkQUSreyLx5doV) hourly at :35 via trig_01Vs2MF4CJVNiTK67T1mjeoz, because supervisor runs get no archive_session tool — owner: "Hourly into this session"
+- #39, #44, #45 re-queued with an owner reply (16 GB commit charge free) — owner: "Yes, re-queue all three"
+- #33 answered: end the line on Hearth-Tear recovery too — owner: "33: yes"
 - gh is active as greenbeanbot; an owner reply is posted with `GH_TOKEN="$(gh auth token --user astevegreen)"` for that one command, never `gh auth switch` — chosen because the lanes count only astevegreen comments.
 - Pushes from this session wait until the integrator is between pushes (its retry on a moved `main` is once only) — chosen because 4ea9ae54 bounced its #21 push.
 - Older open handoff notes (engine-bug-verify, test-audit-complete, handoff-tooling-port) were left open; the owner didn't pick them.

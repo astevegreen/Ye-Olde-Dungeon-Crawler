@@ -1,11 +1,8 @@
 # Handoff: move YODC's sprint to the desktop
-2026-10-21 17:07 UTC · branch main · HEAD a805194c · tree 1 uncommitted file · folder C:/Antigravity/YODC
+2026-10-21 17:08 UTC · branch main · HEAD a805194c · tree 1 uncommitted file · folder C:/Antigravity/YODC
 
 ## Goal
 Owner: "Move YODC's sprint to the desktop; Terminal Dusk stays on the laptop." Done when the "YODC Sprint" rc host runs on the desktop, the supervisor triggers point at it and are on again, and lanes start there.
-
-## Decide first
-- #41 is still open and labelled `to-integrate`, though its fix a805194c landed and deployed green at 16:04Z (the integrator was stopped before closing it; auto mode refused my gh comment/close). Close it by hand, with a comment naming a805194c? — recommend: yes, so the desktop integrator doesn't redo it
 
 ## Done
 - Supervisor triggers trig_01V41kDZjBCWjEa8VNkS6NpC (Wed) and trig_011dQLUCZDrvQNndysjcLfkx (Thu) and the archiver trig_01Vs2MF4CJVNiTK67T1mjeoz: all `enabled: false` (15:58Z).
@@ -25,6 +22,7 @@ Owner: "Move YODC's sprint to the desktop; Terminal Dusk stays on the laptop." D
 Sonnet 5.5 at medium thinking — checking state, editing one ID in two files, trigger updates.
 
 ## Decisions
+- #41 closed by the owner by hand (fix a805194c landed) — owner: "I'll close #41 myself."
 - Stopped the integrator mid-loop rather than wait for all 12 `to-integrate` issues — owner stopped the host ("I stopped the laptop's YODC Sprint window").
 
 ## Dead ends

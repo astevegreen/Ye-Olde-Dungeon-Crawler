@@ -25,6 +25,9 @@ Sonnet 5.5 at medium thinking — checking session and trigger state, firing one
 - Kept `.claude/worktrees/engine-bug-hunt` — its `.prompts/` holds B9's repro notes.
 - The `:02 America/New_York` "Sprint supervisor" scheduled tasks are Terminal Dusk's — confirmed from its `docs/sprint.md:113`.
 - TD's 37 merged worktrees and 3 PENDING lanes (cse_01FypXUz…, cse_01TvAmpn…, cse_01WbEG15…) are left to TD's own session.
+- Run the supervisor now — owner: "Run the supervisor now"; done as one-shot trig_01WskDDbeUTXG6peczw9zckM (agents can't fire the http_api one).
+- Supervisor archives finished sprint sessions hourly — owner: "The supervisor should archive finished sprint sessions every hour" (4ea9ae54).
+- #33 old saves judged by `spent`; TD's finished 11:03Z supervisor archived — owner: "I approve your recommendations for all other questions".
 
 ## Dead ends
 - `Stop-Process`, `archive_session`, `rm -rf` of node_modules and editing `~/.claude/settings.json` — all blocked by the auto-mode classifier; the owner acts instead.

@@ -29,8 +29,9 @@ export class DisarmTrapAction implements Action {
     // If target coordinate not provided, look underfoot first, then adjacent tiles
     let targetTrap = engine.map.getTrapAt(tx, ty);
     if (!targetTrap || targetTrap.disarmed) {
-      // Check 8 adjacent tiles for any revealed active trap
-      for (let dy = -1; dy <= 1; dy++) {
+      // Check 8 adjacent tiles for any revealed active trap (a disarmed trap underfoot
+      // must not end the scan early)
+      scan: for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
           if (dx === 0 && dy === 0) continue;
           const nx = this.player.x + dx;
@@ -40,10 +41,9 @@ export class DisarmTrapAction implements Action {
             targetTrap = t;
             tx = nx;
             ty = ny;
-            break;
+            break scan;
           }
         }
-        if (targetTrap) break;
       }
     }
 

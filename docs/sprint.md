@@ -1,6 +1,6 @@
 # Sprint: 21–22 October 2026
 
-**Window (UTC):** `20261021T0200` to `20261022T1800` (Tue 20 Oct 22:00 to Thu 22 Oct 14:00, Eastern).
+**Window (UTC):** `20261021T0040` to `20261022T1800` (Tue 20 Oct 20:40 to Thu 22 Oct 14:00, Eastern).
 Check with `date -u +%Y%m%dT%H%M`. Every sprint skill reads the window from this line.
 
 Inside the window this file overrides `CLAUDE.md` wherever they conflict: its "ask and wait" steps, "push

@@ -24,10 +24,13 @@ quality: every change has tests, passes the gates, gets a reviewer pass, and lan
 5. Start tonight, every lane at once, beside Terminal Dusk's sprint: "Tonight, full lanes".
 6. A bug the sprint's own soak finds (crash, softlock, oracle failure, wrong text) may be filed and fixed in
    lane `fixes` without asking. Anything about balance or feel is a proposal, never a fix.
+7. The second backlog (21 Oct: U7, T5–T7, R4–R6) is approved: "I approve the second backlog, all seven
+   items." Permission 6 covers bugs R6's code hunt confirms with a failing test.
 
 Each commit's trailer quotes the permission it rests on:
 `Requested: "I approve your backlog proposal" (sprint <ID>)`, or for `aids`,
-`Requested: "Seeress + just-in-time" (sprint <ID>)`.
+`Requested: "Seeress + just-in-time" (sprint <ID>)`, or for the second backlog,
+`Requested: "I approve the second backlog, all seven items." (sprint <ID>)`.
 
 ## What still stops a task (unchanged)
 
@@ -125,6 +128,8 @@ provable on its own. Sources: the magic survey and backlog survey of 20 Oct, the
 - **U4** Command palette entries for casting, aiming and resting to regain Seiðr.
 - **U5** Pack-flavoured run-advisor quotes (`advisorQuotes` is unset, so the engine defaults show).
 - **U6** Reproduce, then fix or close: rest key with full HP gives no feedback; focus leaving the shop modal.
+- **U7** A learning stone the hero has seen but not read stays marked on the map until read; today the mark
+  (`learningStoneMarks`, `src/engine/magic/learningStones.ts:393`) shows only while the hero holds its shard.
 
 ### fixes (unverified bugs from the 18 Oct bug hunt; a failing test first, or close with a reason)
 
@@ -146,6 +151,11 @@ provable on its own. Sources: the magic survey and backlog survey of 20 Oct, the
   raid" oracle fires in deep starts. Tag or tune.
 - **T3** The bot fires at monsters a corner blocks.
 - **T4** The bot never heals with spare Seiðr against Gálmr and cannot leave a radius-2 telegraph.
+- **T5** The bot casts every spell it learns: it casts only quick-bar spells (`e2e/soak/playerBot.ts:1280`),
+  and skips `loki_switch` (a swap, no status) and `hlidskjalf` (no `spellType`). R1: ten known spells never cast.
+- **T6** The soak records why a run stopped: `scripts/soak.mjs:143` drops the signal name; write it to
+  `runs.jsonl` and show it in `soak-report`. R3's soak died twice with no cause.
+- **T7** An energy-clamp counter in the soak tap and report, so R5 can measure the clamp R3 could not.
 
 ### research (decides nothing; first line of each report: "Proposal, not a rule")
 
@@ -153,6 +163,12 @@ provable on its own. Sources: the magic survey and backlog survey of 20 Oct, the
   bugs become `fixes` issues (permission 6).
 - **R2** After M3–M6 land: a soak comparing stones read and spells cast before and after onboarding.
 - **R3** Measure the hearth-cold stages (turns per floor) and the energy clamp question; options only.
+- **R4** After T5 lands: a magic-coverage soak from town and from floor 20, every known spell cast; findings
+  that are bugs become `fixes` issues (permission 6).
+- **R5** After T6 and T7 land: R3 again with a full sample (30 or more seeds from town): hearth-cold stages
+  and the energy clamp; options only.
+- **R6** A read-only bug hunt over the sprint's own changes (`git diff pre-sprint-2026-10-20..origin/main -- src/`);
+  a finding a failing test confirms becomes a `fixes` issue (permission 7).
 
 Not sprint work (the owner's call): P-24, P-27, P-37, the raid's difficulty at level 1, the arrival autosave
 on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` floors), renaming spells.

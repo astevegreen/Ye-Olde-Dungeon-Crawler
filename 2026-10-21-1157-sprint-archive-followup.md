@@ -35,3 +35,4 @@ Sonnet 5.5 at medium thinking — reading session and trigger state, one log.
 ## Verification
 - gates (lint, unit 3377, tooling stamp): green on 85b0f798's tree; pre-push (sim, build, Playwright 99): green on 85b0f798
 - ci:watch: deploy green on 4ea9ae54, d9b9a2cb and 85b0f798. Pass it a full sha (or none, for HEAD): `gh run list --commit` misses a short one.
+Resumed: 2026-10-21 12:59 UTC

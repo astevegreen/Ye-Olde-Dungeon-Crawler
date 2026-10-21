@@ -122,6 +122,27 @@ const FX_SPEED_MULTIPLIER = 1.75;
  */
 const IMPACT_HOLD_MS = 250;
 
+/**
+ * How long past its own length a batch may wait for frames before it ends without them. A
+ * stalled GPU stops `requestAnimationFrame` but not timers: the soak saw both browsers on a
+ * machine draw nothing for 6 s, input locked throughout (#47).
+ */
+const FRAME_STALL_SLACK_MS = 250;
+
+/** A flight's time per path step. */
+const stepDelayOf = (desc: ProjectileEffectDescriptor): number => Math.max(10, (desc.stepDelayMs || 22) * FX_SPEED_MULTIPLIER);
+
+const DEFAULT_MS = { burst: 250, screen_flash: 180, chain_link: 150 } as const;
+
+/** An effect's own length; a flight's includes the impact it may hold the track for. */
+const effectMs = (desc: VisualEffectDescriptor): number =>
+  desc.type === 'projectile'
+    ? stepDelayOf(desc) * Math.max(1, desc.path?.length ?? 0) + IMPACT_HOLD_MS
+    : (desc.durationMs || DEFAULT_MS[desc.type]) * FX_SPEED_MULTIPLIER;
+
+/** A wave's length: its effects play together. */
+const waveMs = (wave: VisualEffectDescriptor[]): number => Math.max(0, ...wave.map(effectMs));
+
 /** World pixels of a tile's centre. */
 const centre = (cell: Cell, cs: number): [number, number] => [(cell.x + 0.5) * cs, (cell.y + 0.5) * cs];
 
@@ -158,6 +179,9 @@ export class CanvasFXRunner {
   private readonly art: () => SpellFxCatalog | undefined;
   /** Flights that end where a burst of their batch goes off: the burst draws their impact. */
   private readonly landsInBurst = new WeakSet<ProjectileEffectDescriptor>();
+  /** When the queued tactical batches should all have ended, frames or not (#47). */
+  private trackDeadline = 0;
+  private stallTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(options: FXRunnerOptions = {}) {
     this.mode = options.mode ?? 'smooth';
@@ -194,17 +218,13 @@ export class CanvasFXRunner {
       const immediate = effects.filter((e) => e.type !== 'projectile' && e.type !== 'burst');
       const bursts = effects.filter((e) => e.type === 'burst');
 
-      if (projectiles.length > 0) {
-        // Wave 1: Projectiles + immediate effects
-        this.queuedTracks.push([...projectiles, ...immediate]);
-        // Wave 2: Bursts (detonations at impact)
-        if (bursts.length > 0) {
-          this.queuedTracks.push(bursts);
-        }
-      } else {
-        // All play together in single wave
-        this.queuedTracks.push(effects);
-      }
+      // Wave 1: projectiles and immediate effects; wave 2: the bursts where they land.
+      // Without projectiles, all play together in a single wave.
+      const waves = projectiles.length > 0 ? [[...projectiles, ...immediate], bursts].filter((w) => w.length > 0) : [effects];
+      this.queuedTracks.push(...waves);
+      // Batches play one after another, so this one ends its own length after the last.
+      this.trackDeadline = Math.max(this.trackDeadline, performance.now()) + waves.reduce((sum, w) => sum + waveMs(w), 0);
+      this.watchForStall();
 
       const existingResolve = this.currentPromiseResolve;
       this.currentPromiseResolve = () => {
@@ -275,6 +295,27 @@ export class CanvasFXRunner {
       const last = e.type === 'projectile' ? e.path?.[e.path.length - 1] : undefined;
       if (e.type === 'projectile' && last && epicentres.has(`${last.x},${last.y}`)) this.landsInBurst.add(e);
     }
+  }
+
+  /**
+   * Ends the tactical track once it has outlived its own length with no frame to finish it,
+   * so input is freed when the effects would have ended rather than when frames come back.
+   */
+  private watchForStall(): void {
+    if (this.stallTimer !== null || typeof setTimeout === 'undefined') return;
+    const wait = Math.max(0, this.trackDeadline - performance.now()) + FRAME_STALL_SLACK_MS;
+    this.stallTimer = setTimeout(() => {
+      this.stallTimer = null;
+      if (this.isDestroyed || !this.isPlaying) return;
+      if (performance.now() < this.trackDeadline + FRAME_STALL_SLACK_MS) {
+        this.watchForStall();
+        return;
+      }
+      flightRecorder.warn('Effects ended without frames: none came for their whole length', { queued: this.queuedTracks.length });
+      this.activeEffects = [];
+      this.queuedTracks = [];
+      this.advanceTrack();
+    }, wait);
   }
 
   private ensureLoop(): void {
@@ -384,7 +425,7 @@ export class CanvasFXRunner {
           type: 'burst',
           descriptor: { ...desc, epicenter, radius },
           startTime: now,
-          durationMs: (desc.durationMs || 250) * FX_SPEED_MULTIPLIER,
+          durationMs: effectMs(desc),
           completed: false,
           drawn: Boolean(art && draw),
           particles,
@@ -396,7 +437,7 @@ export class CanvasFXRunner {
           type: 'screen_flash',
           descriptor: desc,
           startTime: now,
-          durationMs: (desc.durationMs || 180) * FX_SPEED_MULTIPLIER,
+          durationMs: effectMs(desc),
           completed: false,
         };
 
@@ -429,7 +470,7 @@ export class CanvasFXRunner {
           type: 'chain_link',
           descriptor: { ...desc, from, to },
           startTime: now,
-          durationMs: (desc.durationMs || 150) * FX_SPEED_MULTIPLIER,
+          durationMs: effectMs(desc),
           completed: false,
           segments,
           art: art?.bolt ? art : undefined,
@@ -490,7 +531,7 @@ export class CanvasFXRunner {
     const elapsed = now - ef.startTime;
 
     if (ef.type === 'projectile') {
-      const stepDelay = Math.max(10, (ef.descriptor.stepDelayMs || 22) * FX_SPEED_MULTIPLIER);
+      const stepDelay = stepDelayOf(ef.descriptor);
       const totalDuration = stepDelay * Math.max(1, ef.totalSteps);
       ef.progress = Math.min(1, elapsed / totalDuration);
 
@@ -844,6 +885,8 @@ export class CanvasFXRunner {
 
   public destroy(): void {
     this.isDestroyed = true;
+    if (this.stallTimer !== null) clearTimeout(this.stallTimer);
+    this.stallTimer = null;
     if (this.animationFrameId !== null && typeof cancelAnimationFrame !== 'undefined') {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;

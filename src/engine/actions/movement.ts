@@ -249,6 +249,9 @@ export class MovementAction implements Action {
       engine.log(`${mod.name} flings ${this.entity.name} across the floor!`);
       engine.emitGameEvent({ type: 'chaotic_proc', turn: engine.turnCount, actorId: this.entity.id, procType: 'trickster_step', description: mod.name, teleportDestination: dest });
       engine.recordVisualEffects([{ type: 'screen_flash', color: '#c084fc', durationMs: 150 }]);
+      // The fling sets the bearer down on its landing tile, which it meets as if it stepped there.
+      engine.surfaces?.landOn(engine, this.entity);
+      if (!this.entity.isAlive()) return { success: true, cost };
     }
 
     // 5c. Dispatch onMove Hook Event
@@ -282,10 +285,13 @@ export class MovementAction implements Action {
       }
     }
 
-    // 6. Stairs and Altar Check for Player
+    // 6. Stairs and Altar Check for Player, on the tile the step ends on: an ice slide (5b) or
+    // a Trickster's fling (5b3) may have carried the mover past the tile it stepped onto.
     if (this.entity.type === 'player') {
       let choiceTriggered = false;
-      const destTile = engine.map.getTile(targetX, targetY);
+      const standX = this.entity.x;
+      const standY = this.entity.y;
+      const destTile = engine.map.getTile(standX, standY);
       const handlerId = destTile?.interactionHandlerId ?? destTile?.type;
       if (handlerId === 'stairs_down' || destTile?.isStairsDown) {
         engine.log("You stand upon stairs leading down. Press '>' or [Enter] to descend.");
@@ -301,13 +307,13 @@ export class MovementAction implements Action {
           engine.manifest?.town?.playerSpawn ??
           { x: 5, y: 5 };
         engine.changeFloor(0, returnPos);
-      } else if (stepOntoLearningStone(engine, targetX, targetY)) {
+      } else if (stepOntoLearningStone(engine, standX, standY)) {
         // A learning stone, its shard in hand: the presentation layer opens its card on the event.
       } else if (handlerId && getAltarDefinition(engine, handlerId)) {
         // Spell altar (manifest.magic.altars): the presentation layer opens its rite on this event.
         const altar = getAltarDefinition(engine, handlerId)!;
         const wait = altarWaitReason(altar, engine.player);
-        if (isAltarSpent(engine, targetX, targetY)) {
+        if (isAltarSpent(engine, standX, standY)) {
           engine.log(formatMagicMessage(altar.spentMessage, { altar: altar.name }));
         } else if (wait) {
           engine.log(wait);
@@ -317,7 +323,7 @@ export class MovementAction implements Action {
             type: 'altar_reached',
             turn: engine.turnCount,
             actorId: this.entity.id,
-            data: { altarId: altar.id, x: targetX, y: targetY },
+            data: { altarId: altar.id, x: standX, y: standY },
           });
         }
       } else if (handlerId && engine.manifest?.choices?.[handlerId]) {

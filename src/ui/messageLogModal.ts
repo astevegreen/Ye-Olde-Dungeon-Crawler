@@ -1,7 +1,7 @@
 import type { UIModal } from './modalStack';
 import { createDialogScrim, dialogHtml } from './dialog';
 import { escapeHtml } from './html';
-import { classifyLogLine, collapseRepeats, runText } from './logClassifier';
+import { classifyLogLine, collapseByAction, runText, type LogGroups } from './logClassifier';
 
 export interface MessageLogModalOptions {
   /** The label of the key that opens the history, for its footer hint. */
@@ -13,12 +13,19 @@ export interface MessageLogModalOptions {
 }
 
 /**
- * The history's rows: each line toned as the log strip tones it, repeats in a row as one.
+ * The history's rows: each line toned as the log strip tones it, repeats folded as the strip
+ * folds them (`collapseByAction` over `groups`, the action each line came from).
  * `limit` keeps only the newest rows, counted after collapsing, so a run of repeats fills one row.
  */
-export function messageLogRows(messages: readonly string[], playerName: string, critical?: ReadonlySet<string>, limit?: number): string {
+export function messageLogRows(
+  messages: readonly string[],
+  playerName: string,
+  critical?: ReadonlySet<string>,
+  limit?: number,
+  groups?: LogGroups
+): string {
   if (messages.length === 0) return '<div class="log-line log-line-muted">Nothing has happened yet.</div>';
-  const runs = collapseRepeats(messages);
+  const runs = collapseByAction(messages, groups);
   return (limit === undefined ? runs : runs.slice(-limit))
     .map(({ message, count }) => {
       const line = classifyLogLine(message, playerName, critical);
@@ -42,7 +49,7 @@ export class MessageLogModal implements UIModal {
     this.scrim = createDialogScrim(this.id);
   }
 
-  public open(messages: readonly string[], playerName: string, critical?: ReadonlySet<string>): void {
+  public open(messages: readonly string[], playerName: string, critical?: ReadonlySet<string>, groups?: LogGroups): void {
     if (!this.scrim) return;
     this.isOpen = true;
     const key = this.options.openKey();
@@ -51,7 +58,7 @@ export class MessageLogModal implements UIModal {
       kicker: `The last ${messages.length} lines`,
       closeId: 'message-log-x',
       size: 'wide',
-      body: `<div class="message-log-history" id="message-log-history" tabindex="0">${messageLogRows(messages, playerName, critical)}</div>`,
+      body: `<div class="message-log-history" id="message-log-history" tabindex="0">${messageLogRows(messages, playerName, critical, undefined, groups)}</div>`,
       hints: [
         { keys: ['↑', '↓'], label: 'scroll' },
         { keys: ['PgUp', 'PgDn'], label: 'page' },

@@ -122,7 +122,7 @@ import './ui/styles/title.css';
 import './ui/styles/diagnostics.css';
 import { QuickSpellsBar } from './ui/quickSpellsBar';
 import { PotionRow } from './ui/potionRow';
-import { classifyLogLine, CriticalLineTracker, collapseRepeats, runText } from './ui/logClassifier';
+import { ActionLogGroups, classifyLogLine, CriticalLineTracker, collapseByAction, runText, type LogRun } from './ui/logClassifier';
 import { CombatSidebar } from './ui/sidebar/combatSidebar';
 import { ConsoleExtras } from './ui/console/consoleExtras';
 import { FirstTimeHints } from './ui/hints/firstTimeHints';
@@ -160,6 +160,8 @@ declare global {
     __cotwRenderer?: CanvasRenderer | null;
     __cotwInputHandler?: InputHandler | null;
     __cotwInput?: InputHandler | null;
+    /** The log's rows as every view shows them (`collapseByAction`). */
+    __cotwLogRuns?: () => LogRun[];
     __teardownGlobalErrorHandlers?: () => void;
   }
 }
@@ -824,6 +826,10 @@ window.addEventListener('DOMContentLoaded', () => {
   /** Entities that took a critical blow since the last floating-text pass (`damage_dealt`). */
   const criticalTargets = new Set<string>();
   const criticalLines = new CriticalLineTracker();
+  // The action each log line came from: the HUD observes after every action, so a line one
+  // action writes several times shows once with its count, in every view of the log.
+  const logGroups = new ActionLogGroups();
+  window.__cotwLogRuns = () => (activeEngine ? collapseByAction(activeEngine.messages, logGroups.observe(activeEngine.messages)) : []);
   // Auto-pickup happens only on entering a tile, so what the hero drops stays dropped: coins
   // always, other items by the kinds ticked in the settings (`autoPickup.ts`, tracker 2.5).
   let lastAutoPickupTile: string | null = null;
@@ -940,8 +946,8 @@ window.addEventListener('DOMContentLoaded', () => {
       historyKey.style.display = label ? '' : 'none';
     }
 
-    // The last six lines as shown: a line repeated in a row is one line with its count.
-    const runs = collapseRepeats(engine.messages).slice(-6);
+    // The last six lines as shown: a line repeated in a row, or by one action, is one line with its count.
+    const runs = collapseByAction(engine.messages, logGroups.observe(engine.messages)).slice(-6);
     if (runs.length === 0) {
       streamEl.innerHTML = '<div class="log-line log-line-muted">Explore the dungeon.</div>';
       return;
@@ -1229,7 +1235,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function openMessageLog(): void {
     if (!activeEngine || !inputHandler || messageLogModal.isOpen) return;
     if (inputHandler.modalStack.size > 0) return;
-    messageLogModal.open(activeEngine.messages, activeEngine.player.name, criticalLines.set);
+    messageLogModal.open(activeEngine.messages, activeEngine.player.name, criticalLines.set, logGroups.observe(activeEngine.messages));
     pushModal(messageLogModal.id, messageLogModal);
   }
   document.getElementById('btn-log-history')?.addEventListener('click', () => openMessageLog());
@@ -1561,6 +1567,7 @@ window.addEventListener('DOMContentLoaded', () => {
         !won && activeEngine
           ? recentMessagesHtml({
               messages: activeEngine.messages,
+              groups: logGroups.observe(activeEngine.messages),
               playerName: activeEngine.player.name,
               critical: criticalLines.set,
               count: 6,
@@ -1614,6 +1621,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     firstTimeHints.clear();
+    logGroups.reset();
     lastObservedPlayerHp = engine.player.hp;
     lastAutoPickupTile = `${engine.currentFloor}:${engine.player.x},${engine.player.y}`;
     recordKnownMonsters(engine);
@@ -1931,6 +1939,7 @@ window.addEventListener('DOMContentLoaded', () => {
       );
       characterMenuModal.setKeyResolver((actionId) => settingsManager.getCodesForAction(actionId));
       characterMenuModal.setCriticalLines(() => criticalLines.set);
+      characterMenuModal.setLogGroups((messages) => logGroups.observe(messages));
       renderer.mouseVectoringEnabled = settingsManager.getSettings().mouseVectoringEnabled;
       renderer.mouseAimEnabled = settingsManager.getSettings().mouseAimEnabled;
       renderer.torchlightEnabled = settingsManager.getSettings().torchlightEnabled;

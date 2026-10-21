@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { recentMessagesHtml } from '../recentMessages';
+import { messageLogRows } from '../messageLogModal';
+import { collapseByAction, runText } from '../logClassifier';
 
 /** The strip's rows, in order, as `{ cls, text }`. */
 function rows(html: string): { cls: string; text: string }[] {
@@ -39,5 +41,26 @@ describe('recentMessagesHtml: repeats collapse before the strip takes its last l
 
   it('still says so when nothing has happened', () => {
     expect(recentMessagesHtml({ messages: [], playerName: 'Sven' })).toContain('Nothing has happened yet.');
+  });
+});
+
+// The HUD strip (`collapseByAction` in main.ts), the history and this strip read one log the same way.
+describe('every view of the log folds one action\'s repeats alike', () => {
+  const log = ['You enter the den.', 'W attacks', 'W waits', 'W attacks', 'W waits', 'W attacks', 'You enter the den.'];
+  const groups = [undefined, 0, 0, 0, 0, 0, 1];
+  const expected = ['You enter the den.', 'W attacks (×3)', 'W waits (×2)', 'You enter the den.'];
+
+  it('the HUD runs, the history rows and the strip rows match', () => {
+    const hud = collapseByAction(log, groups).map(({ message, count }) => runText(message, count));
+    const history = rows(messageLogRows(log, 'Sven', undefined, undefined, groups)).map((r) => r.text);
+    const strip = rows(recentMessagesHtml({ messages: log, groups, playerName: 'Sven', count: 6 })).map((r) => r.text);
+    expect(hud).toEqual(expected);
+    expect(history).toEqual(expected);
+    expect(strip).toEqual(expected);
+  });
+
+  it('without groups, every view folds only repeats in a row', () => {
+    const strip = rows(recentMessagesHtml({ messages: log, playerName: 'Sven', count: log.length })).map((r) => r.text);
+    expect(strip).toEqual(log);
   });
 });

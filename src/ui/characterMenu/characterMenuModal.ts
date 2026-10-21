@@ -6,6 +6,7 @@ import { resolveBranding } from '../branding';
 import { escapeHtml, keyChip as chip } from '../html';
 import { resolveManaTerms } from '../../engine';
 import { recentMessagesHtml } from '../recentMessages';
+import type { LogGroups } from '../logClassifier';
 import { MenuWatch } from './menuWatch';
 
 /** Log lines the menu's strip shows: enough to read what just happened, short enough to leave the tab its room. */
@@ -52,6 +53,7 @@ export class CharacterMenuModal implements UIModal {
   /** The newest warning, kept while the menu is open so a flash that was missed is still read. */
   private alert: string | null = null;
   private criticalLines?: () => ReadonlySet<string>;
+  private logGroups?: (messages: readonly string[]) => LogGroups;
 
   private readonly host: MenuHost = {
     refreshChrome: () => this.refreshChrome(),
@@ -88,6 +90,11 @@ export class CharacterMenuModal implements UIModal {
   /** The log lines toned as critical blows, so the strip tones them as the log does. */
   public setCriticalLines(supplier: () => ReadonlySet<string>): void {
     this.criticalLines = supplier;
+  }
+
+  /** The action each log line came from (`ActionLogGroups.observe`), so the strip folds repeats as the log does. */
+  public setLogGroups(supplier: (messages: readonly string[]) => LogGroups): void {
+    this.logGroups = supplier;
   }
 
   /** Where the shell reads each tab's keys (the player's keybindings), so chips and
@@ -280,6 +287,7 @@ export class CharacterMenuModal implements UIModal {
     const mana = resolveManaTerms(engine.manifest).name;
     el.innerHTML = recentMessagesHtml({
       messages: engine.messages,
+      groups: this.logGroups?.(engine.messages),
       playerName: p.name,
       critical: this.criticalLines?.(),
       count: MENU_RECENT_LINES,

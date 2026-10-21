@@ -1,4 +1,5 @@
 import { escapeHtml } from './html';
+import type { LogGroups } from './logClassifier';
 import { messageLogRows } from './messageLogModal';
 
 /** How many of the newest log rows the strip shows; a run of repeated lines is one row. */
@@ -7,6 +8,8 @@ export const RECENT_MESSAGE_COUNT = 5;
 export interface RecentMessagesView {
   /** The engine's whole log, oldest first; the strip collapses repeats, then takes the tail. */
   messages: readonly string[];
+  /** The action each line came from (`ActionLogGroups`), so the strip folds repeats as the log does. */
+  groups?: LogGroups;
   playerName: string;
   /** Lines toned as critical blows, as the log strip tones them. */
   critical?: ReadonlySet<string>;
@@ -33,6 +36,6 @@ export function recentMessagesHtml(view: RecentMessagesView): string {
   const title = view.alert ? `<span class="recent-messages-alert" role="alert">${escapeHtml(view.alert)}</span>` : `<span>${heading}</span>`;
   return `<section class="recent-messages${view.flash ? ' is-flashing' : ''}" aria-label="${heading}">
     <div class="recent-messages-head">${title}${vitals}</div>
-    <div class="recent-messages-lines" aria-live="polite">${messageLogRows(view.messages, view.playerName, view.critical, count)}</div>
+    <div class="recent-messages-lines" aria-live="polite">${messageLogRows(view.messages, view.playerName, view.critical, count, view.groups)}</div>
   </section>`;
 }

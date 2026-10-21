@@ -85,24 +85,104 @@ export class CriticalLineTracker {
   }
 }
 
-/** One line of the log as shown, with how many times in a row the engine wrote it. */
+/** One line of the log as shown, with how many times the engine wrote it (`collapseByAction`). */
 export interface LogRun {
   message: string;
   count: number;
 }
 
 /**
- * Consecutive identical lines as one. A pack of three Brim-Howlers each hitting for 2 wrote
- * three identical lines, pushing everything else out of the six-line strip under the map.
- * The engine's log keeps every line; only what is shown is collapsed.
+ * The action each log line came from, by index into the log; `undefined` for a line that was
+ * already there when the log was first observed (a loaded save's history).
  */
-export function collapseRepeats(messages: readonly string[]): LogRun[] {
-  const runs: LogRun[] = [];
-  for (const message of messages) {
-    const last = runs[runs.length - 1];
-    if (last && last.message === message) last.count++;
-    else runs.push({ message, count: 1 });
+export type LogGroups = readonly (number | undefined)[];
+
+/**
+ * Draws the action boundary the engine's log does not carry: every line appended since the
+ * last `observe` is one group. The HUD observes after every action, so a group is what one
+ * action wrote. The log is capped (the engine drops its oldest line), so new lines are found
+ * by overlap with the last observed log; an ambiguous overlap can only undercount new lines,
+ * which collapses less, never shows wrong text.
+ */
+export class ActionLogGroups {
+  private previous: readonly string[] = [];
+  private groups: (number | undefined)[] = [];
+  private nextGroup = 0;
+  private primed = false;
+
+  /** The group of each line of `messages`, giving the lines new since the last call a fresh one. */
+  public observe(messages: readonly string[]): LogGroups {
+    if (!this.primed) {
+      this.primed = true;
+      this.previous = messages.slice();
+      this.groups = messages.map(() => undefined);
+      return this.groups;
+    }
+    const shifted = this.shiftedSince(messages);
+    const kept = this.previous.length - shifted;
+    const groups = this.groups.slice(shifted);
+    if (messages.length > kept) {
+      const group = this.nextGroup++;
+      for (let i = kept; i < messages.length; i++) groups.push(group);
+    }
+    this.previous = messages.slice();
+    this.groups = groups;
+    return groups;
   }
+
+  /** A new engine is wired: its lines never join the old one's groups. */
+  public reset(): void {
+    this.previous = [];
+    this.groups = [];
+    this.primed = false;
+  }
+
+  /** The fewest old lines dropped from the front such that the rest of the old log starts `messages`. */
+  private shiftedSince(messages: readonly string[]): number {
+    const prev = this.previous;
+    for (let shifted = Math.max(0, prev.length - messages.length); shifted < prev.length; shifted++) {
+      let same = true;
+      for (let i = shifted; i < prev.length; i++) {
+        if (prev[i] !== messages[i - shifted]) {
+          same = false;
+          break;
+        }
+      }
+      if (same) return shifted;
+    }
+    return prev.length;
+  }
+}
+
+/**
+ * The log as shown, with repeats folded: a pack of three Brim-Howlers each hitting for 2 wrote
+ * three identical lines, pushing everything else out of the six-line strip under the map. The
+ * engine's log keeps every line; only what is shown is collapsed. Within one action (group), a line
+ * written again, even with other lines between, joins the row where it first appeared: a wolf
+ * pack's "attacks", "waits", "attacks" reads as two rows. Across actions a line merges only with
+ * the row just above it, and so does a line with no group (one shown before the first `observe`).
+ */
+export function collapseByAction(messages: readonly string[], groups?: LogGroups): LogRun[] {
+  const runs: LogRun[] = [];
+  const byGroup = new Map<number, Map<string, LogRun>>();
+  messages.forEach((message, i) => {
+    const group = groups?.[i];
+    let seen: Map<string, LogRun> | undefined;
+    if (group !== undefined) {
+      seen = byGroup.get(group);
+      if (!seen) byGroup.set(group, (seen = new Map()));
+    }
+    const last = runs[runs.length - 1];
+    const run = last?.message === message ? last : seen?.get(message);
+    if (run) {
+      run.count++;
+      seen?.set(message, run);
+      return;
+    }
+    const fresh = { message, count: 1 };
+    runs.push(fresh);
+    seen?.set(message, fresh);
+  });
   return runs;
 }
 

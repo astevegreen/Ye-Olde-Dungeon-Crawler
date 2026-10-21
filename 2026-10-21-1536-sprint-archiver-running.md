@@ -28,3 +28,4 @@ Sonnet 5.5 at low thinking — the hourly wakes are mechanical session checks.
 
 ## Verification
 - Free RAM: 2.0 GB before the first archive at 13:20Z, 215 MB at 15:20Z after the rc restart, 2.7 GB at 15:35Z.
+Resumed: 2026-10-21 18:48 UTC

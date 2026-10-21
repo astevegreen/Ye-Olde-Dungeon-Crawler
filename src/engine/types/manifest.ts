@@ -689,6 +689,10 @@ export interface ObjectiveDefinition {
   /** The HUD's bearing beside the line points at the nearest of these entities still on the
    *  floor, under `label` ("held villager 9 NW"), in place of the nearest stairs down. */
   pointTo?: { entityIds: string[]; label: string };
+  /** On a floor with a learning stone, the bearing leads to it instead (`learningStoneTarget`):
+   *  the shard's carrier, then the dropped shard, then the stone once the shard is held,
+   *  each under its label ("shard-carrier 7 SE"). */
+  pointToLearningStone?: { carrier: string; shard: string; stone: string };
 }
 
 export interface TimedEventDefinition {

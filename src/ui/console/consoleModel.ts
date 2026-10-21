@@ -7,6 +7,7 @@ import {
   findRuneOfReturn,
   getCurrentObjective,
   getOverflowConfig,
+  learningStoneTarget,
   type GameEngine,
 } from '../../engine';
 import type { UiIconName } from '../icons';
@@ -232,7 +233,8 @@ export function getCompanionCard(engine: GameEngine): CompanionCard | undefined 
 
 /**
  * The pack's current objective, plus a bearing: to the nearest entity the objective points
- * at (`pointTo`) while any is on the floor, else to the nearest stairs down the hero has seen
+ * at (`pointTo`) while any is on the floor, else along the way to the floor's learning stone
+ * (`pointToLearningStone`) while it still teaches, else to the nearest stairs down the hero has seen
  * on this floor, e.g. "stairs down 12 NE".
  */
 export function getObjectiveLine(engine: GameEngine): { text: string; bearing?: string } | undefined {
@@ -250,6 +252,12 @@ export function getObjectiveLine(engine: GameEngine): { text: string; bearing?: 
       if (!target || d < target.d) target = { d, x: e.x, y: e.y };
     }
     if (target) return { text: objective.text, bearing: `${objective.pointTo.label} ${target.d} ${compass(target.x, target.y)}`.trimEnd() };
+  }
+  const stoneLabels = objective.pointToLearningStone;
+  const stone = stoneLabels && learningStoneTarget(engine);
+  if (stoneLabels && stone) {
+    const d = Math.max(Math.abs(stone.x - p.x), Math.abs(stone.y - p.y));
+    return { text: objective.text, bearing: `${stoneLabels[stone.kind]} ${d} ${compass(stone.x, stone.y)}`.trimEnd() };
   }
 
   let best: { d: number; x: number; y: number } | undefined;

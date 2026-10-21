@@ -101,7 +101,7 @@ export * from './magic/manaOverflow';
 export * from './magic/magicConfig';
 export * from './magic/killRites';
 export * from './magic/altars';
-export { learningStoneCard, learningStoneMarks, ReadLearningStoneAction } from './magic/learningStones';
+export { learningStoneCard, learningStoneMarks, learningStoneTarget, ReadLearningStoneAction } from './magic/learningStones';
 export type { LearningStoneCard } from './magic/learningStones';
 export { spellCatalog } from './magic/spellCatalog';
 export type { SpellCatalogEntry } from './magic/spellCatalog';

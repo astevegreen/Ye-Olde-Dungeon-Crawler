@@ -398,6 +398,24 @@ export function learningStoneMarks(engine: GameEngine): { stone?: Position; carr
 }
 
 /**
+ * Where the way to this floor's stone leads next: the stone once its shard is held (the
+ * shortcut included), else the living carrier, else the tile where the shard lies. Undefined
+ * on a floor without a stone, and once the stone is spent.
+ */
+export function learningStoneTarget(engine: GameEngine): { kind: 'carrier' | 'shard' | 'stone'; x: number; y: number } | undefined {
+  const config = getLearningStoneConfig(engine);
+  if (!config || !stoneDefinitionFor(config, engine.currentFloor)) return undefined;
+  if (recordFor(engine.player, engine.currentFloor)?.spent) return undefined;
+  const stone = findLearningStone(engine);
+  if (!stone) return undefined;
+  if (holdsStoneShard(engine)) return { kind: 'stone', x: stone.x, y: stone.y };
+  const carrier = stoneCarrier(engine);
+  if (carrier) return { kind: 'carrier', x: carrier.x, y: carrier.y };
+  const ground = engine.map.getAllGroundItems().find((g) => g.items.some((i) => isShard(config, i)));
+  return ground ? { kind: 'shard', x: ground.x, y: ground.y } : undefined;
+}
+
+/**
  * Reads this floor's stone: learns one of its faces (`spellId`), or turns the shard into an
  * Essence-Rune (`null`). Set at the stone, or anywhere on the floor after a shortcut.
  */

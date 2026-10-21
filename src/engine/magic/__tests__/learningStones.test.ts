@@ -17,6 +17,7 @@ import { deserializeGame, serializeGame } from '../../storage/serializer';
 import {
   learningStoneCard,
   learningStoneMarks,
+  learningStoneTarget,
   ReadLearningStoneAction,
   shardFadesOnLeaving,
 } from '../learningStones';
@@ -167,6 +168,37 @@ describe('Shard and stone', () => {
     engine.handlePlayerAction(new PickUpAction(player, dropped!.id));
     expect(engine.messages.some((l: string) => l.includes('The shard marks Broken Stone'))).toBe(true);
     expect(learningStoneMarks(engine)).toEqual({ stone: { x: 3, y: 2 }, carrierId: undefined });
+  });
+
+  describe('the way to the stone', () => {
+    it('leads to the living carrier, then the dropped shard, then the stone once the shard is held', () => {
+      const m = carrier();
+      expect(learningStoneTarget(engine)).toEqual({ kind: 'carrier', x: 9, y: 9 });
+      DeathResolver.resolveDeath(engine, undefined, m);
+      expect(learningStoneTarget(engine)).toEqual({ kind: 'shard', x: 9, y: 9 });
+      const dropped = engine.map.getItemsAt(9, 9).find((i) => i.definitionId === 'test_shard')!;
+      player.x = 9;
+      player.y = 9;
+      engine.handlePlayerAction(new PickUpAction(player, dropped.id));
+      expect(learningStoneTarget(engine)).toEqual({ kind: 'stone', x: 3, y: 2 });
+    });
+
+    it('leads to the stone after the shortcut', () => {
+      DeathResolver.resolveDeath(engine, player, carrier(), { damageElement: 'fire' });
+      expect(learningStoneTarget(engine)).toEqual({ kind: 'stone', x: 3, y: 2 });
+    });
+
+    it('leads nowhere once the stone is spent, or on a floor without one', () => {
+      player.addItem(shard());
+      stepOn();
+      engine.handlePlayerAction(new ReadLearningStoneAction(player, learningStoneCard(engine)!.faces[0].id));
+      carrier('c2');
+      expect(learningStoneTarget(engine)).toBeUndefined();
+
+      build(5);
+      carrier();
+      expect(learningStoneTarget(engine)).toBeUndefined();
+    });
   });
 
   it('opens the card on the stone with two unknown faces from its zone, and reads one', () => {

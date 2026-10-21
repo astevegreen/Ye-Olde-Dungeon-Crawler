@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { GameEngine, GameMap, TILES, Player, Monster, Item, NPC } from '../../engine';
 import { getObjectiveLine, getTrayChips, getCompanionCard, resolveContextAction } from '../console/consoleModel';
 
-function buildEngine(manifest?: unknown) {
+function buildEngine(manifest?: unknown, floor?: number) {
   const map = new GameMap(20, 20, TILES.FLOOR);
   const player = new Player({ id: 'hero', name: 'Hero', position: { x: 10, y: 10 }, stats: { hp: 10, maxHp: 10, attack: 1, defense: 1 } });
-  const engine = new GameEngine({ map, player, manifest: manifest as any });
+  const engine = new GameEngine({ map, player, manifest: manifest as any, floor });
   engine.fov.update(engine.map, player.x, player.y, 8);
   return engine;
 }
@@ -154,6 +154,52 @@ describe('getObjectiveLine', () => {
     engine.removeEntity(near);
     engine.removeEntity(engine.map.getEntityById('far')!);
     expect(getObjectiveLine(engine)?.bearing).toBe('stairs down 3 NE');
+  });
+
+  describe('on the way to a learning stone', () => {
+    const STONE = { ...TILES.FLOOR, type: 'test_stone', name: 'Old Stone' };
+    const stonePack = (floor: number) => {
+      const engine = buildEngine({
+        id: 'test_pack',
+        name: 'Test',
+        tiles: [STONE],
+        objectives: [{ id: 'learn', text: 'Learn a spell.', pointToLearningStone: { carrier: 'bearer', shard: 'fragment', stone: 'old stone' } }],
+        magic: { learningStones: { tileId: 'test_stone', shardItemId: 'test_shard', stones: [{ floor: 4 }], zones: [], messages: {} } },
+      }, floor);
+      engine.map.setTile(13, 7, TILES.STAIRS_DOWN);
+      engine.map.setTile(4, 10, STONE);
+      engine.fov.update(engine.map, 10, 10, 8);
+      return engine;
+    };
+    const shard = () => new Item({ id: 'shard', definitionId: 'test_shard', name: 'Shard', category: 'quest', weight: 1, bulk: 1 });
+    const bearer = () => {
+      const m = new Monster({ id: 'bearer', name: 'Kin', position: { x: 12, y: 15 }, stats: { hp: 5, maxHp: 5, attack: 1, defense: 0 } });
+      m.addItem(shard());
+      return m;
+    };
+
+    it('leads to the carrier, then the dropped shard, then the stone once the shard is held', () => {
+      const engine = stonePack(4);
+      const m = bearer();
+      engine.addEntity(m);
+      expect(getObjectiveLine(engine)).toEqual({ text: 'Learn a spell.', bearing: 'bearer 5 SE' });
+
+      const dropped = m.getItems()[0];
+      m.removeItem(dropped);
+      engine.removeEntity(m);
+      engine.map.addItemAt(10, 2, dropped);
+      expect(getObjectiveLine(engine)?.bearing).toBe('fragment 8 N');
+
+      engine.map.removeItemAt(10, 2, dropped.id);
+      engine.player.addItem(dropped);
+      expect(getObjectiveLine(engine)?.bearing).toBe('old stone 6 W');
+    });
+
+    it('falls back to the stairs down on a floor without a stone', () => {
+      const engine = stonePack(5);
+      engine.addEntity(bearer());
+      expect(getObjectiveLine(engine)?.bearing).toBe('stairs down 3 NE');
+    });
   });
 
   it('is undefined for a pack with no objectives', () => {

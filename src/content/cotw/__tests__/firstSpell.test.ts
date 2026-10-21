@@ -8,6 +8,8 @@ import { MovementAction } from '../../../engine/actions/movement';
 import { WaitAction } from '../../../engine/actions/wait';
 import { serializeGame, deserializeGame } from '../../../engine/storage/serializer';
 import { ReadLearningStoneAction } from '../../../engine/magic/learningStones';
+import { DungeonArc } from '../../../engine/quest/dungeonArc';
+import { getObjectiveLine } from '../../../ui/console/consoleModel';
 import { cotwManifest } from '../index';
 import { COTW_OBJECTIVES } from '../objectives';
 import { COTW_DEEPEST_FLOOR_COUNTER } from '../spellTablets';
@@ -51,6 +53,25 @@ describe('"Learn your first spell" in the HUD objective', () => {
 
   it('never shows before the prologue has ended', () => {
     expect(objectiveAt(1, [])).toBe('cotw_objective_act1');
+  });
+
+  it('labels the way to the stone', () => {
+    expect(COTW_OBJECTIVES.find((o) => o.id === 'cotw_objective_first_spell')?.pointToLearningStone).toEqual({
+      carrier: 'shard-carrier',
+      shard: 'shard',
+      stone: 'broken stone',
+    });
+  });
+
+  it.each([1, 2, 3])('points at the shard-carrier on a generated floor 4 (seed %i)', (seed) => {
+    const { map, playerSpawn } = DungeonArc.generateFloor(4, seed * 7919, cotwManifest.quest, cotwManifest);
+    const player = new Player({ position: playerSpawn, stats: { hp: 50, maxHp: 50, attack: 5, defense: 2 } });
+    const engine = new GameEngine({ map, player, floor: 4, manifest: cotwManifest, seed });
+    for (const f of afterRaid) engine.setWorldFlag(f, true);
+    engine.worldState.counters[COTW_DEEPEST_FLOOR_COUNTER] = 4;
+    const line = getObjectiveLine(engine);
+    expect(line?.text).toBe('Learn your first spell.');
+    expect(line?.bearing).toMatch(/^shard-carrier \d+ [NSEW]+$/);
   });
 });
 

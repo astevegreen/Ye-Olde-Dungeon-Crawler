@@ -36,6 +36,8 @@ export const COTW_OBJECTIVES: ObjectiveDefinition[] = [
     text: 'Learn your first spell.',
     availableWhenFlag: PROLOGUE_ENDED_FLAG,
     doneWhenAnyFlag: [FIRST_STONE_READ_FLAG, RELIC_RECOVERED_FLAG],
+    // On floor 4 the bearing leads to the stone's shard, then the stone, not the stairs down.
+    pointToLearningStone: { carrier: 'shard-carrier', shard: 'shard', stone: 'broken stone' },
   },
   {
     id: 'cotw_objective_act1',

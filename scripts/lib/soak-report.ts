@@ -44,9 +44,76 @@ export interface ReportSummary {
   hero?: { build: string; runestonePolicy: string; level: number; runestones: Record<string, string> };
 }
 
+/** A line of `runs.jsonl` (`scripts/lib/soak-runs.mjs`): a seed's run, or the runner's stop.
+ *  Lines from before 21 Oct 2026 have no `stoppedBy` and no runner line. */
+export interface RunsLine {
+  seed?: number;
+  runner?: boolean;
+  stoppedBy?: string;
+  unfinishedSeeds?: number[];
+  timestamp?: string;
+  error?: string;
+}
+
+/** One soak folder's `runs.jsonl`, as given on the command line. */
+export interface RunsLog {
+  folder: string;
+  lines: RunsLine[];
+}
+
 export interface ReportOptions {
   /** The Hearth-Tear cold's stage thresholds, in turns below town (`hearthCold.ts`). */
   coldStages: number[];
+  /** Each folder's `runs.jsonl`, when it has one: how the runs and the runner stopped. */
+  runs?: RunsLog[];
+}
+
+/** `runs.jsonl`'s lines; a blank or half-written line (a kill mid-append) is skipped. */
+export function parseRunsJsonl(text: string): RunsLine[] {
+  const lines: RunsLine[] = [];
+  for (const raw of text.split('\n')) {
+    if (!raw.trim()) continue;
+    try {
+      const line = JSON.parse(raw) as unknown;
+      if (line && typeof line === 'object') lines.push(line as RunsLine);
+    } catch {
+      // skipped
+    }
+  }
+  return lines;
+}
+
+const TRACELESS = 'runner stopped without a trace (hard kill or crash)';
+
+/** How the runs and the runner stopped, per folder. A runner line closes one soak session; seed
+ *  lines after the last one belong to a runner that wrote none. */
+function stopsSection(logs: RunsLog[]): string[] {
+  const out = ['\n## How the soak stopped'];
+  out.push('Runs by how their browser run ended (`exit`, `error`, `signal:<name>`, `no-summary`; `unknown`: lines from before stop records).');
+  const rows: Array<Array<string | number>> = [];
+  const stops: Array<Array<string | number>> = [];
+  for (const { folder, lines } of logs) {
+    const by: Record<string, number> = {};
+    let session: RunsLine[] = [];
+    for (const line of lines) {
+      if (line.runner) {
+        const seeds = line.unfinishedSeeds ?? [];
+        const listed = seeds.slice(0, 5).join(', ') + (seeds.length > 5 ? ', ...' : '');
+        stops.push([folder, line.timestamp ?? '-', line.stoppedBy ?? 'unknown', session.length, seeds.length ? `${seeds.length} (${listed})` : '0', (line.error?.split('\n')[0] ?? '').replaceAll('|', '\\|')]);
+        session = [];
+      } else {
+        add(by, line.stoppedBy ?? 'unknown');
+        session.push(line);
+      }
+    }
+    // Old lines carry no stop record, so their missing runner line says nothing.
+    if (session.some((l) => l.stoppedBy !== undefined)) stops.push([folder, session[session.length - 1].timestamp ?? '-', TRACELESS, session.length, '-', '']);
+    for (const [stoppedBy, n] of Object.entries(by).sort((a, b) => b[1] - a[1])) rows.push([folder, stoppedBy, n]);
+  }
+  out.push(rows.length ? table(['folder', 'stopped by', 'runs'], rows) : 'No runs.jsonl lines.');
+  out.push("\nThe runner's stops (`done`, `until`: the cutoff, `signal:<name>`, a crash); `runs`: seed lines since the previous stop.");
+  out.push(stops.length ? table(['folder', 'at', 'stopped by', 'runs', 'unfinished seeds', 'error'], stops) : 'No runner stop recorded.');
+  return out;
 }
 
 const SOURCES: Source[] = ['spell', 'melee', 'other', 'world'];
@@ -103,6 +170,7 @@ export function soakReport(all: ReportSummary[], opts: ReportOptions): string {
   for (const s of runs) add(ended, s.endedBy);
   out.push(`# Soak report: ${runs.length} finished runs (${all.length - runs.length} still partial), sha ${shas.join(', ') || '-'}`);
   out.push(`Ended by: ${tally(ended)}. Deep starts: ${runs.filter((s) => s.startFloor > 0).length}.`);
+  if (opts.runs?.length) out.push(...stopsSection(opts.runs));
 
   // --- 1. Is magic worth it? ---------------------------------------------------
   out.push('\n## 1. Is magic worth it?');

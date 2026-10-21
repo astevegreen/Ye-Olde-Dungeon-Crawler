@@ -2,6 +2,8 @@
 import { spawn } from 'node:child_process';
 import { readFileSync, appendFileSync, existsSync, mkdirSync, openSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { constants } from 'node:os';
+import { seedRecord, runnerRecord, unfinishedSeeds } from './lib/soak-runs.mjs';
 
 function printHelp() {
   console.log(`
@@ -92,6 +94,32 @@ mkdirSync(soakOutDir, { recursive: true });
 const runsLogPath = join(soakOutDir, 'runs.jsonl');
 const testResultsDir = join(soakOutDir, 'test-results');
 
+// The runner's own stop goes in runs.jsonl too: a soak that ends with no runner line was killed
+// hard (`taskkill /F`, a closed machine), which nothing can catch.
+const finished = new Set();
+let runnerStopped = false;
+function recordRunnerStop(stoppedBy, error) {
+  if (runnerStopped) return;
+  runnerStopped = true;
+  const line = runnerRecord({ stoppedBy, unfinishedSeeds: unfinishedSeeds(fromSeed, count, finished), timestamp: new Date().toISOString(), error });
+  appendFileSync(runsLogPath, JSON.stringify(line) + '\n');
+}
+// SIGHUP is a closed console window on Windows, SIGBREAK its Ctrl+Break.
+for (const name of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK']) {
+  process.on(name, () => {
+    console.log(`\n[soak runner] Stopped by ${name}.`);
+    recordRunnerStop(`signal:${name}`);
+    process.exit(128 + (constants.signals[name] ?? 0));
+  });
+}
+for (const kind of ['uncaughtException', 'unhandledRejection']) {
+  process.on(kind, (err) => {
+    console.error(`[soak runner] ${kind}:`, err);
+    recordRunnerStop(kind, err instanceof Error ? err.stack ?? err.message : String(err));
+    process.exit(1);
+  });
+}
+
 console.log(`[soak runner] Starting soak runs: lens=${lens}, seeds ${fromSeed} to ${fromSeed + count - 1}, maxActions=${actions}, ${workers} at once`);
 console.log(`[soak runner] Output directory: ${soakOutDir}`);
 
@@ -142,7 +170,6 @@ function runSeed(seed) {
     const child = spawn(cmd, cmdArgs, { env, stdio, shell: false });
     child.on('close', (code, signal) => {
       const durationMs = Date.now() - startTime;
-      const exitCode = code ?? (signal ? 1 : 0);
 
       const summaryFile = join(soakOutDir, String(seed), 'summary.json');
       let summary = null;
@@ -154,36 +181,23 @@ function runSeed(seed) {
         }
       }
 
-      const runRecord = {
-        seed,
-        lens,
-        opening,
-        exitCode,
-        status: exitCode === 0 ? 'passed' : 'failed',
-        durationMs,
-        endedBy: summary?.endedBy ?? null,
-        turnsPlayed: summary?.turnsPlayed ?? null,
-        deepestFloor: summary?.deepestFloor ?? null,
-        causeOfDeath: summary?.causeOfDeath ?? null,
-        sha: summary?.sha ?? null,
-        deathCause: summary?.bot?.deathCause ?? null,
-        build: summary?.hero?.build ?? null,
-        findingCounts: summary?.findingCounts ?? {},
-        timestamp: new Date().toISOString(),
-      };
+      const runRecord = seedRecord({ seed, lens, opening, code, signal, durationMs, summary, timestamp: new Date().toISOString() });
 
       appendFileSync(runsLogPath, JSON.stringify(runRecord) + '\n');
-      console.log(`[soak runner] Completed seed ${seed}: exitCode=${exitCode}, floor ${runRecord.deepestFloor}, ${runRecord.endedBy}, ${Math.round(durationMs / 1000)} s`);
+      finished.add(seed);
+      console.log(`[soak runner] Completed seed ${seed}: ${runRecord.stoppedBy} (exitCode=${runRecord.exitCode}), floor ${runRecord.deepestFloor}, ${runRecord.endedBy}, ${Math.round(durationMs / 1000)} s`);
       done();
     });
   });
 }
 
 let next = fromSeed;
+let cutoffReached = false;
 async function lane() {
   while (next < fromSeed + count) {
     if (cutoffMs && Date.now() >= cutoffMs) {
-      console.log(`[soak runner] Cutoff time reached (${untilStr}). Stopping.`);
+      if (!cutoffReached) console.log(`[soak runner] Cutoff time reached (${untilStr}). Stopping.`);
+      cutoffReached = true;
       return;
     }
     await runSeed(next++);
@@ -191,4 +205,5 @@ async function lane() {
 }
 
 await Promise.all(Array.from({ length: Math.max(1, workers) }, lane));
-console.log(`\n[soak runner] All scheduled runs completed.`);
+recordRunnerStop(cutoffReached ? 'until' : 'done');
+console.log(`\n[soak runner] ${cutoffReached ? 'Stopped at the cutoff.' : 'All scheduled runs completed.'}`);

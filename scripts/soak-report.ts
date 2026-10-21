@@ -4,11 +4,12 @@
  *
  *   npm run soak:report -- .prompts/soak/player [.prompts/soak/player-floor12 ...] [--sha <sha>]
  *
- * Reads every `<folder>/<seed>/summary.json`; `--sha` keeps the runs of one game commit.
+ * Reads every `<folder>/<seed>/summary.json`; `--sha` keeps the runs of one game commit. Each
+ * folder's `runs.jsonl`, unfiltered, says how the runs and the runner stopped.
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { soakReport, type ReportSummary } from './lib/soak-report';
+import { parseRunsJsonl, soakReport, type ReportSummary, type RunsLog } from './lib/soak-report';
 
 /** `src/content/cotw/hearthCold.ts` HEARTH_COLD_STAGES, in turns below town. */
 const COLD_STAGES = [3000, 7000, 12000, 20000];
@@ -23,7 +24,10 @@ if (dirs.length === 0) {
 }
 
 const summaries: ReportSummary[] = [];
+const runs: RunsLog[] = [];
 for (const dir of dirs) {
+  const runsFile = join(dir, 'runs.jsonl');
+  if (existsSync(runsFile)) runs.push({ folder: dir, lines: parseRunsJsonl(readFileSync(runsFile, 'utf-8')) });
   for (const seed of readdirSync(dir)) {
     const file = join(dir, seed, 'summary.json');
     if (!existsSync(file)) continue;
@@ -35,4 +39,4 @@ for (const dir of dirs) {
     }
   }
 }
-console.log(soakReport(summaries, { coldStages: COLD_STAGES }));
+console.log(soakReport(summaries, { coldStages: COLD_STAGES, runs }));

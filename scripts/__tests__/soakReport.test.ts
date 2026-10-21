@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { soakReport, type ReportSummary } from '../lib/soak-report';
+import { parseRunsJsonl, soakReport, type ReportSummary } from '../lib/soak-report';
 
 /** The P-36 soak report (scripts/soak-report.ts) answers the owner's five questions from summaries. */
 
@@ -102,6 +102,50 @@ describe('soak report', () => {
       coldStages: [300],
     });
     expect(twoFolders).toContain('| bug: magic: cast of slow succeeded without spending its turn | 2 | 4 |');
+  });
+
+  describe('how the soak stopped (runs.jsonl)', () => {
+    const seedLine = (seed: number, stoppedBy?: string) => JSON.stringify({ seed, status: 'passed', ...(stoppedBy ? { stoppedBy } : {}), timestamp: `t${seed}` });
+    const runnerLine = (stoppedBy: string, unfinishedSeeds: number[], error?: string) =>
+      JSON.stringify({ runner: true, stoppedBy, unfinishedSeeds, timestamp: `stop-${stoppedBy}`, ...(error ? { error } : {}) });
+    const withRuns = (folder: string, lines: string[]) => soakReport([run(1, 'warrior', 'first')], { coldStages: [300], runs: [{ folder, lines: parseRunsJsonl(lines.join('\n')) }] });
+
+    it('tables runs by how they stopped, old lines as unknown, and skips a half-written line', () => {
+      const text = withRuns('player', [seedLine(1), seedLine(2, 'exit'), seedLine(3, 'exit'), seedLine(4, 'signal:SIGTERM'), seedLine(5, 'no-summary'), '{"seed": 6, "stopp', runnerLine('done', [])]);
+      expect(text).toContain('## How the soak stopped');
+      expect(text).toContain('| player | exit | 2 |');
+      expect(text).toContain('| player | signal:SIGTERM | 1 |');
+      expect(text).toContain('| player | no-summary | 1 |');
+      expect(text).toContain('| player | unknown | 1 |');
+      expect(text).toContain('| player | stop-done | done | 5 | 0 |  |');
+      expect(text).not.toContain('without a trace');
+    });
+
+    it("shows each of the runner's stops: the cutoff, a signal, a crash", () => {
+      const text = withRuns('player', [
+        seedLine(1, 'exit'),
+        runnerLine('until', [2, 3, 4, 5, 6, 7]),
+        seedLine(2, 'error'),
+        runnerLine('signal:SIGHUP', [3]),
+        runnerLine('uncaughtException', [3], 'Error: a | b\n    at soak.mjs:1'),
+      ]);
+      expect(text).toContain('| player | stop-until | until | 1 | 6 (2, 3, 4, 5, 6, ...) |  |');
+      expect(text).toContain('| player | stop-signal:SIGHUP | signal:SIGHUP | 1 | 1 (3) |  |');
+      expect(text).toContain('| player | stop-uncaughtException | uncaughtException | 0 | 1 (3) | Error: a \\| b |');
+    });
+
+    it('says a runner with seed lines but no stop line stopped without a trace', () => {
+      const text = withRuns('player-floor12', [seedLine(1, 'exit'), runnerLine('done', []), seedLine(2, 'exit'), seedLine(3, 'error')]);
+      expect(text).toContain('| player-floor12 | t3 | runner stopped without a trace (hard kill or crash) | 2 | - |  |');
+    });
+
+    it('does not blame a runner for old lines that predate stop records', () => {
+      expect(withRuns('player', [seedLine(1), seedLine(2)])).not.toContain('without a trace');
+    });
+
+    it('leaves the section out when no folder has a runs.jsonl', () => {
+      expect(report).not.toContain('How the soak stopped');
+    });
   });
 
   it('counts the same seed in one folder, or with no folder, once', () => {

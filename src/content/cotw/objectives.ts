@@ -1,7 +1,8 @@
 import type { ObjectiveDefinition } from '../../engine';
 import { COTW_DEEPEST_FLOOR_COUNTER } from './spellTablets';
 import { HEARTH_TEAR_RETURNED_FLAG, RELIC_RECOVERED_FLAG } from './relic';
-import { PROLOGUE_OBJECTIVES } from './prologue';
+import { PROLOGUE_ENDED_FLAG, PROLOGUE_OBJECTIVES } from './prologue';
+import { FIRST_STONE_READ_FLAG } from './firstSpell';
 
 /**
  * The running objective the HUD shows under the spell belt (`manifest.objectives`),
@@ -27,6 +28,13 @@ export const COTW_OBJECTIVES: ObjectiveDefinition[] = [
     id: 'cotw_objective_descend',
     text: "Gear up in Bjarnarhaven's shops, then take the stairs down.",
     doneWhenCounterAtLeast: { counter: COTW_DEEPEST_FLOOR_COUNTER, value: 1 },
+  },
+  {
+    // Ahead of Act 1's line, which waits behind it until the first stone (floor 4) is read.
+    id: 'cotw_objective_first_spell',
+    text: 'Learn your first spell.',
+    availableWhenFlag: PROLOGUE_ENDED_FLAG,
+    doneWhenAnyFlag: [FIRST_STONE_READ_FLAG],
   },
   {
     id: 'cotw_objective_act1',

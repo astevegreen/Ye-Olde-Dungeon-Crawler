@@ -17,7 +17,7 @@ You only start sessions and report on them, with the `RemoteTrigger` tool (load 
 a few minutes.
 
 `$ARGUMENTS` is `dry-run`: do every check and print what you would start, disable and comment, but create,
-update and comment nothing.
+update and comment nothing. A dry run before the window carries on as if the window were open.
 
 ## 1. Window
 Run `date -u +%Y%m%dT%H%M` and read the window from line 3 of `docs/sprint.md`.
@@ -69,7 +69,12 @@ To start one, `RemoteTrigger` `create` with this body:
 `{"name": "<title>", "run_once_at": "<now + 1 minute, UTC, ISO 8601 with Z>", "enabled": true,
 "job_config": {"ccr": {"environment_id": "env_01Tnhbujy7ocSKWa8wqLPdCm", "session_context": {"model": "<model>"},
 "events": [{"data": {"type": "user", "uuid": "<new random UUID from node -e \"console.log(crypto.randomUUID())\">",
-"parent_tool_use_id": null, "message": {"role": "user", "content": "<prompt>"}}}]}}}`
+"parent_tool_use_id": null, "message": {"role": "user", "content": "<prompt>"}}}]}},
+"mcp_connections": [{"connector_uuid": "bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a", "name": "Claude_Code_Remote",
+"url": "https://api.anthropic.com/v1/code/mcp/meta"}, {"connector_uuid": "31ab071e-7af4-450e-a530-43360c649956",
+"name": "Context7", "url": "https://mcp.context7.com/mcp"}]}`
+Sprint sessions get no mail, calendar, drive or notes connector: without `mcp_connections` a trigger gets them
+all.
 
 | Title                   | Prompt                    | Model               |
 | ----------------------- | ------------------------- | ------------------- |

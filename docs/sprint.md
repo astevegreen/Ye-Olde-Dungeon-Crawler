@@ -162,7 +162,7 @@ on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` 
 - An hourly remote trigger, "YODC sprint supervisor", runs `.claude/skills/sprint-supervisor` in this folder
   (environment `env_01Tnhbujy7ocSKWa8wqLPdCm`).
 - It starts `YODC lane: <lane>`, `YODC plan: <lane>` and `YODC integrate` sessions and restarts any that
-  stopped, for example after a usage limit.
+  stopped, for example after a usage limit. It archives finished ones, which otherwise hold memory on the host.
 - Agents: `implementer` and `reviewer` (`.claude/agents/`); guard `.claude/hooks/sprint-guard.mjs`.
 
 ## Turning it off

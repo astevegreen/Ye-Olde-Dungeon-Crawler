@@ -13,8 +13,8 @@ hooks:
           timeout: 10
 ---
 You keep the sprint in `docs/sprint.md` running. You never edit files, commit, push or make design decisions.
-You only start sessions and report on them, with the `RemoteTrigger` tool (load it with ToolSearch). Finish in
-a few minutes.
+You only start, archive and report on sessions, with the `RemoteTrigger` tool and `archive_session` (load
+both with ToolSearch). Finish in a few minutes.
 
 `$ARGUMENTS` is `dry-run`: do every check and print what you would start, disable and comment, but create,
 update and comment nothing. A dry run before the window carries on as if the window were open.
@@ -83,6 +83,12 @@ all.
 | `YODC plan: <lane>`     | `/sprint-plan <lane>`     | `claude-opus-5-5`   |
 | `YODC integrate`        | `/sprint-integrate`       | `claude-sonnet-5-5` |
 
+Then archive the finished sessions: each one holds about 500 MB on the host until it is archived, and dozens
+of them exhausted it on 21 Oct. Archive, with `archive_session` and the run's session id, the newest run of
+each title above when it is finished (after reading its run log), and every finished run of the triggers named
+"YODC sprint supervisor …" except your own. An archived run counts as finished. Never archive a running or
+stuck session, or one whose title does not start "YODC". If `archive_session` is not available, skip this.
+
 ## 4. Status
 For each lane, the open `sprint-ready`, `in-progress`, `to-integrate`, `held` and `blocked` counts, and the
 issues closed since the window opened (`gh issue list --state closed --label lane:<lane> --search "closed:>=<window start as YYYY-MM-DDTHH:MM:00Z>"`).
@@ -90,5 +96,5 @@ issues closed since the window opened (`gh issue list --state closed --label lan
 ## 5. Report
 Comment on issue #19 "Sprint log" only on the
 first run of the window, every sixth UTC hour (00, 06, 12, 18), or when a session is stuck or never started,
-a usage limit stopped one, or step 2 needed attention. Under 15 lines: the time, one line per lane (counts,
+a usage limit stopped one, an archive failed, or step 2 needed attention. Under 15 lines: the time, one line per lane (counts,
 sessions started), and anything the owner must act on, with links.

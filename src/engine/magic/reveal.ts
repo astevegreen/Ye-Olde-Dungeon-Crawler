@@ -56,7 +56,7 @@ export function executeReveal(engine: GameEngine, caster: Entity, effect: Reveal
     case 'objects':
     case 'items': {
       caster.statusManager.applyStatus(
-        { type: SENSING_OBJECTS_STATUS, duration, sourceEntityId: caster.id, data: { x: caster.x, y: caster.y, radius } },
+        { type: SENSING_OBJECTS_STATUS, duration, sourceEntityId: caster.id, data: { x: caster.x, y: caster.y, radius, floor: engine.currentFloor } },
         [],
         caster,
         engine

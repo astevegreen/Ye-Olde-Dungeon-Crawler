@@ -22,7 +22,11 @@ export function sensesThroughWalls(engine: GameEngine, entity: Entity): boolean 
   return within > 0 && Math.max(Math.abs(entity.x - engine.player.x), Math.abs(entity.y - engine.player.y)) <= within;
 }
 
-/** On the hero: the piles within `data.radius` of `data.x`, `data.y` are seen through walls while it lasts (a seer's reveal). */
+/**
+ * On the hero: the piles within `data.radius` of `data.x`, `data.y` on floor `data.floor` are
+ * seen through walls while it lasts (a seer's reveal). A status saved without a floor senses on
+ * the current one.
+ */
 export const SENSING_OBJECTS_STATUS = 'sensing_objects';
 
 /** Whether the hero senses the ground items at `x`, `y` without seeing them: Detect Objects, or a seer's reach. */
@@ -30,5 +34,6 @@ export function objectSensedAt(engine: GameEngine, x: number, y: number): boolea
   if (engine.detectObjectsTurns > 0) return true;
   const d = engine.player?.statusManager.getStatus(SENSING_OBJECTS_STATUS)?.data;
   if (!d || typeof d.x !== 'number' || typeof d.y !== 'number' || typeof d.radius !== 'number') return false;
+  if (typeof d.floor === 'number' && d.floor !== engine.currentFloor) return false;
   return Math.max(Math.abs(x - d.x), Math.abs(y - d.y)) <= d.radius;
 }

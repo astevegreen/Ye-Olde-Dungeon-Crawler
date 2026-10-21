@@ -37,10 +37,12 @@ Session titles: `YODC lane: <lane>` for `aids`, `ux`, `fixes`, `tooling`, `resea
 
 Run `RemoteTrigger` `list` once. For each title, take the newest trigger with that exact name and run
 `list_runs` on it. Its newest run is the session:
-- **Running** (`worker_status` is not `idle`, and `last_event_at` is within 3 hours): leave it.
+- **Running** (`status` is not `archived`, `worker_status` is not `idle`, and `last_event_at` is within 3 hours):
+  leave it.
 - **Stuck** (running, but no event in 3 hours): start nothing for that title; name it in step 5 with its `url`
   so the owner can stop it.
-- **Missing, or finished** (`worker_status` `idle`, or no trigger yet): start one if it has work (below).
+- **Missing, or finished** (`worker_status` `idle`, `status` `archived` whatever its `worker_status`, or no
+  trigger yet): start one if it has work (below).
   A trigger with no run 15 minutes after its `run_once_at` never started: report it, `update` it to
   `{"enabled": false}`, and start a new one. Before starting, `update` every enabled trigger with that name
   that has no run to `{"enabled": false}`, so a late start never puts two sessions on one title.

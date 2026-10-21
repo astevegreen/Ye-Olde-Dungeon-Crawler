@@ -6,12 +6,16 @@ import type { BoundKeys } from './oracles';
 import type { DispatchedAction } from './policies';
 import { lineOfFire } from './lineOfFire';
 import { healReserve, shouldHeal } from './healPlan';
+import { telegraphChoice, telegraphExit } from './telegraphExit';
 
 /** `lineOfFire` as source text: the page can't import it, so each decision rebuilds it there. */
 const LINE_OF_FIRE_SRC = lineOfFire.toString();
 /** The heal decision and the damage-spell reserve (healPlan.ts), as source text like `lineOfFire`. */
 const SHOULD_HEAL_SRC = shouldHeal.toString();
 const HEAL_RESERVE_SRC = healReserve.toString();
+/** The way out of a telegraph one step can't clear, and the choice under one (telegraphExit.ts). */
+const TELEGRAPH_EXIT_SRC = telegraphExit.toString();
+const TELEGRAPH_CHOICE_SRC = telegraphChoice.toString();
 
 /**
  * The player bot's builds (P-36), so a soak compares play styles instead of one: the level-up
@@ -478,6 +482,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       lineOfFireSrc: string;
       shouldHealSrc: string;
       healReserveSrc: string;
+      telegraphExitSrc: string;
+      telegraphChoiceSrc: string;
     }) => {
       const w = window as any;
       const e = w.__cotwEngine;
@@ -1766,14 +1772,36 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           return safe.sort((a, b) => a.adj - b.adj || a.dy - b.dy || a.dx - b.dx);
         };
 
-        // Standing where a telegraphed attack will land: step to a tile it won't hit.
+        // Standing where a telegraphed attack will land: step to a tile it won't hit. When no
+        // step clears it (a radius-2 blast round the hero), heal if hurt, else start the way out,
+        // so the warning turn isn't spent standing still (telegraphExit.ts, rebuilt from source).
         if (snapshot.onTelegraph) {
           const best = safeSteps()[0];
-          if (best) {
+          const telegraphHeal = best ? undefined : healCast();
+          const telegraphExitFn = new Function(`return (${args.telegraphExitSrc})`)() as typeof telegraphExit;
+          const telegraphChoiceFn = new Function(`return (${args.telegraphChoiceSrc})`)() as typeof telegraphChoice;
+          // A tile the way out may cross: open floor or an open door, with no creature on it.
+          const walkable = (x: number, y: number): boolean => {
+            const t = e.map.inBounds(x, y) ? e.map.getTile(x, y) : null;
+            return Boolean(t && t.passable && !t.isClosedDoor && t.type !== 'door_closed' && !e.map.getEntityAt(x, y));
+          };
+          const out = best ? null : telegraphExitFn(walkable, inDanger, avoid, p, 400);
+          const choice = telegraphChoiceFn({
+            safeStep: Boolean(best),
+            hurt: p.hp < p.maxHp,
+            healCastable: Boolean(telegraphHeal),
+            exit: Boolean(out),
+            adjacentFoe: adjHostiles.length > 0,
+          });
+          if (choice === 'dodge' && best) {
             return { action: { type: 'key' as const, key: stepToKey(best.dx, best.dy) }, curPos, curTurn, curFloor, telegraph: 'dodge' as const };
           }
-          // Cornered: no tile to step to. Fight on (counted, so a report can see it).
-          if (adjHostiles.length > 0) {
+          if (choice === 'heal' && telegraphHeal) return { ...castAt(telegraphHeal, 'heal'), telegraph: 'cornered' as const };
+          if (choice === 'exit' && out) {
+            return { action: { type: 'key' as const, key: stepToKey(out.dx, out.dy) }, curPos, curTurn, curFloor, telegraph: 'dodge' as const };
+          }
+          // Cornered: no way out. Fight on (counted, so a report can see it).
+          if (choice === 'melee') {
             const m = adjHostiles[0];
             return { action: { type: 'key' as const, key: stepToKey(m.x - p.x, m.y - p.y) }, curPos, curTurn, curFloor, telegraph: 'cornered' as const };
           }
@@ -2161,6 +2189,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       lineOfFireSrc: LINE_OF_FIRE_SRC,
       shouldHealSrc: SHOULD_HEAL_SRC,
       healReserveSrc: HEAL_RESERVE_SRC,
+      telegraphExitSrc: TELEGRAPH_EXIT_SRC,
+      telegraphChoiceSrc: TELEGRAPH_CHOICE_SRC,
     }
   );
 

@@ -1,4 +1,4 @@
-import type { FirstTimeHintId, GameEngine } from '../../engine';
+import type { GameEngine } from '../../engine';
 import { iconElement } from '../icons';
 import { hintFlag, itemHintFlag, resolveHintText, unseenHints } from './hintModel';
 
@@ -8,10 +8,6 @@ export interface FirstTimeHintsOptions {
   /** The player's "First-time hints" setting. */
   enabled: () => boolean;
 }
-
-const ALL_HINTS: readonly FirstTimeHintId[] = [
-  'altar', 'killRite', 'pactKeeper', 'companion', 'renown', 'runeOfReturn', 'factionStanding', 'story', 'grimoire', 'unidentified',
-];
 
 /**
  * First-time hints: the pack's short note on a system (`manifest.firstTimeHints`) the first
@@ -63,7 +59,7 @@ export class FirstTimeHints {
   }
 
   /** Queues the pack's hint for each of `ids` this hero hasn't been shown. */
-  public offer(engine: GameEngine, ids: readonly FirstTimeHintId[]): void {
+  public offer(engine: GameEngine, ids: readonly string[]): void {
     if (ids.length === 0 || !engine?.player || !this.options.enabled()) return;
     this.engine = engine;
     const hints = engine.manifest.firstTimeHints ?? {};
@@ -92,7 +88,7 @@ export class FirstTimeHints {
 
   /** Whether this hero has any hint left to see (so a caller can skip checking for them). */
   public hasUnseen(engine: GameEngine): boolean {
-    return unseenHints(engine, ALL_HINTS).length > 0;
+    return unseenHints(engine, Object.keys(engine.manifest.firstTimeHints ?? {})).length > 0;
   }
 
   /** Closes the shown hint; the next queued one, if any, takes its place. */

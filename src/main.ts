@@ -1621,7 +1621,7 @@ window.addEventListener('DOMContentLoaded', () => {
     updateMessageLog(engine);
 
     engine.onGameEvent = (event: GameEvent) => {
-      firstTimeHints.offer(engine, hintsMetByEvent(event));
+      firstTimeHints.offer(engine, hintsMetByEvent(engine, event));
       if (isGameEvent(event, 'damage_dealt')) {
         playMeleeBlow(engine, event, event.critical ? 'crit' : 'hit');
         if (event.critical) {

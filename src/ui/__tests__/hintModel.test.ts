@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { GameEngine, GameMap, TILES, Player, Item, Container, ProfileManager, MemoryStorage } from '../../engine';
+import { GameEngine, GameMap, TILES, Player, Item, Container, ProfileManager, MemoryStorage, type GameEvent } from '../../engine';
 import { hintFlag, hintsMetByEvent, hintsMetByState, itemHintFlag, itemHintsMet, resolveHintText, unseenHints } from '../hints/hintModel';
 import { FirstTimeHints } from '../hints/firstTimeHints';
 import { cotwManifest } from '../../content/cotw';
@@ -39,10 +39,27 @@ describe('first-time hints', () => {
   });
 
   it('meets the altar hint on reaching an altar, and the kill-rite hint on a rite', () => {
-    expect(hintsMetByEvent({ type: 'altar_reached', turn: 3, data: {} } as any)).toEqual(['altar']);
-    expect(hintsMetByEvent({ type: 'kill_rite_performed', turn: 3, data: {} } as any)).toEqual(['killRite']);
-    expect(hintsMetByEvent({ type: 'entity_killed', turn: 3, data: {} } as any)).toEqual([]);
+    const engine = buildEngine({ firstTimeHints: cotwManifest.firstTimeHints });
+    expect(hintsMetByEvent(engine, { type: 'altar_reached', turn: 3, data: {} } as any)).toEqual(['altar']);
+    expect(hintsMetByEvent(engine, { type: 'kill_rite_performed', turn: 3, data: {} } as any)).toEqual(['killRite']);
+    expect(hintsMetByEvent(engine, { type: 'entity_killed', turn: 3, data: {} } as any)).toEqual([]);
   });
+
+  it("matches a trigger's where on a top-level field or a data entry, and nothing on another value", () => {
+    const engine = buildEngine({
+      firstTimeHints: {
+        short: { title: 'Short', text: 't', showOn: [{ type: 'spell_cast', where: { spellId: 'spark' } }] },
+        deep: { title: 'Deep', text: 't', showOn: [{ type: 'floor_entered', where: { depth: 4, lit: true } }] },
+      },
+    });
+    expect(hintsMetByEvent(engine, { type: 'spell_cast', turn: 1, spellId: 'spark' } as GameEvent)).toEqual(['short']);
+    expect(hintsMetByEvent(engine, { type: 'spell_cast', turn: 1, spellId: 'frost' } as GameEvent)).toEqual([]);
+    expect(hintsMetByEvent(engine, { type: 'spell_cast', turn: 1, data: { spellId: 'spark' } })).toEqual(['short']);
+    expect(hintsMetByEvent(engine, { type: 'floor_entered', turn: 1, data: { depth: 4, lit: true } })).toEqual(['deep']);
+    expect(hintsMetByEvent(engine, { type: 'floor_entered', turn: 1, data: { depth: 3, lit: true } })).toEqual([]);
+    expect(hintsMetByEvent(engine, { type: 'floor_entered', turn: 1, data: { depth: 4 } })).toEqual([]);
+  });
+
 
   it('meets the standing hint once a faction moves from where it began, not before', () => {
     const engine = buildEngine({ initialWorldState: { flags: {}, counters: {}, factions: { clans: -10 } } });
@@ -214,6 +231,37 @@ describe('FirstTimeHints', () => {
     hints.offer(engine, ['unidentified']);
     expect(hints.element.hidden).toBe(true);
     expect(hints.hasUnseen(engine)).toBe(false);
+  });
+
+  const THING = { title: 'A thing', text: 'It happened.', showOn: [{ type: 'test:thing_happened' }] };
+
+  it("offers a pack's own hint once, on the event its showOn names, and never after it was shown", () => {
+    const engine = buildEngine({ firstTimeHints: { 'test:thing': THING } });
+    const hints = new FirstTimeHints({ keyFor: () => undefined, enabled: () => true });
+    const [, text] = (hints.element as unknown as HintEl).children as HintEl[];
+    const event: GameEvent = { type: 'test:thing_happened', turn: 1 };
+
+    hints.offer(engine, hintsMetByEvent(engine, { type: 'test:other', turn: 1 }));
+    expect(hints.element.hidden).toBe(true);
+    hints.offer(engine, hintsMetByEvent(engine, event));
+    expect(hints.element.hidden).toBe(false);
+    expect(text.textContent).toBe('It happened.');
+    expect(engine.player.tutorialFlags[hintFlag('test:thing')]).toBe(true);
+
+    hints.dismiss();
+    hints.offer(engine, hintsMetByEvent(engine, event));
+    expect(hints.element.hidden).toBe(true);
+  });
+
+  it("has hints unseen while any of the pack's, built-in or its own, is unflagged", () => {
+    const engine = buildEngine({ firstTimeHints: { story: HINTS.story, 'test:thing': THING } });
+    const hints = new FirstTimeHints({ keyFor: () => undefined, enabled: () => true });
+    expect(hints.hasUnseen(engine)).toBe(true);
+    engine.player.markTutorialSeen(hintFlag('story'));
+    expect(hints.hasUnseen(engine)).toBe(true);
+    engine.player.markTutorialSeen(hintFlag('test:thing'));
+    expect(hints.hasUnseen(engine)).toBe(false);
+    expect(hints.hasUnseen(buildEngine())).toBe(false);
   });
 
   it('offers no item hint with first-time hints turned off', () => {

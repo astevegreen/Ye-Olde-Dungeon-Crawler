@@ -27,6 +27,7 @@ import type { MonsterScalingConfig } from './monsterScaling';
 import type { GasType } from '../surfaces/surfaceGrid';
 import type { SurfaceBehaviourTable } from '../surfaces/surfaceBehaviours';
 import type { Gender } from '../character/types';
+import type { EventScalar } from '../events';
 
 export interface MerchantConfig {
   id: string;
@@ -1089,14 +1090,14 @@ export function resolveManaTerms(manifest?: { branding?: PackBranding }): ManaTe
 }
 
 /**
- * The systems a first-time hint introduces. Presentation decides when each is first met
- * (an altar reached, a creature with a kill rite seen, the pact keeper greeted, a companion
- * at the hero's side, the first renown, a Rune of Return carried, a faction standing moved,
- * the first saga deed, an unidentified item carried) and shows the pack's hint once per hero
+ * The first-time hints presentation itself knows when to show, from the game's state (a
+ * companion at the hero's side, the first renown, a Rune of Return carried, a faction
+ * standing moved, the first saga deed, a creature with a kill rite seen, grimoires worth
+ * arranging, an unidentified item carried) or from greeting the pact keeper. A pack's hint
+ * under any other id is shown by the events its `showOn` names. Each is shown once per hero
  * (`Player.tutorialFlags`).
  */
-export type FirstTimeHintId =
-  | 'altar'
+export type BuiltInFirstTimeHintId =
   | 'killRite'
   | 'pactKeeper'
   | 'companion'
@@ -1107,10 +1108,22 @@ export type FirstTimeHintId =
   | 'grimoire'
   | 'unidentified';
 
+/**
+ * A game event that shows a first-time hint: its `type`, and optionally values it must
+ * carry. Each `where` pair is compared with the event's top-level field of that name
+ * (`spellId`, `targetId`), or else with its `data` entry.
+ */
+export interface FirstTimeHintTrigger {
+  type: string;
+  where?: Readonly<Record<string, EventScalar>>;
+}
+
 export interface FirstTimeHintDefinition {
   title: string;
   /** One or two sentences. `{key:<action>}` names the key bound to that command, e.g. `{key:story}`. */
   text: string;
+  /** The game events (built-in or the pack's own) that show this hint, the first time one arrives. */
+  showOn?: readonly FirstTimeHintTrigger[];
 }
 
 /**
@@ -1235,8 +1248,11 @@ export interface GameContentManifest {
    * without it the Pacts tab seals and renounces them itself.
    */
   pactKeeperNpcId?: string;
-  /** A short, dismissible hint the first time each system is met; a system without one shows none. */
-  firstTimeHints?: Partial<Record<FirstTimeHintId, FirstTimeHintDefinition>>;
+  /**
+   * A short, dismissible hint the first time each system is met; a system without one shows
+   * none. Keyed by a `BuiltInFirstTimeHintId` or any id of the pack's own, shown by `showOn`.
+   */
+  firstTimeHints?: Partial<Record<BuiltInFirstTimeHintId, FirstTimeHintDefinition>> & Record<string, FirstTimeHintDefinition>;
   traps?: TrapDefinition[];
   /** How many of `traps` each generated floor hides; absent, floors hide none. */
   trapPlacement?: TrapPlacementConfig;

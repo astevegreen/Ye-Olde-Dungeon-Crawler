@@ -1,16 +1,18 @@
-import type { FirstTimeHintDefinition, FirstTimeHintId } from '../../engine';
+import type { GameContentManifest } from '../../engine';
 
 /**
  * The first-time hints (`manifest.firstTimeHints`): one short note the first time a hero
  * meets each system, at the foot of the sidebar. `{key:<action>}` names the bound key.
  */
-export const COTW_FIRST_TIME_HINTS: Partial<Record<FirstTimeHintId, FirstTimeHintDefinition>> = {
+export const COTW_FIRST_TIME_HINTS: NonNullable<GameContentManifest['firstTimeHints']> = {
   altar: {
     title: 'Altars',
+    showOn: [{ type: 'altar_reached' }],
     text: 'Each god\'s altar works one rite on your grimoires. Tyr doubles one slot\'s lend, Hel is free: she re-picks a grimoire\'s stats or adds a slot, and clears your debt. Odin forges a second element onto a spell, and Loki gambles with fate. The rest ask an offering burnt on them. Step away and the altar waits for you.',
   },
   killRite: {
     title: 'Kill rites',
+    showOn: [{ type: 'kill_rite_performed' }],
     text: 'Spells come from broken learning stones: set a stone\'s shard in it, and it offers you a spell to learn. A creature of the floor carries the shard; slay it the way its kind\'s rite asks, and the stone\'s offer opens on the spot. The Bestiary ({key:compendium}) keeps a verse that hints at each one\'s rite.',
   },
   pactKeeper: {

@@ -14,7 +14,7 @@ import type { SerializedSurfaceCell } from '../surfaces/surfaceGrid';
 import type { SerializedTempWall } from '../surfaces/tempWalls';
 
 // One-time tutorial flags, saved with the hero. Presentation's first-time hints record
-// each hint shown as `hint:<FirstTimeHintId>` (`src/ui/hints/`); the keys are open, so a
+// each hint shown as `hint:<id>`, a key of `manifest.firstTimeHints` (`src/ui/hints/`); the keys are open, so a
 // pack or a later feature can add its own without engine changes.
 export interface TutorialFlags {
   [flag: string]: boolean | undefined;

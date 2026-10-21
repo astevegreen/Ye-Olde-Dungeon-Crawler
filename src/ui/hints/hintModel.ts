@@ -5,16 +5,16 @@ import {
   isPrologueRunning,
   getMonsterDefinition,
   getRenownTotal,
-  isGameEvent,
+  type BuiltInFirstTimeHintId,
   type FirstTimeHintDefinition,
-  type FirstTimeHintId,
+  type FirstTimeHintTrigger,
   type GameEngine,
   type GameEvent,
 } from '../../engine';
 import { buildSaga } from '../characterMenu/storyModel';
 
 /** The `Player.tutorialFlags` key that records a hint as shown. */
-export function hintFlag(id: FirstTimeHintId): string {
+export function hintFlag(id: string): string {
   return `hint:${id}`;
 }
 
@@ -24,8 +24,8 @@ export function hintFlag(id: FirstTimeHintId): string {
  * moved from where it began, a saga deed done, a creature with a kill rite in sight, an
  * unidentified item carried (worn containers included).
  */
-export function hintsMetByState(engine: GameEngine): FirstTimeHintId[] {
-  const met: FirstTimeHintId[] = [];
+export function hintsMetByState(engine: GameEngine): BuiltInFirstTimeHintId[] {
+  const met: BuiltInFirstTimeHintId[] = [];
   const p = engine.player;
   if (engine.companion?.isAlive()) met.push('companion');
   if (getRenownTotal(engine) > 0) met.push('renown');
@@ -78,15 +78,21 @@ export function itemHintsMet(engine: GameEngine): string[] {
   return unseen.filter((def) => carried.has(def.id)).map((def) => def.id);
 }
 
-/** The systems a game event introduces: reaching an altar, performing a kill rite. */
-export function hintsMetByEvent(event: GameEvent): FirstTimeHintId[] {
-  if (isGameEvent(event, 'altar_reached')) return ['altar'];
-  if (isGameEvent(event, 'kill_rite_performed')) return ['killRite'];
-  return [];
+/** The ids of the pack's hints that `event` shows (`FirstTimeHintDefinition.showOn`), in the pack's order. */
+export function hintsMetByEvent(engine: GameEngine, event: GameEvent): string[] {
+  const hints = engine.manifest.firstTimeHints ?? {};
+  return Object.keys(hints).filter((id) => hints[id].showOn?.some((trigger) => triggerMatches(trigger, event)));
+}
+
+/** Whether `event` is the trigger's type and carries each of its `where` values, top-level or in `data`. */
+function triggerMatches(trigger: FirstTimeHintTrigger, event: GameEvent): boolean {
+  if (trigger.type !== event.type) return false;
+  const fields = event as unknown as Readonly<Record<string, unknown>>;
+  return Object.entries(trigger.where ?? {}).every(([key, value]) => (key in fields ? fields[key] : event.data?.[key]) === value);
 }
 
 /** Of `ids`, those the pack has a hint for that this hero hasn't been shown, in order. */
-export function unseenHints(engine: GameEngine, ids: readonly FirstTimeHintId[]): FirstTimeHintId[] {
+export function unseenHints(engine: GameEngine, ids: readonly string[]): string[] {
   const hints = engine.manifest.firstTimeHints ?? {};
   const flags = engine.player.tutorialFlags ?? {};
   return [...new Set(ids)].filter((id) => hints[id] && !flags[hintFlag(id)]);

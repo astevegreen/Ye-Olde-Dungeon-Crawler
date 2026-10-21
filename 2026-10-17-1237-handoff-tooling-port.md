@@ -24,3 +24,4 @@ Complete. The first real `claim` is the open P-36 note (2026-10-17-1127-p36-meas
 ## Verification
 - lint + test (gate-stamp): green on f36f4b7c, 3313 tests
 - pre-push (sim, build, Playwright ×3): green, pushed to main
+Resumed: 2026-10-21 18:48 UTC

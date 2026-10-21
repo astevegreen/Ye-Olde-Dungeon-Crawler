@@ -342,3 +342,135 @@ describe('a keypress stops a rest even while effects hold input', () => {
     expect(acted).not.toHaveBeenCalled();
   });
 });
+
+describe('B3 · a buffered arrow step never fires under a dialog that opened inside the chord window', () => {
+  // Arrow, then I (or a click on a HUD button) within 40 ms: the step the chord buffer was
+  // holding used to fire under the open dialog, a turn the paused monsters never answered (§6).
+  afterEach(() => vi.useRealTimers());
+
+  function chordHandler() {
+    vi.useFakeTimers();
+    const map = new GameMap(20, 20);
+    for (let y = 8; y <= 12; y++) for (let x = 8; x <= 12; x++) map.setTile(x, y, TILES.FLOOR);
+    const engine = new GameEngine({ map, player: new Player({ position: { x: 10, y: 10 } }) });
+    const moves: Array<[number, number]> = [];
+    const orig = engine.handlePlayerAction.bind(engine);
+    engine.handlePlayerAction = ((a: unknown) => {
+      if (a instanceof MovementAction) moves.push([a.dx, a.dy]);
+      return orig(a as never);
+    }) as typeof engine.handlePlayerAction;
+    const ih = new InputHandler(engine, () => {}, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, new SettingsManager(new MemoryStorage()));
+    ih.enabled = true;
+    const dialog = { id: 'test-dialog', isOpen: false, handleKeyDown: () => true, close() {} };
+    const openDialog = () => ih.modalStack.push(dialog);
+    const closeDialog = () => ih.modalStack.remove('test-dialog');
+    return { engine, ih, moves, openDialog, closeDialog };
+  }
+
+  it('chording is on by default', () => {
+    expect(new SettingsManager(new MemoryStorage()).getSettings().arrowChordingEnabled).toBe(true);
+  });
+
+  it('a keyup with the dialog open does not step the hero', () => {
+    const { engine, ih, moves, openDialog } = chordHandler();
+    const turn = engine.turnCount;
+
+    ih.handleKeyDown(ev('ArrowRight'));
+    openDialog();
+    ih.handleKeyUp(ev('ArrowRight'));
+    vi.advanceTimersByTime(200);
+    ih.destroy();
+
+    expect(moves).toEqual([]);
+    expect(engine.player.position).toEqual({ x: 10, y: 10 });
+    expect(engine.turnCount).toBe(turn);
+  });
+
+  it('the window running out with the dialog open does not step the hero', () => {
+    const { engine, ih, moves, openDialog } = chordHandler();
+    const turn = engine.turnCount;
+
+    ih.handleKeyDown(ev('ArrowRight'));
+    openDialog();
+    vi.advanceTimersByTime(200);
+    ih.destroy();
+
+    expect(moves).toEqual([]);
+    expect(engine.player.position).toEqual({ x: 10, y: 10 });
+    expect(engine.turnCount).toBe(turn);
+  });
+
+  it.each(['keyup', 'timer'] as const)('the dropped step does not fire late once the dialog closes (dropped on %s)', (dropOn) => {
+    const { engine, ih, moves, openDialog, closeDialog } = chordHandler();
+
+    ih.handleKeyDown(ev('ArrowRight'));
+    openDialog();
+    if (dropOn === 'keyup') ih.handleKeyUp(ev('ArrowRight'));
+    else vi.advanceTimersByTime(200);
+    closeDialog();
+    ih.handleKeyUp(ev('ArrowRight'));
+    vi.advanceTimersByTime(200);
+    ih.destroy();
+
+    expect(moves).toEqual([]);
+    expect(engine.player.position).toEqual({ x: 10, y: 10 });
+  });
+
+  it('opening the map (M) inside the window does not step the hero either', () => {
+    const { engine, ih, moves } = chordHandler();
+    ih.mapOverlay = { isOpen: false } as never;
+
+    ih.handleKeyDown(ev('ArrowRight'));
+    (ih.mapOverlay as unknown as { isOpen: boolean }).isOpen = true;
+    ih.handleKeyUp(ev('ArrowRight'));
+    vi.advanceTimersByTime(200);
+    ih.destroy();
+
+    expect(moves).toEqual([]);
+    expect(engine.player.position).toEqual({ x: 10, y: 10 });
+  });
+
+  it('with no dialog, the buffered step still fires on keyup and on timeout', () => {
+    const { engine, ih, moves } = chordHandler();
+
+    ih.handleKeyDown(ev('ArrowRight'));
+    expect(moves).toEqual([]); // still inside the chord window
+    ih.handleKeyUp(ev('ArrowRight'));
+    expect(moves).toEqual([[1, 0]]);
+
+    ih.handleKeyDown(ev('ArrowDown'));
+    vi.advanceTimersByTime(200);
+    ih.handleKeyUp(ev('ArrowDown'));
+    ih.destroy();
+
+    expect(moves).toEqual([[1, 0], [0, 1]]);
+    expect(engine.player.position).toEqual({ x: 11, y: 11 });
+  });
+
+  it('with no dialog, a diagonal chord still moves diagonally', () => {
+    const { engine, ih, moves } = chordHandler();
+
+    ih.handleKeyDown(ev('ArrowUp'));
+    ih.handleKeyDown(ev('ArrowRight'));
+    ih.handleKeyUp(ev('ArrowUp'));
+    ih.handleKeyUp(ev('ArrowRight'));
+    vi.advanceTimersByTime(200);
+    ih.destroy();
+
+    expect(moves).toEqual([[1, -1]]);
+    expect(engine.player.position).toEqual({ x: 11, y: 9 });
+  });
+
+  it('releasing an arrow while the dialog is open still clears it from the held set', () => {
+    const { ih, openDialog } = chordHandler();
+
+    ih.handleKeyDown(ev('ArrowUp'));
+    vi.advanceTimersByTime(200);
+    openDialog();
+    ih.handleKeyUp(ev('ArrowUp'));
+    const held = ih.chordBuffer.getStatus().pressedKeys;
+    ih.destroy();
+
+    expect(held).toEqual([]);
+  });
+});

@@ -319,7 +319,11 @@ export class LootFromContainerAction implements Action {
     }
 
     const takenName = removed.displayName;
-    const storeResult = this.player.inventory.storeItem(removed);
+    // Out of a worn belt, purse or rune pouch, the item goes to the pack, never straight back.
+    const inv = this.player.inventory;
+    const worn =
+      this.container !== inv.primaryPack && inv.paperdoll.getAllEquipped().some((eq) => eq.item === this.container);
+    const storeResult = inv.storeItem(removed, worn ? this.container : undefined);
     if (!storeResult.success) {
       this.container.addItem(removed);
       const msg = `Cannot loot ${this.item.displayName}: ${storeResult.reason}`;

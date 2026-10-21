@@ -111,11 +111,12 @@ export class InventoryManager {
   /**
    * Attempts to pick up an item and stash it:
    * First tries utility belt (if quick-draw slot available), then primary pack.
+   * `except` is a worn container the item never goes into: the one it is being taken out of.
    */
-  public storeItem(item: Item): { success: boolean; destination: string; reason?: string } {
+  public storeItem(item: Item, except?: Container): { success: boolean; destination: string; reason?: string } {
     // 1. Coins fill the purse, and what it has no room for goes to the pack.
     if (item instanceof CoinItem) {
-      const stored = this.storeCoins(item);
+      const stored = this.storeCoins(item, except);
       if (stored.success && this.ownerId) item.ownerId = this.ownerId;
       return stored;
     }
@@ -127,7 +128,7 @@ export class InventoryManager {
         { container: this.primaryPack, dest: 'pack' },
       ];
       for (const { container, dest } of targets) {
-        if (container?.addItem(item)) {
+        if (container !== except && container?.addItem(item)) {
           if (this.ownerId) item.ownerId = this.ownerId;
           return { success: true, destination: dest };
         }
@@ -137,6 +138,7 @@ export class InventoryManager {
     //    A worn container made for this item (a rune pouch) takes it before the belt and pack.
     for (const eq of this.paperdoll.getAllEquipped()) {
       const c = eq.item;
+      if (c === except) continue;
       if (c instanceof Container && c.acceptedItemIds?.length && c.canContain(item).allowed && c.addItem(item)) {
         if (this.ownerId) item.ownerId = this.ownerId;
         return { success: true, destination: eq.slot };
@@ -144,7 +146,7 @@ export class InventoryManager {
     }
 
     // 2. Try utility belt if equipped
-    if (this.belt && this.belt.canContain(item).allowed) {
+    if (this.belt && this.belt !== except && this.belt.canContain(item).allowed) {
       if (this.belt.addItem(item)) {
         if (this.ownerId) item.ownerId = this.ownerId;
         return { success: true, destination: 'belt' };
@@ -428,14 +430,15 @@ export class InventoryManager {
   /**
    * Coins fill the purse while it has room and the rest go to the pack, so a pile that only
    * partly fits is split. All or nothing overall: a pile the two can't hold between them
-   * stays whole where it was.
+   * stays whole where it was. Coins taken out of the purse (`except`) go to the pack only.
    */
-  private storeCoins(coins: CoinItem): { success: boolean; destination: string; reason?: string } {
-    const purse = this.purse;
+  private storeCoins(coins: CoinItem, except?: Container): { success: boolean; destination: string; reason?: string } {
+    const purse = this.purse === except ? null : this.purse;
     const toPurse = purse ? Math.min(coins.count, coinRoom(purse, coins.denomination)) : 0;
     const rest = coins.count - toPurse;
     if (rest > 0 && rest > coinRoom(this.primaryPack, coins.denomination)) {
-      return { success: false, destination: 'none', reason: 'Your purse and pack have no room for that many coins.' };
+      const where = purse ? 'Your purse and pack have' : 'Your pack has';
+      return { success: false, destination: 'none', reason: `${where} no room for that many coins.` };
     }
     if (purse && rest === 0) {
       purse.addItem(coins);

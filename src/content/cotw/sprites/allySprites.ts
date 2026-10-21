@@ -12,6 +12,7 @@ import { torvaldModel } from './sculpt/torvald';
 import { haakonModel } from './sculpt/haakon';
 import { bjornModel } from './sculpt/bjorn';
 import { thrainModel } from './sculpt/thrain';
+import { hrefnaModel } from './sculpt/hrefna';
 import { eirModel, sigrunModel, brandrModel, hallvardModel, ingridModel, torsteinModel, sigridModel, leifModel, ketilModel } from './sculpt/villagers';
 
 /** Every companion and townsfolk model idles over four frames. */
@@ -60,4 +61,6 @@ export const COTW_TOWNSFOLK_SPRITES: Record<string, PixelSprite> = {
   captive_villager_4: sculpted(leifModel),
   // The carter who comes over the pass with the thaw (townStages.ts).
   'npc-ketil': sculpted(ketilModel),
+  // Hrefna the völva, by the plaza fountain after the raid (hrefna.ts).
+  'npc-hrefna': sculpted(hrefnaModel),
 };

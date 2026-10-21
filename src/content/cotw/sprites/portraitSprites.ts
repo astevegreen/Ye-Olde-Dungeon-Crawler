@@ -16,6 +16,7 @@ import { guntherPortrait, ivaldaPortrait, thrainPortrait } from './sculpt/portra
 import { bjornPortrait, torvaldPortrait } from './sculpt/portraitsTempleGate';
 import { emberWolfPortrait, frostHoundPortrait, ranvildPortrait } from './sculpt/portraitsKennel';
 import { brandrPortrait, eirPortrait, ingridPortrait, leifPortrait, sigridPortrait, sigrunPortrait, torsteinPortrait } from './sculpt/portraitsVillagers';
+import { hrefnaPortrait } from './sculpt/portraitsVolva';
 import { goblinPortrait, koboldPortrait, koboldShamanPortrait, skraelingPortrait } from './sculpt/portraitsGoblins';
 import { covenWarlockPortrait, trollWifeWarlockPortrait, winterHagPortrait } from './sculpt/portraitsWitches';
 import { darkSorcererPortrait, solBrandZealotPortrait } from './sculpt/portraitsDarkArts';
@@ -79,6 +80,8 @@ export const COTW_PORTRAITS: Record<string, PixelSprite> = {
   captive_villager_2: portrait(torsteinPortrait),
   captive_villager_3: portrait(sigridPortrait),
   captive_villager_4: portrait(leifPortrait),
+  // Hrefna the völva, by the plaza fountain after the raid, talked to on every visit
+  'npc-hrefna': portrait(hrefnaPortrait),
   // the Oath's two companions, in the companion panel
   hearth_frost_hound: portrait(frostHoundPortrait),
   ember_fang_wolf: portrait(emberWolfPortrait),

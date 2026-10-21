@@ -26,10 +26,11 @@ const CREATURES = [
   'amber_sap_weeper', 'yggdrasil_parasite',
 ];
 // Wave 9c: every townsperson who greets (Ivalda at her anvil in Gunther's armory), and the Oath's two
-// companions, the only ones (owner, 10 Oct).
+// companions, the only ones (owner, 10 Oct). Hrefna the völva joined them after the raid (sprint M3).
 const TOWNSFOLK = [
   'npc-sage', 'npc-olaf', 'npc-gunther', 'npc-astrid', 'npc-priest',
   'npc-banker', 'npc-guard', 'npc-trainer', 'npc-rune-smith', 'npc-ivalda',
+  'npc-hrefna',
 ];
 const COMPANIONS = ['hearth_frost_hound', 'ember_fang_wolf'];
 // The rescued villagers, who live in town afterwards and talk on every visit; Hallvard speaks once

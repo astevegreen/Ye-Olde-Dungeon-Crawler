@@ -61,6 +61,7 @@ import { COTW_PROLOGUE, COVEN_CHANNELER_STRATEGY, PROLOGUE_HOOKS, PROLOGUE_TIMED
 import { COTW_TILES } from './tiles';
 import { COTW_TOWN_FURNISHING_HOOK } from './townFurnishings';
 import { COTW_TOWN_STAGES_HOOK } from './townStages';
+import { COTW_HREFNA_HOOK } from './hrefna';
 import { COTW_FLOOR_HAZARDS, COTW_ROOM_DECORATION } from './floorBands';
 import { COTW_FLOOR_LAYOUTS, COTW_FLOOR_SIZE } from './floorLayouts';
 import { COTW_MONSTER_CATEGORIES } from './monsterCategories';
@@ -196,6 +197,7 @@ export const cotwManifest: GameContentManifest = {
     COTW_NORN_CHOICES_HOOK,
     COTW_TOWN_FURNISHING_HOOK,
     COTW_TOWN_STAGES_HOOK,
+    COTW_HREFNA_HOOK,
     COTW_TEMPLE_MET_HOOK,
     COTW_RELIC_HOOK,
     OATH_HOLD_HOOK,

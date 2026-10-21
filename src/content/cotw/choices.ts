@@ -5,6 +5,7 @@ import { SKALDIC_RUNESTONE_CHOICES } from './runestones';
 import { VIDNIR_REVELATION_CHOICE } from './narrative';
 import { IRON_CLANS_BARROW_CHOICES, IVALDA_CHOICE, IVALDA_TOWN_CHOICE, IVALDA_TOWN_PLUNDERED_CHOICE, IVALDA_TOWN_SHUNNED_CHOICE } from './ironClans';
 import { GATEWARD_CHOICE } from './prologue';
+import { HREFNA_CHOICE } from './hrefna';
 import { OATH_BROKEN_FLAG, OATH_HONORED_FLAG } from './oath';
 import { COTW_MILESTONE_CHOICES, COTW_SAGA_CHOICES } from './perks';
 import { COTW_ESSENCE_BY_ELEMENT } from './items/essences';
@@ -160,6 +161,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
   [IVALDA_TOWN_PLUNDERED_CHOICE.id]: IVALDA_TOWN_PLUNDERED_CHOICE,
   [IVALDA_TOWN_SHUNNED_CHOICE.id]: IVALDA_TOWN_SHUNNED_CHOICE,
   [GATEWARD_CHOICE.id]: GATEWARD_CHOICE,
+  [HREFNA_CHOICE.id]: HREFNA_CHOICE,
 
   choice_dwarven_hearth: {
     id: 'choice_dwarven_hearth',

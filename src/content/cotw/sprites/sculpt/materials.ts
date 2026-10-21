@@ -343,6 +343,15 @@ mat('vil_flour', '#ddd7c7', { tex: 'cloth', hs: 8 });
 mat('vil_fleece', '#e0dacb', { tex: 'fur', hs: 8 });
 mat('vil_yarn', '#cdbf9c', { hs: 8 });
 mat('vil_frost', '#cfeefa', { shiny: true, tex: 'ice', hs: 6 });
+// Hrefna the völva (hrefna.ts): the saga's seeress, in a blue cloak set with stones, a black
+// lambskin hood lined with white catskin, glass beads, and a brass-knobbed staff
+mat('vol_cloak', '#34466e', { tex: 'cloth' });
+mat('vol_cloakDark', '#232f4c', { tex: 'cloth' });
+mat('vol_lamb', '#2e2c33', { tex: 'fur', hs: 10 });
+mat('vol_catskin', '#ddd8cc', { tex: 'fur', hs: 6 });
+mat('vol_skin', '#cfae98', { hs: 12 });
+mat('vol_bead', '#7cc8c0', { shiny: true, hs: 8 });
+mat('vol_seidr', '#9cc8ff', { em: true, hs: 0 });
 
 // ---- items (wave 6): only material or element colour; alignment is the aura's job
 mat('item_glass', '#a3bccb', { shiny: true, a: 0.78, hs: 8 });
@@ -836,6 +845,23 @@ mat('scr_leifIris', '#4c7090', { hs: 8 });
 mat('scr_leifLash', '#3a2418', { hs: 6 });
 mat('scr_leifMouth', '#4a1e1a', { hs: 6 });
 mat('scr_leifTeeth', '#eee2ca', { hs: 6 });
+// Hrefna the völva, by the plaza fountain at dusk, her staff's knob burning with Seiðr (portraitsVolva.ts)
+mat('scr_gHrefna', '#1a2232', { em: true, hs: 12 });
+mat('scr_hrefnaHalo', '#2c4a7a', { em: true, hs: 8 });
+mat('scr_hrefnaStone', '#3a3f4c', { em: true, hs: 8 });
+mat('scr_hrefnaSkin', '#c9a690', { hs: 12 });
+mat('scr_hrefnaLine', '#8e6c5c', { hs: 10 });
+mat('scr_hrefnaHair', '#b4b0a8', { hs: 8 });
+mat('scr_hrefnaCloak', '#34466e', { tex: 'cloth', hs: 12 });
+mat('scr_hrefnaLamb', '#2e2c33', { tex: 'fur', hs: 10 });
+mat('scr_hrefnaCat', '#ddd8cc', { tex: 'fur', hs: 6 });
+mat('scr_hrefnaBead', '#7cc8c0', { shiny: true, hs: 8 });
+mat('scr_hrefnaWhite', '#dcd6cc', { hs: 6 });
+mat('scr_hrefnaIris', '#6f8fa8', { hs: 8 });
+mat('scr_hrefnaLash', '#2a1e1c', { hs: 6 });
+mat('scr_hrefnaLip', '#9a6458', { hs: 8 });
+mat('scr_hrefnaSeidr', '#a8d0ff', { em: true, hs: 0 });
+mat('scr_hrefnaSeidrCore', '#eef6ff', { em: true, hs: 0 });
 
 // ---- wave 9d portraits
 // the Myling, the Kirkegrim, the Root-Wraith (portraitsRestless.ts)

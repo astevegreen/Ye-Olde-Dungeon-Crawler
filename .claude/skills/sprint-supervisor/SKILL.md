@@ -67,7 +67,7 @@ Work exists for:
 
 To start one, `RemoteTrigger` `create` with this body:
 `{"name": "<title>", "run_once_at": "<now + 1 minute, UTC, ISO 8601 with Z>", "enabled": true,
-"job_config": {"ccr": {"environment_id": "env_01Tnhbujy7ocSKWa8wqLPdCm", "session_context": {"model": "<model>"},
+"job_config": {"ccr": {"environment_id": "env_0157HwSnMQCykikhVk9tpWUC", "session_context": {"model": "<model>"},
 "events": [{"data": {"type": "user", "uuid": "<new random UUID from node -e \"console.log(crypto.randomUUID())\">",
 "parent_tool_use_id": null, "message": {"role": "user", "content": "<prompt>"}}}]}},
 "mcp_connections": [{"connector_uuid": "bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a", "name": "Claude_Code_Remote",

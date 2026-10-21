@@ -45,7 +45,8 @@ export type BuiltInGameEventType =
   // Magic systems (magic/killRites.ts, magic/altars.ts); details in the scalar `data` bag
   | 'kill_rite_performed'
   | 'altar_reached'
-  | 'altar_rite_performed';
+  | 'altar_rite_performed'
+  | 'void_debt_accrued';
 
 export interface PlayerLeveledUpEvent extends GameEventBase {
   type: 'player_leveled_up';
@@ -87,6 +88,16 @@ export interface AttackMissedEvent extends GameEventBase {
 export interface SpellAimedEvent extends GameEventBase {
   type: 'spell_aimed';
   spellId: string;
+}
+
+/**
+ * A cast went short of mana and the hero's debt grew (magic/manaOverflow.ts): `actorId` owes
+ * `data.deficit` more, `data.totalDebt` in all; `data.tier` is the pack's overflow tier that
+ * debt has reached, 0 below the first.
+ */
+export interface VoidDebtAccruedEvent extends GameEventBase {
+  type: 'void_debt_accrued';
+  data: Record<string, EventScalar | undefined> & { deficit: number; totalDebt: number; tier: number };
 }
 
 export interface EntityKilledEvent extends GameEventBase {
@@ -133,6 +144,7 @@ export type GameEvent =
   | DamageDealtEvent
   | AttackMissedEvent
   | SpellAimedEvent
+  | VoidDebtAccruedEvent
   | EntityKilledEvent
   | LevelTransitionEvent
   | RuneOfReturnDiscoveredEvent

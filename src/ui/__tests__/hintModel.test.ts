@@ -3,6 +3,7 @@ import { GameEngine, GameMap, TILES, Player, Item, Container, ProfileManager, Me
 import { hintFlag, hintsMetByEvent, hintsMetByState, itemHintFlag, itemHintsMet, resolveHintText, unseenHints } from '../hints/hintModel';
 import { FirstTimeHints } from '../hints/firstTimeHints';
 import { cotwManifest } from '../../content/cotw';
+import { ACTION_METADATA } from '../settings/settingsManager';
 
 function buildEngine(manifest: Record<string, unknown> = {}) {
   const map = new GameMap(20, 20, TILES.FLOOR);
@@ -43,6 +44,47 @@ describe('first-time hints', () => {
     expect(hintsMetByEvent(engine, { type: 'altar_reached', turn: 3, data: {} } as any)).toEqual(['altar']);
     expect(hintsMetByEvent(engine, { type: 'kill_rite_performed', turn: 3, data: {} } as any)).toEqual(['killRite']);
     expect(hintsMetByEvent(engine, { type: 'entity_killed', turn: 3, data: {} } as any)).toEqual([]);
+  });
+
+  it("offers Hrefna's Void Debt and stone hints once each, on their events, and not once flagged", () => {
+    const engine = buildEngine({ firstTimeHints: cotwManifest.firstTimeHints });
+    const debt: GameEvent = { type: 'void_debt_accrued', turn: 3, actorId: 'hero', data: { deficit: 4, totalDebt: 4, tier: 1 } };
+    const read: GameEvent = { type: 'learning_stone_read', turn: 3, actorId: 'hero', data: { floor: 2, spellId: 'spark', shortcut: false } };
+    expect(hintsMetByEvent(engine, debt)).toEqual(['voidDebt']);
+    expect(hintsMetByEvent(engine, read)).toEqual(['learningStone']);
+    expect(unseenHints(engine, [...hintsMetByEvent(engine, debt), ...hintsMetByEvent(engine, debt)])).toEqual(['voidDebt']);
+
+    engine.player.markTutorialSeen(hintFlag('voidDebt'));
+    engine.player.markTutorialSeen(hintFlag('learningStone'));
+    expect(unseenHints(engine, hintsMetByEvent(engine, debt))).toEqual([]);
+    expect(unseenHints(engine, hintsMetByEvent(engine, read))).toEqual([]);
+  });
+
+  it("cotw's Seiðr hints use the pack's terms, name only bound keys and run two sentences at most", () => {
+    const hints = cotwManifest.firstTimeHints ?? {};
+    const shard = cotwManifest.items?.find((item) => item.id === 'runestone_shard')?.firstPickupHint;
+    const cases: Array<[string | undefined, string[]]> = [
+      [hints.voidDebt?.text, ['Seiðr', 'Void Debt', 'Rest', 'town']],
+      [hints.learningStone?.text, ['grimoire', 'Spellbook']],
+      [shard?.text, ['broken stone', 'Seiðr']],
+    ];
+    const bound = new Set(ACTION_METADATA.filter((a) => a.defaultCodes.length > 0).map((a) => a.id));
+    for (const [text, terms] of cases) {
+      expect(text).toBeDefined();
+      for (const term of terms) expect(text).toContain(term);
+      for (const [, action] of text!.matchAll(/\{key:([a-z_]+)\}/g)) expect(bound).toContain(action);
+      expect(text!.split(/[.!?](?:\s|$)/).filter((s) => s.trim()).length).toBeLessThanOrEqual(2);
+    }
+    for (const hint of [hints.voidDebt, hints.learningStone, shard]) expect(hint?.title).toContain('Hrefna');
+  });
+
+  it('carrying a Runestone Shard offers its pickup hint once, pointing to the broken stone', () => {
+    const engine = buildEngine({ items: cotwManifest.items });
+    expect(itemHintsMet(engine)).not.toContain('runestone_shard');
+    carry(engine, 'runestone_shard');
+    expect(itemHintsMet(engine)).toEqual(['runestone_shard']);
+    engine.player.markTutorialSeen(itemHintFlag('runestone_shard'));
+    expect(itemHintsMet(engine)).toEqual([]);
   });
 
   it("matches a trigger's where on a top-level field or a data entry, and nothing on another value", () => {

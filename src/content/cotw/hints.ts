@@ -43,6 +43,16 @@ export const COTW_FIRST_TIME_HINTS: NonNullable<GameContentManifest['firstTimeHi
     title: 'Your grimoires',
     text: 'A spell is cast only from a grimoire slot, and where it sits shapes it. Each axis starts unpicked: you pick its stat, which grows away from the centre, and each spell lends something to the spells touching it. Open the Spellbook ({key:cast_spell}) and point at a slot to see what it does; Hel\'s altar, or Sage Mimir for a fee, re-picks a grimoire\'s stats.',
   },
+  voidDebt: {
+    title: 'Hrefna the völva: Void Debt',
+    showOn: [{ type: 'void_debt_accrued' }],
+    text: 'You cast past your Seiðr, and the Void keeps the tally as Void Debt: the deeper it runs, the harder each short cast bites back. Rest pays it down, and what still lingers below is cleared in town.',
+  },
+  learningStone: {
+    title: 'Hrefna the völva: the stone',
+    showOn: [{ type: 'learning_stone_read' }],
+    text: 'A spell taken from a stone sits in a grimoire slot, and only from a slot is it cast. An axis left unpicked waits for you to choose its stat: open the Spellbook ({key:cast_spell}) and pick it.',
+  },
   unidentified: {
     title: 'Unknown things',
     text: 'Much of what the deep gives up hides its true name: Sage Mimir in town names such things for a fee, and a Scroll of Identify names one at once. At Intelligence 20 you may take the Lore-Keeper gift: each time you take the stairs, it names what you have carried since the last stairs.',

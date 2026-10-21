@@ -9,6 +9,7 @@ import { ManaOverflowManager } from '../manaOverflow';
 import { COTW_MAGIC } from '../../../content/cotw/magic';
 import type { SpellDefinition } from '../types';
 import { serializeGame, deserializeGame } from '../../storage/serializer';
+import type { GameEvent } from '../../events';
 
 describe('Ginnungagap / Mana Overflow System', () => {
   let engine: GameEngine;
@@ -98,6 +99,56 @@ describe('Ginnungagap / Mana Overflow System', () => {
     expect(res3.occurred).toBe(true);
     expect(res3.tier).toBe(3);
     expect(player.voidDebt).toBe(18);
+  });
+
+  describe('void_debt_accrued', () => {
+    const debtEvents = () => {
+      const seen: GameEvent[] = [];
+      engine.onGameEvent = (event) => {
+        if (event.type === 'void_debt_accrued') seen.push(event);
+      };
+      return seen;
+    };
+
+    it('a short cast emits one event with the deficit, the new total and its tier', () => {
+      const seen = debtEvents();
+      player.mana = 4;
+      player.voidDebt = 2;
+      new CastSpellAction(player, testSpell.id, 5, 8).perform(engine);
+      expect(seen).toHaveLength(1);
+      expect(seen[0]).toMatchObject({ actorId: player.id, data: { deficit: 6, totalDebt: 8, tier: 2 } });
+      expect(JSON.parse(JSON.stringify(seen[0]))).toEqual(seen[0]);
+    });
+
+    it('a cast with enough Seiðr emits none', () => {
+      const seen = debtEvents();
+      new CastSpellAction(player, testSpell.id, 5, 8).perform(engine);
+      expect(seen).toEqual([]);
+    });
+
+    it("names the tier the debt reached, 0 below the first, whether or not a surge follows", () => {
+      const seen = debtEvents();
+      const res = ManaOverflowManager.evaluateOverflow(engine, player, 3, { tierShift: -1 });
+      expect(res.occurred).toBe(false);
+      expect(seen.map((e) => e.data)).toEqual([{ deficit: 3, totalDebt: 3, tier: 1 }]);
+      const zeroTier = new GameEngine({
+        map: new GameMap(15, 15, TILES.FLOOR),
+        player,
+        manifest: { ...testManifest, magic: { overflow: { ...COTW_MAGIC.overflow!, tiers: [{ ...COTW_MAGIC.overflow!.tiers[0], minDebt: 50 }] } } } as any,
+        seed: 1,
+      });
+      const below: GameEvent[] = [];
+      zeroTier.onGameEvent = (event) => below.push(event);
+      ManaOverflowManager.evaluateOverflow(zeroTier, player, 2);
+      expect(below.map((e) => e.data)).toEqual([{ deficit: 2, totalDebt: 5, tier: 0 }]);
+    });
+
+    it('a Void-Kissed short cast, which owes nothing, emits none', () => {
+      const seen = debtEvents();
+      ManaOverflowManager.evaluateOverflow(engine, player, 6, { accrueDebt: false });
+      expect(player.voidDebt).toBe(0);
+      expect(seen).toEqual([]);
+    });
   });
 
   it('a negative tier shift makes a surge a tier milder, and the mildest none (Arch-Seiðkona)', () => {

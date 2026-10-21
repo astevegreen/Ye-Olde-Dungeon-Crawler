@@ -73,6 +73,14 @@ export class ManaOverflowManager {
 
     const config = getOverflowConfig(engine);
     let reached = getOverflowTier(config, totalDebt);
+    if (player && accrue && deficit > 0) {
+      engine.emitGameEvent({
+        type: 'void_debt_accrued',
+        turn: engine.turnCount,
+        actorId: player.id,
+        data: { deficit, totalDebt, tier: reached?.index ?? 0 },
+      });
+    }
     const shift = options?.tierShift ?? 0;
     if (reached && shift > 0 && config) {
       const ceiling = Math.min(config.tiers.length, options?.tierShiftCap ?? config.tiers.length);

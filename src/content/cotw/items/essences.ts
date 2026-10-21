@@ -76,4 +76,8 @@ export const COTW_RUNESTONE_SHARD: ItemDefinition = {
   value: 0,
   description:
     'A splinter of a broken runestone, humming faintly. It fits a stone somewhere on this floor; set in it, the stone shows its spells. Left unused, it crumbles into a rune when you leave.',
+  firstPickupHint: {
+    title: 'Hrefna the völva: the shard',
+    text: 'Carry it to the broken stone; your map marks where it stands. Set in it, the shard wakes the stone, and the stone offers you a spell of Seiðr.',
+  },
 };

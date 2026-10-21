@@ -8,9 +8,11 @@ import {
   ProfileManager,
   MemoryStorage,
   WaitAction,
+  getCounter,
   getFaction,
   getTimedEventCountdowns,
   isPrologueRunning,
+  setFlag,
   type GameEngine,
 } from '../../../engine';
 import { ClimbStairsAction } from '../../../engine/actions/stairs';
@@ -236,6 +238,55 @@ describe('cotw prologue: the night raid', () => {
     expect(engine.getWorldFlag('prologue-brandr_taken')).toBe(true);
     expect(engine.map.lit).toBe(true);
     expect(engine.map.getEntityById('prologue-hallvard')).toBeInstanceOf(NPC);
+  });
+
+  describe('once the coven has fled, the next action frees no one (the one-action lag)', () => {
+    /** As the timer's expiry leaves it: the fled flag set, the raid not yet ended. */
+    const covenFlees = (engine: GameEngine) => setFlag(engine.worldState, 'cotw_prologue_coven_fled', true);
+    const SAVED = 'cotw_prologue_villagers_saved';
+
+    it('a bump into a villager whose thrall is dead ends the raid instead of freeing them', () => {
+      const engine = newRun();
+      const eir = villager(engine, 'prologue-eir');
+      killCaptor(engine, eir);
+      standBeside(engine, eir);
+      covenFlees(engine);
+      expect(isPrologueRunning(engine.worldState, COTW_PROLOGUE)).toBe(true);
+
+      const result = step(engine, 1, 0);
+
+      expect(result.message ?? '').not.toMatch(/You free/);
+      expect(engine.messages.some((m) => m.includes('You free'))).toBe(false);
+      expect(getCounter(engine.worldState, SAVED)).toBe(0);
+      expect(engine.getWorldFlag('prologue-eir_saved')).toBeFalsy();
+      expect(engine.getWorldFlag('prologue-eir_taken')).toBe(true);
+      expect(isPrologueRunning(engine.worldState, COTW_PROLOGUE)).toBe(false);
+    });
+
+    it('a thrall killed by the hero’s action does not free the villager it held', () => {
+      const engine = newRun();
+      const eir = villager(engine, 'prologue-eir');
+      const captor = engine.map
+        .getAllEntities()
+        .find((e): e is Monster => e instanceof Monster && Math.max(Math.abs(e.x - eir.x), Math.abs(e.y - eir.y)) <= 1)!;
+      covenFlees(engine);
+
+      // The hero's blow lands, deterministically: the last thrall at Eir's side dies in this action.
+      engine.handlePlayerAction({
+        entity: engine.player,
+        perform: (e: GameEngine) => {
+          DeathResolver.resolveDeath(e, e.player, captor);
+          return { success: true, cost: 100 };
+        },
+      });
+
+      expect(captor.isAlive()).toBe(false);
+      expect(engine.getWorldFlag('prologue-eir_saved')).toBeFalsy();
+      expect(engine.getWorldFlag('prologue-eir_taken')).toBe(true);
+      expect(getCounter(engine.worldState, SAVED)).toBe(0);
+      expect(engine.messages.some((m) => m.includes('The thrall that held Eir is down.'))).toBe(false);
+      expect(isPrologueRunning(engine.worldState, COTW_PROLOGUE)).toBe(false);
+    });
   });
 
   it('strikes the hero down instead of killing them, and they wake mended', () => {

@@ -249,6 +249,8 @@ export interface SerializedPlayer {
   grimoires?: SerializedGrimoireState;
   /** Shard-and-stone state (P-34); absent when the hero has met no stone. */
   learningStones?: import('../magic/learningStones').LearningStoneState;
+  /** `Actor.healCarryValue`, written only when non-zero (a heal scaled below a whole point, Mirror Hide). */
+  healCarry?: number;
 }
 
 /** A slot of the old 3×3 grimoire page, as saves before the three grimoires hold it. */
@@ -321,6 +323,8 @@ export interface SerializedMonster {
   deepSleep?: boolean;
   /** `Monster.struckInSleep`, written only when set: a blow woke it and it has not acted since. */
   struckInSleep?: boolean;
+  /** `Actor.healCarryValue`, written only when non-zero: the fraction of a point its next heal adds. */
+  healCarry?: number;
 }
 
 /** Companions & Pet Progression, Phase 1 (docs/architecture/content-companions.md). Top-level in SaveData, not per-floor. */
@@ -342,6 +346,8 @@ export interface SerializedCompanion {
   archetype?: CompanionArchetype;
   /** Trainer-taught skills; absent = none. */
   unlockedSkills?: string[];
+  /** `Actor.healCarryValue`, written only when non-zero. */
+  healCarry?: number;
 }
 
 export interface SerializedNpc {

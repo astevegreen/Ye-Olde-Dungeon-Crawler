@@ -426,6 +426,7 @@ function serializeCompanion(companion: Companion): SerializedCompanion {
     primaryPack: serializeItem(companion.inventory.primaryPack) as SerializedContainer,
     archetype: companion.archetype === 'balanced' ? undefined : companion.archetype,
     unlockedSkills: companion.unlockedSkills.length ? [...companion.unlockedSkills] : undefined,
+    healCarry: companion.healCarryValue || undefined,
   };
 }
 
@@ -460,6 +461,7 @@ function deserializeCompanion(
   }
   if (data.archetype) companion.setArchetype(data.archetype);
   if (data.unlockedSkills) companion.unlockedSkills = [...data.unlockedSkills];
+  if (data.healCarry) companion.restoreHealCarry(data.healCarry);
   return companion;
 }
 
@@ -538,6 +540,7 @@ export function serializeGame(engine: GameEngine, profile?: CharacterProfile): S
     carriedAtStairs: p.carriedAtStairs.length > 0 ? [...p.carriedAtStairs] : undefined,
     grimoires: p.grimoireState ? serializeGrimoireState(p.grimoireState) : undefined,
     learningStones: serializeLearningStoneState(p.learningStones),
+    healCarry: p.healCarryValue || undefined,
   };
 
   if (profile) {
@@ -707,6 +710,7 @@ export function serializeMapObject(map: GameMap): SerializedMap {
         lentHits: mon.lentHits ? structuredClone(mon.lentHits) : undefined,
         deepSleep: mon.deepSleep || undefined,
         struckInSleep: mon.struckInSleep || undefined,
+        healCarry: mon.healCarryValue || undefined,
         carried: carried.length > 0 ? carried.map(serializeItem) : undefined,
       };
     });
@@ -927,6 +931,7 @@ export function deserializeMapObject(
       }
       if (mData.deepSleep) monster.deepSleep = true;
       if (mData.struckInSleep) monster.struckInSleep = true;
+      if (mData.healCarry) monster.restoreHealCarry(mData.healCarry);
       for (const node of mData.carried ?? []) monster.addItem(deserializeItem(node, definitions));
       map.addEntity(monster);
     }
@@ -1128,6 +1133,7 @@ function hydrateGame(
       : undefined,
   });
   player.energy = Number(pData.energy) || 0;
+  player.restoreHealCarry(Number(pData.healCarry) || 0);
   if (Array.isArray(pData.carriedAtStairs)) player.carriedAtStairs = pData.carriedAtStairs.map(String);
   // Before HP is clamped to max HP, which the blessing raises.
   player.maxHpPercentBonus = Number(pData.maxHpPercentBonus) || 0;

@@ -395,6 +395,11 @@ const PROLOGUE_MOVE_HOOK: ActionHook = {
   execute: ({ action, actor, engine }) => {
     if (actor !== engine.player || !(action instanceof MovementAction)) return;
     if (!isPrologueRunning(engine.worldState, COTW_PROLOGUE)) return;
+    // The rite ran out after the last action: the night ends before this move frees anyone.
+    if (getFlag(engine.worldState, FLAG_COVEN_FLED)) {
+      endRaid(engine);
+      return;
+    }
     const x = actor.x + action.dx;
     const y = actor.y + action.dy;
 
@@ -450,6 +455,12 @@ const PROLOGUE_RAID_HOOK: ActionHook = {
       return;
     }
 
+    // The countdown ran out after the last action: the night ends first, so no villager
+    // goes free on a thrall's death once the coven has fled.
+    if (getFlag(engine.worldState, FLAG_COVEN_FLED)) {
+      endRaid(engine);
+      return;
+    }
     if (engine.player.wasHeldAtHpFloor) {
       setFlag(engine.worldState, FLAG_STRUCK_DOWN, true);
       endRaid(engine);
@@ -457,9 +468,9 @@ const PROLOGUE_RAID_HOOK: ActionHook = {
     }
     freeVillagersWhoseCaptorFell(engine);
     if (!isPrologueRunning(engine.worldState, COTW_PROLOGUE)) return;
-    // The countdown run out; or nothing is left to fight for, every villager free and the
-    // coven at the fountain slain, so the night ends now rather than on the clock.
-    if (getFlag(engine.worldState, FLAG_COVEN_FLED) || (getFlag(engine.worldState, FLAG_ALL_SAVED) && covenSlain(engine))) {
+    // Nothing is left to fight for, every villager free and the coven at the fountain
+    // slain, so the night ends now rather than on the clock.
+    if (getFlag(engine.worldState, FLAG_ALL_SAVED) && covenSlain(engine)) {
       endRaid(engine);
       return;
     }

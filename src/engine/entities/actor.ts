@@ -255,6 +255,16 @@ export class Actor extends Entity implements IItemContainer, IEquipmentBearer {
   /** Healing scaled below a whole point carries over, so a halved rest still heals every other tick. */
   private healCarry = 0;
 
+  /** The fraction of a point `heal` carries to the next heal, read by the save (`serializer.ts`). */
+  public get healCarryValue(): number {
+    return this.healCarry;
+  }
+
+  /** Puts back the carry a save wrote, so a load or a replay checkpoint heals as the live run did. */
+  public restoreHealCarry(carry: number): void {
+    this.healCarry = Number.isFinite(carry) && carry > 0 ? carry : 0;
+  }
+
   public override takeDamage(rawAmount: number): { damageDealt: number; killed: boolean } {
     if (this.isInvulnerable || !this.capabilities.isDestructible || this.hp <= 0) {
       return { damageDealt: 0, killed: false };

@@ -31,10 +31,11 @@ export const COTW_OBJECTIVES: ObjectiveDefinition[] = [
   },
   {
     // Ahead of Act 1's line, which waits behind it until the first stone (floor 4) is read.
+    // Recovering the Hearth-Tear ends it too, so a hero who reads no stone still sees the quest.
     id: 'cotw_objective_first_spell',
     text: 'Learn your first spell.',
     availableWhenFlag: PROLOGUE_ENDED_FLAG,
-    doneWhenAnyFlag: [FIRST_STONE_READ_FLAG],
+    doneWhenAnyFlag: [FIRST_STONE_READ_FLAG, RELIC_RECOVERED_FLAG],
   },
   {
     id: 'cotw_objective_act1',

@@ -14,6 +14,7 @@ import { COTW_DEEPEST_FLOOR_COUNTER } from '../spellTablets';
 import { GATEWARD_HEARD_FLAG, PROLOGUE_ENDED_FLAG } from '../prologue';
 import { FIRST_STONE_READ_FLAG, FIRST_STONE_READ_TRACKED_FLAG } from '../firstSpell';
 import { COTW_LEARNING_STONES } from '../learningStones';
+import { HEARTH_TEAR_RETURNED_FLAG, RELIC_RECOVERED_FLAG } from '../relic';
 
 describe('"Learn your first spell" in the HUD objective', () => {
   const objectiveAt = (deepest: number, flags: string[]) => {
@@ -36,6 +37,12 @@ describe('"Learn your first spell" in the HUD objective', () => {
     expect(objectiveAt(1, afterRaid)).toBe('cotw_objective_first_spell');
     expect(objectiveAt(4, afterRaid)).toBe('cotw_objective_first_spell');
     expect(objectiveAt(4, [...afterRaid, FIRST_STONE_READ_FLAG])).toBe('cotw_objective_act1');
+  });
+
+  // The owner's call (issue #33): a hero who never reads a stone still gets the main-quest lines.
+  it('ends when the Hearth-Tear is recovered, though no stone was read', () => {
+    expect(objectiveAt(25, [...afterRaid, RELIC_RECOVERED_FLAG])).toBe('cotw_objective_return');
+    expect(objectiveAt(25, [...afterRaid, RELIC_RECOVERED_FLAG, HEARTH_TEAR_RETURNED_FLAG])).toBe('cotw_objective_act2');
   });
 
   it('reads "Learn your first spell."', () => {

@@ -12,10 +12,14 @@ export interface MessageLogModalOptions {
   onClose: () => void;
 }
 
-/** The history's rows: each line toned as the log strip tones it, repeats in a row as one. */
-export function messageLogRows(messages: readonly string[], playerName: string, critical?: ReadonlySet<string>): string {
+/**
+ * The history's rows: each line toned as the log strip tones it, repeats in a row as one.
+ * `limit` keeps only the newest rows, counted after collapsing, so a run of repeats fills one row.
+ */
+export function messageLogRows(messages: readonly string[], playerName: string, critical?: ReadonlySet<string>, limit?: number): string {
   if (messages.length === 0) return '<div class="log-line log-line-muted">Nothing has happened yet.</div>';
-  return collapseRepeats(messages)
+  const runs = collapseRepeats(messages);
+  return (limit === undefined ? runs : runs.slice(-limit))
     .map(({ message, count }) => {
       const line = classifyLogLine(message, playerName, critical);
       const tone = line.tone !== 'plain' ? ` log-line-${line.tone}` : '';

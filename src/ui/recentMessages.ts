@@ -1,11 +1,11 @@
 import { escapeHtml } from './html';
 import { messageLogRows } from './messageLogModal';
 
-/** How many of the newest log lines the strip shows. */
+/** How many of the newest log rows the strip shows; a run of repeated lines is one row. */
 export const RECENT_MESSAGE_COUNT = 5;
 
 export interface RecentMessagesView {
-  /** The engine's whole log, oldest first; the strip takes the tail. */
+  /** The engine's whole log, oldest first; the strip collapses repeats, then takes the tail. */
   messages: readonly string[];
   playerName: string;
   /** Lines toned as critical blows, as the log strip tones them. */
@@ -27,13 +27,12 @@ export interface RecentMessagesView {
  */
 export function recentMessagesHtml(view: RecentMessagesView): string {
   const count = view.count ?? RECENT_MESSAGE_COUNT;
-  const tail = view.messages.slice(-count);
   const vitals = view.vitals ? `<span class="recent-messages-vitals">${escapeHtml(view.vitals)}</span>` : '';
   const heading = escapeHtml(view.heading ?? 'Recent messages');
   // A warning takes the heading's place, so it never adds a line and the tab above it keeps its height.
   const title = view.alert ? `<span class="recent-messages-alert" role="alert">${escapeHtml(view.alert)}</span>` : `<span>${heading}</span>`;
   return `<section class="recent-messages${view.flash ? ' is-flashing' : ''}" aria-label="${heading}">
     <div class="recent-messages-head">${title}${vitals}</div>
-    <div class="recent-messages-lines" aria-live="polite">${messageLogRows(tail, view.playerName, view.critical)}</div>
+    <div class="recent-messages-lines" aria-live="polite">${messageLogRows(view.messages, view.playerName, view.critical, count)}</div>
   </section>`;
 }

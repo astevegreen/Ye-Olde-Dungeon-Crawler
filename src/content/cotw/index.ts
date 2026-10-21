@@ -131,6 +131,15 @@ export const cotwManifest: GameContentManifest = {
   pacts: COTW_PACTS,
   // Pacts are sworn with Sage Mimir, as Odin pledged an eye at Mímir's well for wisdom.
   pactKeeperNpcId: 'npc-sage',
+  // Mimir's closing saying when his run advice finds nothing to warn of; flavour only, no rule.
+  // Two echo the Hávamál (stanzas 10 and 76).
+  advisorQuotes: [
+    '"The Allfather paid an eye at my well for wisdom. Forethought costs you far less."',
+    '"Cattle die, kinsmen die, you too shall die; but a name won well in the deep never dies."',
+    '"No better burden bears a wanderer than wit, and none worse than a pack too heavy to run with."',
+    '"Seiðr is borrowed breath. Spend it as a miser spends silver, and the deep will not keep you."',
+    '"The Norns spin for the bold and the wary alike; only the careless find their thread cut short."',
+  ],
   firstTimeHints: COTW_FIRST_TIME_HINTS,
   traps: [
     { type: 'pit', name: 'Hidden Pit', damage: 10, disarmDifficulty: 12, minFloor: 1 },

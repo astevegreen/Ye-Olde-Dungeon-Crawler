@@ -30,3 +30,4 @@ Opus at high thinking — each finding needs a cause traced across files before 
 - gate-stamp lint/test/tooling: green on 92e5362c (3337 tests)
 - pre-push (sim, build, Playwright ×3): green on 92e5362c; deploy.yml green
 - Flake seen once: e2e/story-milestones.spec.ts:77 floating text (passed 5/5 rerun)
+Resumed: 2026-10-21 18:48 UTC

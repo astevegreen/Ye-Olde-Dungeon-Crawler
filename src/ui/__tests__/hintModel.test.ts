@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { GameEngine, GameMap, TILES, Player, Item } from '../../engine';
+import { GameEngine, GameMap, TILES, Player, Item, Container, ProfileManager, MemoryStorage } from '../../engine';
 import { hintFlag, hintsMetByEvent, hintsMetByState, itemHintFlag, itemHintsMet, resolveHintText, unseenHints } from '../hints/hintModel';
 import { FirstTimeHints } from '../hints/firstTimeHints';
+import { cotwManifest } from '../../content/cotw';
 
 function buildEngine(manifest: Record<string, unknown> = {}) {
   const map = new GameMap(20, 20, TILES.FLOOR);
@@ -67,6 +68,39 @@ describe('first-time hints', () => {
     engine.currentFloor = 1;
     expect(hintsMetByState(engine)).toContain('grimoire');
     expect(hintsMetByState(buildEngine())).not.toContain('grimoire');
+  });
+
+  it('meets the unidentified hint once the hero carries something that can be identified and is not', () => {
+    const engine = buildEngine();
+    const thing = (id: string, category: string, identified: boolean) =>
+      new Item({ id, definitionId: id, name: id, category: category as never, weight: 1, bulk: 1, identified });
+    expect(hintsMetByState(engine)).not.toContain('unidentified');
+    engine.player.inventory.storeItem(thing('known_sword', 'weapon', true));
+    engine.player.inventory.storeItem(thing('odd_stone', 'quest', false));
+    expect(hintsMetByState(engine)).not.toContain('unidentified');
+    engine.player.inventory.storeItem(thing('strange_sword', 'weapon', false));
+    expect(hintsMetByState(engine)).toContain('unidentified');
+  });
+
+  it('meets the unidentified hint for an item inside a worn pouch', () => {
+    const engine = buildEngine();
+    const belt = new Container({ id: 'belt', name: 'Belt', category: 'container', containerType: 'belt', weight: 100, bulk: 100, maxWeightCapacity: 9000, maxBulkCapacity: 9000, maxSlots: 4 });
+    engine.player.inventory.paperdoll.equip(belt, 'waist');
+    expect(belt.addItem(new Item({ id: 'birch_wand', definitionId: 'birch_wand', name: 'Birch Wand', category: 'wand', weight: 1, bulk: 1 }))).toBe(true);
+    expect(hintsMetByState(engine)).toContain('unidentified');
+  });
+
+  it('does not meet the unidentified hint on a new cotw hero, who carries only the starting kit', () => {
+    const engine = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Hild', { manifest: cotwManifest }).engine;
+    const unknown = engine.player.inventory.getAllCarriedItems().filter((item) => !item.identified && item.canBeIdentified());
+    expect(unknown.map((item) => item.definitionId)).toEqual([]);
+    expect(hintsMetByState(engine)).not.toContain('unidentified');
+  });
+
+  it('offers the unidentified hint only from a pack that wrote one', () => {
+    const engine = buildEngine({ firstTimeHints: HINTS });
+    expect(unseenHints(engine, ['unidentified'])).toEqual([]);
+    expect(unseenHints(buildEngine({ firstTimeHints: cotwManifest.firstTimeHints }), ['unidentified'])).toEqual(['unidentified']);
   });
 
   it("meets an item's first-pickup hint once the hero carries one, until it is shown", () => {
@@ -152,6 +186,26 @@ describe('FirstTimeHints', () => {
     expect(text.textContent).toBe('It hums.');
     expect((head.children[0] as HintEl).children).toContain(' Rune A');
     expect(engine.player.tutorialFlags[itemHintFlag('rune_a')]).toBe(true);
+  });
+
+  it('shows the unidentified hint once per hero, and never with first-time hints turned off', () => {
+    const engine = buildEngine({ firstTimeHints: { unidentified: { title: 'Unknown things', text: 'Ask the sage.' } } });
+    let enabled = false;
+    const hints = new FirstTimeHints({ keyFor: () => undefined, enabled: () => enabled });
+    const [, text] = (hints.element as unknown as HintEl).children as HintEl[];
+    expect(hints.hasUnseen(engine)).toBe(true);
+    hints.offer(engine, ['unidentified']);
+    expect(hints.element.hidden).toBe(true);
+    expect(engine.player.tutorialFlags['hint:unidentified']).toBeUndefined();
+
+    enabled = true;
+    hints.offer(engine, ['unidentified']);
+    expect(text.textContent).toBe('Ask the sage.');
+    expect(engine.player.tutorialFlags['hint:unidentified']).toBe(true);
+    hints.dismiss();
+    hints.offer(engine, ['unidentified']);
+    expect(hints.element.hidden).toBe(true);
+    expect(hints.hasUnseen(engine)).toBe(false);
   });
 
   it('offers no item hint with first-time hints turned off', () => {

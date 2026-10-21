@@ -41,4 +41,8 @@ export const COTW_FIRST_TIME_HINTS: Partial<Record<FirstTimeHintId, FirstTimeHin
     title: 'Your grimoires',
     text: 'A spell is cast only from a grimoire slot, and where it sits shapes it. Each axis starts unpicked: you pick its stat, which grows away from the centre, and each spell lends something to the spells touching it. Open the Spellbook ({key:cast_spell}) and point at a slot to see what it does; Hel\'s altar, or Sage Mimir for a fee, re-picks a grimoire\'s stats.',
   },
+  unidentified: {
+    title: 'Unknown things',
+    text: 'Much of what the deep gives up hides its true name: Sage Mimir in town names such things for a fee, and a Scroll of Identify names one at once. At Intelligence 20 you may take the Lore-Keeper gift, and each time you take the stairs it names what you carry.',
+  },
 };

@@ -21,7 +21,8 @@ export function hintFlag(id: FirstTimeHintId): string {
 /**
  * The systems the hero has come upon, judged from the game's state after a turn: a
  * companion at their side, renown earned, a Rune of Return carried, a faction standing
- * moved from where it began, a saga deed done, a creature with a kill rite in sight.
+ * moved from where it began, a saga deed done, a creature with a kill rite in sight, an
+ * unidentified item carried (worn containers included).
  */
 export function hintsMetByState(engine: GameEngine): FirstTimeHintId[] {
   const met: FirstTimeHintId[] = [];
@@ -35,6 +36,8 @@ export function hintsMetByState(engine: GameEngine): FirstTimeHintId[] {
   if (Object.entries(now).some(([id, value]) => value !== (start[id] ?? 0))) met.push('factionStanding');
 
   if (buildSaga(engine).achieved.length > 0) met.push('story');
+
+  if (p.inventory?.getAllCarriedItems().some((item) => !item.identified && item.canBeIdentified())) met.push('unidentified');
 
   // The grimoires matter once there is something to arrange, and a fight to arrange it for.
   if (engine.manifest.magic?.grimoires && engine.currentFloor >= 1 && p.spellsKnown.length >= 2) met.push('grimoire');

@@ -10,7 +10,7 @@ export interface FirstTimeHintsOptions {
 }
 
 const ALL_HINTS: readonly FirstTimeHintId[] = [
-  'altar', 'killRite', 'pactKeeper', 'companion', 'renown', 'runeOfReturn', 'factionStanding', 'story', 'grimoire',
+  'altar', 'killRite', 'pactKeeper', 'companion', 'renown', 'runeOfReturn', 'factionStanding', 'story', 'grimoire', 'unidentified',
 ];
 
 /**

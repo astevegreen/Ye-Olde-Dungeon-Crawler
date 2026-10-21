@@ -1092,7 +1092,8 @@ export function resolveManaTerms(manifest?: { branding?: PackBranding }): ManaTe
  * The systems a first-time hint introduces. Presentation decides when each is first met
  * (an altar reached, a creature with a kill rite seen, the pact keeper greeted, a companion
  * at the hero's side, the first renown, a Rune of Return carried, a faction standing moved,
- * the first saga deed) and shows the pack's hint once per hero (`Player.tutorialFlags`).
+ * the first saga deed, an unidentified item carried) and shows the pack's hint once per hero
+ * (`Player.tutorialFlags`).
  */
 export type FirstTimeHintId =
   | 'altar'
@@ -1103,7 +1104,8 @@ export type FirstTimeHintId =
   | 'runeOfReturn'
   | 'factionStanding'
   | 'story'
-  | 'grimoire';
+  | 'grimoire'
+  | 'unidentified';
 
 export interface FirstTimeHintDefinition {
   title: string;

@@ -32,3 +32,4 @@ Sonnet 5.5 at medium thinking — checking session and trigger state, firing one
 ## Read first
 - .claude/skills/sprint-supervisor/SKILL.md:36 — how it treats stuck and never-started sessions
 - docs/sprint.md:1 — window, lanes, what stops a task
+Resumed: 2026-10-21 11:18 UTC

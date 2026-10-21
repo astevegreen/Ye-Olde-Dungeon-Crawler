@@ -16,7 +16,6 @@ import {
   BASE_ACTION_COST,
   ExecuteChoiceAction,
   MeleeAttackAction,
-  ItemFactory,
   Monster,
   MovementAction,
   NPC,
@@ -42,9 +41,10 @@ import { makeLootItem } from './items/makeItem';
  * It teaches without a word of tutorial: walking and bump-fighting thralls, drinking when
  * hurt (the hero cannot die here, but is struck down at 1 HP and loses whoever is still
  * held), shooting a fleeing rime-wolf or a channelling warlock with Magic Arrow, picking
- * up the gift a freed villager drops. Each villager freed raises the townsfolk's standing,
- * so saving all three lowers Bjarnarhaven's prices for the run (`merchantPricing`), and
- * each one's kin remembers it. Freeing none costs nothing.
+ * up the gift a freed villager drops (Sigrun's is a Seiðr draught, the hero's first look at
+ * Seiðr). Each villager freed raises the townsfolk's standing, so saving all three lowers
+ * Bjarnarhaven's prices for the run (`merchantPricing`), and each one's kin remembers it.
+ * Freeing none costs nothing.
  *
  * Staged on the real town map (owner's choice, 2026-10-02), so it teaches the town too.
  */
@@ -78,7 +78,7 @@ interface Villager extends PrologueNpc {
   where: string;
   /** Logged as they run free; they drop `gift` where they stood. */
   freedMessage: string;
-  gift: { itemId: string } | { silver: number };
+  gift: { itemId: string };
 }
 
 export const PROLOGUE_VILLAGERS: Villager[] = [
@@ -101,8 +101,9 @@ export const PROLOGUE_VILLAGERS: Villager[] = [
     where: 'by Olaf’s store',
     position: { x: 12, y: 13 },
     greeting: 'Father barred the door with me still outside! Help me!',
-    freedMessage: 'Sigrun bolts for the longhouse, flinging back her purse: "Father would want you to have it!"',
-    gift: { silver: 12 },
+    // Sprint M4: her gift is the hero's first look at Seiðr, the well Magic Arrow draws on.
+    freedMessage: 'Sigrun bolts for the longhouse, leaving a Seiðr draught in the snow. “Your well runs dry fast. Drink, and aim true.”',
+    gift: { itemId: 'mana_potion' },
   },
   {
     id: 'prologue-brandr',
@@ -256,11 +257,7 @@ export const PROLOGUE_OBJECTIVES: ObjectiveDefinition[] = [
 ];
 
 function dropGift(ctx: EngineContext, villager: Villager, x: number, y: number): void {
-  const id = `${villager.id}-gift`;
-  const item = 'silver' in villager.gift
-    ? ItemFactory.createSilverCoins(id, villager.gift.silver)
-    : makeLootItem(villager.gift.itemId, id, ctx.rng);
-  ctx.map.addItemAt(x, y, item);
+  ctx.map.addItemAt(x, y, makeLootItem(villager.gift.itemId, `${villager.id}-gift`, ctx.rng));
 }
 
 function freeVillager(ctx: EngineContext, npc: NPC): void {

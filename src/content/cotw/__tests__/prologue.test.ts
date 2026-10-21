@@ -81,6 +81,21 @@ describe('cotw prologue: the night raid', () => {
     expect(engine.map.getItemsAt(x, y).some((i) => i.id === 'prologue-eir-gift')).toBe(true);
   });
 
+  it('Sigrun, freed, presses a Seiðr draught on the hero: the raid’s first look at Seiðr (sprint M4)', () => {
+    const engine = newRun();
+    const sigrun = villager(engine, 'prologue-sigrun');
+    const { x, y } = sigrun;
+    killCaptor(engine, sigrun);
+    standBeside(engine, sigrun);
+
+    step(engine, 1, 0);
+
+    const gift = engine.map.getItemsAt(x, y).find((i) => i.id === 'prologue-sigrun-gift');
+    expect(gift?.definitionId).toBe('mana_potion');
+    expect(gift?.name).toBe('Minor Seiðr Potion');
+    expect(engine.messages.some((m) => m.includes('“Your well runs dry fast. Drink, and aim true.”'))).toBe(true);
+  });
+
   it('frees a villager the moment the thrall holding them dies, with no step into them (GitHub #11)', () => {
     const engine = newRun();
     const eir = villager(engine, 'prologue-eir');

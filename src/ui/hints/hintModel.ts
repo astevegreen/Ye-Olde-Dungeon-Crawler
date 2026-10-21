@@ -5,6 +5,7 @@ import {
   isPrologueRunning,
   getMonsterDefinition,
   getRenownTotal,
+  learningStoneMarks,
   type BuiltInFirstTimeHintId,
   type FirstTimeHintDefinition,
   type FirstTimeHintTrigger,
@@ -22,7 +23,8 @@ export function hintFlag(id: string): string {
  * The systems the hero has come upon, judged from the game's state after a turn: a
  * companion at their side, renown earned, a Rune of Return carried, a faction standing
  * moved from where it began, a saga deed done, a creature with a kill rite in sight, an
- * unidentified item carried (worn containers included).
+ * unidentified item carried (worn containers included), the floor's shard carrier asleep in
+ * sight, a spell offered while every grimoire slot was full.
  */
 export function hintsMetByState(engine: GameEngine): BuiltInFirstTimeHintId[] {
   const met: BuiltInFirstTimeHintId[] = [];
@@ -56,6 +58,16 @@ export function hintsMetByState(engine: GameEngine): BuiltInFirstTimeHintId[] {
       );
     if (riteInSight) met.push('killRite');
   }
+
+  // The floor's shard carrier, asleep and in sight: the moment to choose how to take its shard.
+  if (!isPrologueRunning(engine.worldState, engine.manifest.prologue)) {
+    const carrierId = learningStoneMarks(engine).carrierId;
+    const carrier = carrierId ? engine.map.getEntityById(carrierId) : undefined;
+    if (carrier instanceof Monster && carrier.aiState === 'sleeping' && engine.fov.isVisible(carrier.x, carrier.y)) met.push('shardCarrier');
+  }
+
+  // A spell waits for a slot: every grimoire slot was full when it was offered.
+  if (p.pendingSpellOffers.length > 0) met.push('grimoireFull');
   return met;
 }
 

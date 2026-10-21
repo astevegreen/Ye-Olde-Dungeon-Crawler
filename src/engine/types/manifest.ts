@@ -1093,7 +1093,8 @@ export function resolveManaTerms(manifest?: { branding?: PackBranding }): ManaTe
  * The first-time hints presentation itself knows when to show, from the game's state (a
  * companion at the hero's side, the first renown, a Rune of Return carried, a faction
  * standing moved, the first saga deed, a creature with a kill rite seen, grimoires worth
- * arranging, an unidentified item carried) or from greeting the pact keeper. A pack's hint
+ * arranging, an unidentified item carried, a learning stone's shard carrier asleep in sight,
+ * a spell offered while every grimoire slot is full) or from greeting the pact keeper. A pack's hint
  * under any other id is shown by the events its `showOn` names. Each is shown once per hero
  * (`Player.tutorialFlags`).
  */
@@ -1106,7 +1107,9 @@ export type BuiltInFirstTimeHintId =
   | 'factionStanding'
   | 'story'
   | 'grimoire'
-  | 'unidentified';
+  | 'unidentified'
+  | 'shardCarrier'
+  | 'grimoireFull';
 
 /**
  * A game event that shows a first-time hint: its `type`, and optionally values it must

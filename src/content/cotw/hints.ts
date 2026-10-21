@@ -57,4 +57,12 @@ export const COTW_FIRST_TIME_HINTS: NonNullable<GameContentManifest['firstTimeHi
     title: 'Unknown things',
     text: 'Much of what the deep gives up hides its true name: Sage Mimir in town names such things for a fee, and a Scroll of Identify names one at once. At Intelligence 20 you may take the Lore-Keeper gift: each time you take the stairs, it names what you have carried since the last stairs.',
   },
+  shardCarrier: {
+    title: 'Hrefna the völva: the shard-carrier',
+    text: 'It dreams with a shard. Let it sleep, or wake it your own way.',
+  },
+  grimoireFull: {
+    title: 'Hrefna the völva: a full grimoire',
+    text: "Every slot is full, so the new spell waits in your Spellbook ({key:cast_spell}). Forget a spell, or give one as an altar's offering, and its slot is free, but that spell is gone for the rest of this run: neither a stone nor Astrid's rune tablets teach it again. From floor 31 down, Hel's altar adds a slot instead.",
+  },
 };

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { GameEngine, GameMap, TILES, Player, Item, Container, ProfileManager, MemoryStorage, type GameEvent } from '../../engine';
+import { GameEngine, GameMap, TILES, Player, Item, Container, Monster, ProfileManager, MemoryStorage, type GameEvent } from '../../engine';
 import { hintFlag, hintsMetByEvent, hintsMetByState, itemHintFlag, itemHintsMet, resolveHintText, unseenHints } from '../hints/hintModel';
 import { FirstTimeHints } from '../hints/firstTimeHints';
 import { cotwManifest } from '../../content/cotw';
@@ -168,6 +168,79 @@ describe('first-time hints', () => {
     // Lore-Keeper names only what was carried since the previous stairs (perks.ts, identifyCarriedSinceStairs).
     expect(text).toContain('since the last stairs');
     expect(text.split(/[.!?](?:\s|$)/).filter((s) => s.trim()).length).toBeLessThanOrEqual(2);
+  });
+
+  /** A floor-2 stone whose shard a monster at (x, y) carries; the hero stands at (10, 10). */
+  function carrierEngine(x: number, y: number, manifest: Record<string, unknown> = {}) {
+    const learningStones = { tileId: 'stone', shardItemId: 'shard', stones: [{ floor: 2 }], zones: [], messages: {} };
+    const engine = buildEngine({ magic: { learningStones }, ...manifest });
+    engine.currentFloor = 2;
+    const carrier = new Monster({ id: 'kobold', name: 'Kobold', position: { x, y }, stats: { hp: 5, maxHp: 5, attack: 1, defense: 0 } });
+    carrier.addItem(new Item({ id: 'shard-1', definitionId: 'shard', name: 'Shard', category: 'quest', weight: 1, bulk: 1 }));
+    engine.map.addEntity(carrier);
+    return { engine, carrier };
+  }
+
+  it("meets the shard-carrier hint while the floor's carrier sleeps in sight, not awake, unseen or without a stone", () => {
+    const { engine, carrier } = carrierEngine(12, 10);
+    expect(carrier.aiState).toBe('sleeping');
+    expect(hintsMetByState(engine)).toContain('shardCarrier');
+
+    carrier.aiState = 'hunting';
+    expect(hintsMetByState(engine)).not.toContain('shardCarrier');
+
+    expect(hintsMetByState(carrierEngine(19, 19).engine)).not.toContain('shardCarrier');
+
+    // The same monster on a floor with no stone carries nothing the hint is about.
+    const noStone = carrierEngine(12, 10).engine;
+    noStone.currentFloor = 3;
+    expect(hintsMetByState(noStone)).not.toContain('shardCarrier');
+
+    const dead = carrierEngine(12, 10);
+    dead.carrier.takeDamage(100);
+    dead.carrier.aiState = 'sleeping';
+    expect(dead.carrier.isAlive()).toBe(false);
+    expect(hintsMetByState(dead.engine)).not.toContain('shardCarrier');
+  });
+
+  it('does not meet the shard-carrier hint in the prologue', () => {
+    const { engine } = carrierEngine(12, 10, { prologue: { startFlag: 'raid_begun', endFlag: 'raid_over' } });
+    engine.worldState.flags.raid_begun = true;
+    expect(hintsMetByState(engine)).not.toContain('shardCarrier');
+    engine.worldState.flags.raid_over = true;
+    expect(hintsMetByState(engine)).toContain('shardCarrier');
+  });
+
+  it('meets the grimoire-full hint once a spell is offered with every slot full, not before', () => {
+    const engine = new ProfileManager(new MemoryStorage(), cotwManifest).createCharacter('Hild', { manifest: cotwManifest }).engine;
+    expect(engine.player.pendingSpellOffers).toEqual([]);
+    expect(hintsMetByState(engine)).not.toContain('grimoireFull');
+
+    let outcome = '';
+    for (const spell of cotwManifest.spells ?? []) {
+      outcome = engine.player.learnSpellResult(spell.id).outcome;
+      if (outcome === 'full') break;
+      expect(hintsMetByState(engine)).not.toContain('grimoireFull');
+    }
+    expect(outcome).toBe('full');
+    expect(engine.player.pendingSpellOffers.length).toBe(1);
+    expect(hintsMetByState(engine)).toContain('grimoireFull');
+  });
+
+  it('offers the shard-carrier and grimoire-full hints only from a pack that wrote them', () => {
+    expect(unseenHints(buildEngine({ firstTimeHints: HINTS }), ['shardCarrier', 'grimoireFull'])).toEqual([]);
+    expect(unseenHints(buildEngine({ firstTimeHints: cotwManifest.firstTimeHints }), ['shardCarrier', 'grimoireFull'])).toEqual([
+      'shardCarrier',
+      'grimoireFull',
+    ]);
+  });
+
+  it("cotw's völva speaks the sketch's line at a sleeping carrier, and says forgetting frees a slot for the rest of the run", () => {
+    expect(cotwManifest.firstTimeHints?.shardCarrier?.text).toBe('It dreams with a shard. Let it sleep, or wake it your own way.');
+    const full = cotwManifest.firstTimeHints?.grimoireFull?.text ?? '';
+    // Player.forgetSpell / forgetFromGrimoire: the slot is emptied and the spell never returns this run.
+    expect(full).toMatch(/Forget a spell[^.]*its slot is free[^.]*gone for the rest of this run/);
+    expect(full).toContain('Spellbook ({key:cast_spell})');
   });
 
   it("meets an item's first-pickup hint once the hero carries one, until it is shown", () => {

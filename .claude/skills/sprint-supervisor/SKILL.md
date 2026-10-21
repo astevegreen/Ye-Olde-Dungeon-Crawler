@@ -86,8 +86,10 @@ all.
 Then archive the finished sessions: each one holds about 500 MB on the host until it is archived, and dozens
 of them exhausted it on 21 Oct. Archive, with `archive_session` and the run's session id, the newest run of
 each title above when it is finished (after reading its run log), and every finished run of the triggers named
-"YODC sprint supervisor …" except your own. An archived run counts as finished. Never archive a running or
-stuck session, or one whose title does not start "YODC". If `archive_session` is not available, skip this.
+"YODC sprint supervisor …" except your own, once its `last_event_at` is over an hour old: a session that
+ended its turn on a background push or CI watch reads `idle` until that finishes, and archiving it would kill
+the push. An archived run counts as finished. Never archive a running or stuck session, or one whose title
+does not start "YODC". If `archive_session` is not available, skip this.
 
 ## 4. Status
 For each lane, the open `sprint-ready`, `in-progress`, `to-integrate`, `held` and `blocked` counts, and the

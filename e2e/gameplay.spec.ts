@@ -809,6 +809,38 @@ test("the log's history opens by key or label and spends no turn", async ({ page
   expect(await stackIds(page)).toEqual([]);
 });
 
+// Rest with HP and mana full says so at once, spends no turn, and a second press counts
+// up (×2), so the key never looks dead (sprint U6a). The HUD Rest button says it too.
+test('resting at full HP and mana says so in the log and spends no turn', async ({ page }) => {
+  await embarkNewHero(page);
+  await page.evaluate(() => {
+    const e = window.__cotwEngine!;
+    // The opening floor's countdown (the Coven's rite) refuses any rest first; end it.
+    for (const def of e.manifest?.timedEvents ?? []) {
+      if (def.resolvedFlag) e.setWorldFlag(def.resolvedFlag, true);
+      else e.setWorldFlag(def.startFlag, false);
+    }
+    const p = e.player;
+    p.hp = p.maxHp;
+    p.mana = p.maxMana;
+  });
+  const before = await state(page);
+  const newest = page.locator('#log-messages-stream .log-line-newest');
+
+  await page.keyboard.press('KeyR');
+  await expect(newest).toContainText('already fully rested');
+  await expect(newest).not.toHaveText(/\(×\d+\)$/);
+  expect((await state(page)).turn).toBe(before.turn);
+
+  await page.keyboard.press('KeyR');
+  await expect(newest).toHaveText(/already fully rested.*\(×2\)$/);
+  expect((await state(page)).turn).toBe(before.turn);
+
+  await page.locator('#btn-hud-rest').click();
+  await expect(newest).toHaveText(/already fully rested.*\(×3\)$/);
+  expect((await state(page)).turn).toBe(before.turn);
+});
+
 // Every way into the help card and the diagnostics registers it on the modal stack and
 // every way out takes it off (§6): the HUD Help button, F2, the card's X.
 test('the HUD Help button, F2 and the help card X keep the modal stack honest', async ({ page }) => {

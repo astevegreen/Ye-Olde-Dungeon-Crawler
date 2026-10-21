@@ -326,6 +326,48 @@ test.describe('a whole run', () => {
     await expect(page.locator('#btn-menu-new-game')).toBeVisible();
   });
 
+  test('focus stays inside the shop after a row click, a list switch and a trade', async ({ page }) => {
+    await embark(page);
+    const shopNpc = await page.evaluate(() => {
+      const e = window.__cotwEngine!;
+      const npc = e.map.getAllEntities().find((n) => (n as { shopId?: string }).shopId && e.merchants.get((n as { shopId?: string }).shopId!));
+      return npc ? { id: npc.id, x: npc.x, y: npc.y } : null;
+    });
+    expect(shopNpc).not.toBeNull();
+    await page.keyboard.press(await standBeside(page, shopNpc!));
+    await expect.poll(() => stackIds(page)).toContain('shop');
+
+    // Each of these redraws the whole dialog, which used to drop focus on the page body.
+    const focus = () =>
+      page.evaluate(() => {
+        const active = document.activeElement;
+        const inShop = Boolean(active && active !== document.body && document.getElementById('shop-dialog')?.contains(active));
+        return { inShop, row: active?.getAttribute('data-row') ?? null };
+      });
+    const activeTab = () => page.evaluate(() => window.__cotwInputHandler!.shopOverlay!.activeTab);
+
+    // A row clicked: it is selected, and keeps focus.
+    await page.locator('#shop-dialog .shop-row[data-row="1"]').click();
+    expect(await focus()).toEqual({ inShop: true, row: '1' });
+
+    // S, then B, switch lists with a row focused.
+    await page.locator('#shop-dialog .shop-row[data-row="1"]').focus();
+    await page.keyboard.press('s');
+    await expect.poll(activeTab).toBe('sell');
+    expect((await focus()).inShop).toBe(true);
+    await page.keyboard.press('b');
+    await expect.poll(activeTab).toBe('buy');
+    expect((await focus()).inShop).toBe(true);
+
+    // A buy: the first thing on the list, which the hero can afford.
+    await page.keyboard.press('ArrowUp');
+    const carried = () => page.evaluate(() => window.__cotwEngine!.player.inventory.getAllCarriedItems().length);
+    const before = await carried();
+    await pressUntil(page, 'Enter', async () => (await carried()) > before);
+    expect((await focus()).inShop).toBe(true);
+    await closeAll(page);
+  });
+
   test('the driven-off ending through the portal home', async ({ page }) => {
     await embark(page);
     await arriveAtTheLastFloor(page);

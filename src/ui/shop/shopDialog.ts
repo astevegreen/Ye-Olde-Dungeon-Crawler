@@ -15,6 +15,7 @@ import {
 } from '../../engine';
 import { createDialogScrim, dialogButton, dialogHtml } from '../dialog';
 import { escapeHtml, keyChip } from '../html';
+import { focusMark, restoreFocus } from '../keepFocus';
 import { formatLoad, formatWeight } from '../units';
 import { itemFrameClass, itemToneClass } from '../inventory/itemTone';
 import { itemDetailHtml } from '../inventory/itemDetail';
@@ -581,6 +582,8 @@ export class ShopDialog {
     // list that has just been switched.
     const keepScroll = this.freshList ? [] : SCROLLERS.map((sel) => [sel, scrim.querySelector?.(sel)?.scrollTop ?? 0] as const);
     this.freshList = false;
+    // So is the focused control: the rebuild removes it, and focus would fall to the page.
+    const focused = focusMark(scrim);
     const panel = this.panel(engine);
     const title = serviceTitle(engine, npc, this.merchant?.shopName);
     // What the last trade said sits at the top, under the greeting, where it is seen
@@ -626,6 +629,7 @@ export class ShopDialog {
       const el = scrim.querySelector?.(sel);
       if (el) el.scrollTop = top;
     }
+    restoreFocus(scrim, focused, '.shop-row.is-selected, .shop-choice.is-selected');
     this.bind(scrim, engine);
   }
 

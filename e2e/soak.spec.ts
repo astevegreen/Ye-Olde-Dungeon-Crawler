@@ -17,7 +17,8 @@ import {
   normalizeSignature,
   type ActionContext,
 } from './soak/oracles';
-import type { Finding, FindingCategory, FindingSeverity, ActionLogEntry, FloorPace, SoakSummary, SoakPolicy, SoakOpening } from './soak/types';
+import { countFindings } from './soak/oracleRules';
+import type { Finding, FindingCategory, FindingSeverity, FindingTag, ActionLogEntry, FloorPace, SoakSummary, SoakPolicy, SoakOpening } from './soak/types';
 
 /**
  * One overnight soak run (`SOAK=1`; kept out of the gate suite by playwright.config.ts).
@@ -303,7 +304,7 @@ test.describe('soak @soak', () => {
     const oracleState = createInitialOracleState(boundKeys);
     const runStartedAt = Date.now();
     const latencies: number[] = [];
-    const runSigs = new Map<string, { category: FindingCategory; severity: FindingSeverity; count: number }>();
+    const runSigs = new Map<string, { category: FindingCategory; severity: FindingSeverity; tag?: FindingTag; count: number }>();
     let artifacts = 0;
     let actionsPlayed = 0;
     let messagesSeen = await page.evaluate(() => (window as any).__soakLogTotal ?? 0);
@@ -336,10 +337,11 @@ test.describe('soak @soak', () => {
     const deepRepro = startFloor > 0 ? ` SOAK_START_FLOOR=${startFloor}${startLevel ? ` SOAK_START_LEVEL=${startLevel}` : ''}` : '';
     const repro = (i: number) =>
       `SOAK=1 SOAK_SEED=${seed} SOAK_POLICY=${policy} SOAK_OPENING=${opening}${deepRepro} SOAK_ACTIONS=${i + 1} npx playwright test e2e/soak.spec.ts --project=chromium --workers=1`;
-    const harnessFinding = (i: number, turn: number, floor: number, category: FindingCategory, severity: FindingSeverity, detail: string, frame?: string): Finding => ({
+    const harnessFinding = (i: number, turn: number, floor: number, category: FindingCategory, severity: FindingSeverity, detail: string, frame?: string, tag?: FindingTag): Finding => ({
       sig: normalizeSignature(category, detail, frame),
       category,
       severity,
+      ...(tag ? { tag } : {}),
       lens: policy,
       seed,
       opening,
@@ -362,7 +364,7 @@ test.describe('soak @soak', () => {
         seen.count++;
         return;
       }
-      runSigs.set(finding.sig, { category: finding.category, severity: finding.severity, count: 1 });
+      runSigs.set(finding.sig, { category: finding.category, severity: finding.severity, tag: finding.tag, count: 1 });
       // Evidence by weight: a trace (the last <= 30 s) for bugs and softlocks, a screenshot
       // for text, and the detail line alone for player-experience notes.
       const wantsTrace = finding.category === 'bug' || finding.category === 'softlock';
@@ -410,8 +412,7 @@ test.describe('soak @soak', () => {
         })
         .catch(() => ({ turn: -1, floor: -1, attack: 0, defense: 0, level: 0, stats: { str: 0, int: 0, con: 0, dex: 0 }, maxHp: 0, maxMana: 0, belowTurns: null }));
       const magic = await readMagic(page);
-      const findingCounts = { bug: 0, softlock: 0, text: 0, ux: 0 };
-      for (const s of runSigs.values()) findingCounts[s.category]++;
+      const findingCounts = countFindings(runSigs.values());
       const summary: SoakSummary = {
         seed,
         lens: policy,
@@ -609,7 +610,7 @@ test.describe('soak @soak', () => {
           if (answered) {
             const ms = Date.now() - pressedAt;
             latencies.push(ms);
-            if (ms > 250) await record(harnessFinding(i, pre.turn, pre.floor, 'ux', 'S4', `${measuredKey} took ${ms} ms to answer (over 250 ms)`));
+            if (ms > 250) await record(harnessFinding(i, pre.turn, pre.floor, 'ux', 'S4', `${measuredKey} took ${ms} ms to answer (over 250 ms)`, undefined, 'latency'));
           }
         }
 

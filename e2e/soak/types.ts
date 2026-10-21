@@ -4,11 +4,19 @@ export type FindingCategory = 'bug' | 'softlock' | 'text' | 'ux';
 export type FindingSeverity = 'S1' | 'S2' | 'S3' | 'S4';
 export type SoakPolicy = 'chaos' | 'player' | 'ui-sweep';
 export type SoakOpening = 'play' | 'skip';
+/**
+ * Marks a finding that is real but noisy, so counts can leave it out: `latency` is
+ * wall-clock and moves with machine load; `pacing` is the bot's route, not the game.
+ */
+export type FindingTag = 'latency' | 'pacing';
+/** Distinct signatures per category, tagged ones counted apart (`countFindings`). */
+export type FindingCounts = Record<FindingCategory, number> & { tagged: number };
 
 export interface Finding {
   sig: string;
   category: FindingCategory;
   severity: FindingSeverity;
+  tag?: FindingTag;
   lens: string;
   seed: number;
   opening: SoakOpening;
@@ -57,8 +65,8 @@ export interface SoakSummary {
     p95: number;
     max: number;
   };
-  /** Distinct signatures per category in this run. */
-  findingCounts: Record<FindingCategory, number>;
+  /** Distinct signatures per category in this run; tagged ones only under `tagged`. */
+  findingCounts: FindingCounts;
   /** Every signature seen in this run, with how many times it fired. */
   findings: Record<string, number>;
   raid: {

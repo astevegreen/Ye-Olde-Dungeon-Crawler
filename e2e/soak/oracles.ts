@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
-import type { Finding, FindingCategory, FindingSeverity, SoakOpening } from './types';
+import { RAID_SKIPPED, diedAfterRaid } from './oracleRules';
+import type { Finding, FindingCategory, FindingSeverity, FindingTag, SoakOpening } from './types';
 
 export interface ActionContext {
   actionIndex: number;
@@ -177,11 +178,12 @@ export async function runOracles(
   let curTurn = ctx.turnBefore;
   let curFloor = state.currentFloor;
 
-  const addFinding = (category: FindingCategory, severity: FindingSeverity, detail: string, topFrame?: string) => {
+  const addFinding = (category: FindingCategory, severity: FindingSeverity, detail: string, topFrame?: string, tag?: FindingTag) => {
     findings.push({
       sig: normalizeSignature(category, detail, topFrame),
       category,
       severity,
+      ...(tag ? { tag } : {}),
       lens: ctx.policy,
       seed: ctx.seed,
       opening: ctx.opening,
@@ -406,7 +408,7 @@ export async function runOracles(
     state.raidEndTurn = live.turn;
     state.raidLogLines = live.messageCount;
     state.raidEndedReason =
-      ctx.opening === 'skip' ? 'skipped (triage)' : live.struckDown ? 'struck down' : live.covenFled ? 'countdown' : 'warlocks slain';
+      ctx.opening === 'skip' ? RAID_SKIPPED : live.struckDown ? 'struck down' : live.covenFled ? 'countdown' : 'warlocks slain';
   } else if (state.raidEndedObserved && !state.raidEndChecked && state.raidEndTurn !== null && live.turn > state.raidEndTurn) {
     // One turn after the end: the pack's own hooks (the countdown's stop flag among them)
     // run on the step after the raid ends, so checking on the ending action itself is early.
@@ -487,12 +489,18 @@ export async function runOracles(
   }
   if (live.stairsSeen) state.stairsFoundOnFloor = true;
   if (live.floor > 0 && state.turnsOnCurrentFloor > 300 && !state.stairsFoundOnFloor) {
-    addFinding('ux', 'S4', `more than 300 turns on floor ${live.floor} without seeing the stairs down`);
+    addFinding('ux', 'S4', `more than 300 turns on floor ${live.floor} without seeing the stairs down`, undefined, 'pacing');
   }
 
-  if (!live.isAlive && state.raidEndTurn !== null && live.turn - state.raidEndTurn < 200) {
-    addFinding('ux', 'S4', `died ${live.turn - state.raidEndTurn} turns after the raid: ${live.messages.slice(-20).join(' | ')}`);
-  }
+  const raidDeath = diedAfterRaid({
+    isAlive: live.isAlive,
+    turn: live.turn,
+    raidEndTurn: state.raidEndTurn,
+    raidEndedReason: state.raidEndedReason,
+    opening: ctx.opening,
+    messages: live.messages,
+  });
+  if (raidDeath) addFinding('ux', 'S4', raidDeath);
 
   return findings;
 }

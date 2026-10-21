@@ -95,13 +95,16 @@ export class AutoRestManager {
 
   /**
    * Why a rest can't begin now, or null: `restRefusal`, nothing to recover, or a hostile
-   * already in sight. Every way of starting a rest asks this first.
+   * already in sight. Every way of starting a rest asks this first. HP and mana full with
+   * debt above what lingers until town is still something to recover: that rest settles it
+   * on its first turn (`stepRestTurn`).
    */
   public static startRefusal(engine: GameEngine): string | null {
     const refusal = this.restRefusal(engine);
     if (refusal) return refusal;
     const player = engine.player;
-    if (player.hp >= player.maxHp && player.mana >= player.maxMana) {
+    const debtToSettle = player.voidDebt > lingeringDebtFloor(engine, player.voidDebt);
+    if (player.hp >= player.maxHp && player.mana >= player.maxMana && !debtToSettle) {
       return `You are already fully rested (HP and ${resolveManaTerms(engine.manifest).name} full).`;
     }
     const hostile = this.findVisibleHostile(engine);

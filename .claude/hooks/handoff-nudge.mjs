@@ -56,6 +56,13 @@ try {
   process.exit(0);
 }
 
+// A sprint session (docs/sprint.md) runs unattended and reports to its issue log, never a handoff.
+const firstPrompt = entries.find((e) => e.type === 'user');
+const firstText = JSON.stringify(firstPrompt?.message?.content ?? '');
+if (/^"?\s*(<command-name>)?\/sprint-/.test(firstText) || firstText.includes('<command-name>/sprint-')) {
+  process.exit(0);
+}
+
 // A turn that ends by sending the owner to /clear or /handoff resume needs a note `list` will
 // offer: published by this session after its last commit, with no Resumed: line. Sessions that
 // resumed a note, worked on, and republished that claimed note sent the owner to an empty list.

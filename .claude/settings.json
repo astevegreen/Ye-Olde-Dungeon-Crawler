@@ -12,7 +12,8 @@
     "defaultMode": "auto",
     "allow": [
       "Bash(git push)",
-      "Bash(git push origin main)"
+      "Bash(git push origin main)",
+      "Bash(git -C C:/Antigravity/YODC-integrate push origin HEAD:main)"
     ],
     "deny": [
       "Read(dist/**)",

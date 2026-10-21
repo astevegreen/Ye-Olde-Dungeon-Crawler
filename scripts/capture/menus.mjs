@@ -194,6 +194,24 @@ async function shopScenes(page, tag) {
   }
 }
 
+// Hrefna's lines by the plaza fountain, on a new run: startRun's wait past the opening seats her.
+const HREFNA = 'g-hrefna';
+async function hrefnaScene(page, w, h) {
+  await newGame(page, w, h);
+  const seated = await page.evaluate(() => {
+    const e = window.__cotwEngine;
+    const n = e.map.getEntityById('npc-hrefna');
+    if (!n) return false;
+    e.map.moveEntity(e.player, n.x - 1, n.y);
+    e.updateFov();
+    window.__cotwRenderer.render();
+    return true;
+  });
+  if (!seated) { console.log(HREFNA, 'failed: Hrefna is not in town'); return; }
+  await key(page, 'ArrowRight');
+  await wait(page, 300);
+}
+
 const browser = await chromium.launch();
 const report = {};
 for (const [w, h] of want) {
@@ -220,6 +238,11 @@ for (const [w, h] of want) {
   }
   if (!filter || filter.test('shop')) await shopScenes(page, tag);
   if (!filter || filter.test(CRASH[0])) { await resetGame(page); await CRASH[1](page); await wait(page, 300); await page.screenshot({ path: OUT + '/' + CRASH[0] + '-' + tag + '.png' }); }
+  if (!filter || filter.test(HREFNA)) {
+    await hrefnaScene(page, w, h);
+    await page.screenshot({ path: `${OUT}/${HREFNA}-${tag}.png` });
+    report[`${HREFNA}-${tag}`] = await measure(page);
+  }
   for (const [name, end] of ENDS) {
     if (filter && !filter.test(name)) continue;
     await newGame(page, w, h);

@@ -112,4 +112,72 @@ test.describe('the opening', () => {
     expect(await page.evaluate(() => Boolean(window.__cotwEngine!.map.getEntityById('prologue-hallvard')))).toBe(false);
     await expect(page.locator('#console-objective')).toContainText('Gear up');
   });
+
+  test('after the raid: Hrefna by the fountain, her lines, and the first-spell objective', async ({ page }) => {
+    expect(existsSync(BUNDLE), `${BUNDLE} is missing; run \`npm run build\` first`).toBe(true);
+    await page.goto(pathToFileURL(BUNDLE).href);
+    await page.locator('#btn-menu-new-game').click();
+    await page.locator('#btn-create-embark').click();
+    await expect.poll(() => page.evaluate(() => Boolean(window.__cotwEngine?.player))).toBe(true);
+    await expect(page.locator('#controls-primer')).toBeVisible();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#controls-primer')).toBeHidden();
+
+    // The raid's end, as above: the thralls gone, the hero struck down, then Hallvard.
+    await page.evaluate(() => {
+      const e = window.__cotwEngine!;
+      for (const m of e.map.getAllEntities()) if (m.id.startsWith('prologue-monster-')) e.removeEntity(m);
+      e.player.takeDamage(999);
+    });
+    await unlocked(page);
+    await page.keyboard.press('Space');
+    await expect.poll(() => flag(page, 'cotw_prologue_ended')).toBe(true);
+    const hallvard = await page.evaluate(() => {
+      const n = window.__cotwEngine!.map.getEntityById('prologue-hallvard')!;
+      return { x: n.x, y: n.y };
+    });
+    await page.keyboard.press(await standWestOf(page, hallvard));
+    const choice = page.locator('#choice-modal-overlay');
+    await expect(choice).toBeVisible();
+    await page.waitForTimeout(250); // past the modal's open debounce
+    await page.keyboard.press('Enter');
+    await expect(choice).toBeHidden();
+    await expect.poll(() => flag(page, 'cotw_prologue_gateward_heard')).toBe(true);
+
+    // Hrefna sits west of the plaza fountain (HREFNA_POSITION in src/content/cotw/hrefna.ts).
+    const hrefna = { x: 27, y: 18 };
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const e = window.__cotwEngine!;
+          const n = e.map.getEntityById('npc-hrefna');
+          return n ? { floor: e.currentFloor, x: n.x, y: n.y } : null;
+        })
+      )
+      .toEqual({ floor: 0, ...hrefna });
+
+    // Walking into her opens her lines; Nod closes them and hands the keys back.
+    await page.keyboard.press(await standWestOf(page, hrefna));
+    await expect(choice).toBeVisible();
+    await expect(choice).toContainText('Hrefna the Völva');
+    await expect(choice).toContainText('Seiðr is borrowed');
+    await expect(choice.locator('.is-focused')).toContainText('Nod');
+    await page.waitForTimeout(250); // past the modal's open debounce
+    await page.keyboard.press('Enter');
+    await expect(choice).toBeHidden();
+    await unlocked(page);
+
+    // The owner's order (GitHub #33): "Gear up" in town, then "Learn your first spell" from the
+    // first floor down until a stone is read.
+    await expect(page.locator('#console-objective')).toContainText('Gear up');
+    await page.evaluate(() => window.__cotwEngine!.diagnostics.jumpToFloor(1));
+    await unlocked(page);
+    await page.keyboard.press('Space');
+    await expect(page.locator('#console-objective')).toContainText('Learn your first spell');
+
+    // Reading a stone (unit-tested) sets the flag; the objective goes on the next action.
+    await page.evaluate(() => window.__cotwEngine!.setWorldFlag('cotw_first_stone_read', true));
+    await page.keyboard.press('Space');
+    await expect(page.locator('#console-objective')).not.toContainText('Learn your first spell');
+  });
 });

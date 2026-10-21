@@ -5,9 +5,13 @@ import type { SoakPrng } from './prng';
 import type { BoundKeys } from './oracles';
 import type { DispatchedAction } from './policies';
 import { lineOfFire } from './lineOfFire';
+import { healReserve, shouldHeal } from './healPlan';
 
 /** `lineOfFire` as source text: the page can't import it, so each decision rebuilds it there. */
 const LINE_OF_FIRE_SRC = lineOfFire.toString();
+/** The heal decision and the damage-spell reserve (healPlan.ts), as source text like `lineOfFire`. */
+const SHOULD_HEAL_SRC = shouldHeal.toString();
+const HEAL_RESERVE_SRC = healReserve.toString();
 
 /**
  * The player bot's builds (P-36), so a soak compares play styles instead of one: the level-up
@@ -472,6 +476,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       lastCast: Record<string, number>;
       altarsTried: string[];
       lineOfFireSrc: string;
+      shouldHealSrc: string;
+      healReserveSrc: string;
     }) => {
       const w = window as any;
       const e = w.__cotwEngine;
@@ -1320,6 +1326,9 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         };
       };
       const healCast = () => castables.find((c) => c.type === 'heal');
+      // When to heal, and what a damage spell leaves for one (healPlan.ts, rebuilt from source).
+      const shouldHealFn = new Function(`return (${args.shouldHealSrc})`)() as typeof shouldHeal;
+      const healReserveFn = new Function(`return (${args.healReserveSrc})`)() as typeof healReserve;
       const escapeCast = () => castables.find((c) => c.type === 'movement' && (c.sp.targetType === 'self' || c.sp.targetingMode === 'self'));
       // Summons and terrain open a real fight; control goes on its biggest foe.
       const openingCast = () => {
@@ -1342,11 +1351,18 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         }
         return null;
       };
-      // The hardest-hitting damage spell that reaches a foe, leaving the mana for a heal while
-      // hurt; area spells only where the hero stands outside the blast, and score per foe caught.
+      // The hardest-hitting damage spell that reaches a foe, leaving the mana for a heal in a big
+      // fight or while hurt; area spells only where the hero stands outside the blast, and score
+      // per foe caught.
       const damageCast = (adjacentOnly: boolean) => {
         const heal = (p.quickSpells ?? []).map((id: string | null) => spellDefs.find((d: any) => d.id === id)).find((d: any) => d?.spellType === 'heal');
-        const reserve = heal && p.hp < p.maxHp * 0.7 ? heal.manaCost ?? 0 : 0;
+        const reserve = healReserveFn({
+          hp: p.hp,
+          maxHp: p.maxHp,
+          bigFight,
+          healCost: healCast()?.cost ?? null,
+          listedHealCost: heal ? heal.manaCost ?? 0 : null,
+        });
         const targets = [...awakeFoes].sort(
           (a: any, b: any) => Number(b.aiState === 'fleeing') - Number(a.aiState === 'fleeing') || a.hp - b.hp || cheb(a, p) - cheb(b, p)
         );
@@ -1689,8 +1705,22 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
 
       // --- 4. A dungeon floor --------------------------------------------------
       if (curFloor > 0) {
-        // Hurt: a heal spell first, while the mana lasts; a potion below that (P-36).
-        const heal = p.hp <= p.maxHp * 0.55 ? healCast() : undefined;
+        // Hurt: a heal spell first, while the mana lasts; a potion below that (P-36). In a big
+        // fight, an early top-up while the Seiðr runs to two Heals (healPlan.ts).
+        const healable = healCast();
+        const heal =
+          healable &&
+          shouldHealFn({
+            hp: p.hp,
+            maxHp: p.maxHp,
+            mana: p.mana,
+            healCost: healable.cost,
+            // A Heal of unknown strength never tops up early.
+            healPower: healable.sp.basePower ?? p.maxHp,
+            bigFight,
+          })
+            ? healable
+            : undefined;
         if (heal) return castAt(heal, 'heal');
         // Badly hurt in melee, or ringed by three: an escape spell before any scroll.
         const ringed = adjHostiles.length >= 3 && p.hp <= p.maxHp * 0.6;
@@ -2129,6 +2159,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       lastCast: state.lastCast,
       altarsTried: state.altarsTried,
       lineOfFireSrc: LINE_OF_FIRE_SRC,
+      shouldHealSrc: SHOULD_HEAL_SRC,
+      healReserveSrc: HEAL_RESERVE_SRC,
     }
   );
 

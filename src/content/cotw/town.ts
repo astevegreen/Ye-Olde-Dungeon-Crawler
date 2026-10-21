@@ -88,7 +88,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
       shopId: 'merchant-astrid',
       position: { x: 9, y: 27 },
       greeting: 'Potions and enchanted scrolls to ward off the dark...',
-      dialogText: 'Brewing against frost and venom is an art. Drink deeply before battle.',
+      dialogText: 'Brewing against frost and venom is an art. Drink deeply before battle. Go past a spell below without learning it, and my shelf will hold a rune tablet that teaches it.',
       merchantConfig: {
         id: 'merchant-astrid',
         name: "Astrid's Alchemy",

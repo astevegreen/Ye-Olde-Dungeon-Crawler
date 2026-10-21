@@ -105,7 +105,7 @@ export const SKALDIC_RUNESTONE_LORE: LoreEntryDefinition[] = [
     flag: 'skaldic_runestone_3_resolved',
     title: 'Lay of the Stolen Dawn',
     verse: 'In the high sky, Sól’s horses galloped, until iron nets dragged the golden chariot low.\nThe coven built the Siphon to harness the sun’s blinding wrath,\nheedless that the fires below would burn through the deep roots of the world.',
-    lore: 'At Odin’s Gallows-Stone, forge Fire onto Lightning Bolt (or Lightning onto Firebolt) for a Surtr-forged spell: it strikes as whichever of fire and lightning its target fears more, and lends both to its grimoire neighbours!',
+    lore: 'At Odin’s Gallows-Stone, forge Fire onto Hammer-Throw (or Lightning onto Firebolt) for a Surtr-forged spell: it strikes as whichever of fire and lightning its target fears more, and lends both to its grimoire neighbours!',
     forgePair: ['fire', 'lightning'],
   },
   {
@@ -119,14 +119,14 @@ export const SKALDIC_RUNESTONE_LORE: LoreEntryDefinition[] = [
     flag: 'skaldic_runestone_5_resolved',
     title: 'The Threads of Urðr',
     verse: 'Urðr sees what was, Verðandi what is, and Skuld what must be.\nThey whisper: the blood of Thrym was not made to serve the Aesir nor the Wyrm.\nIt was made to stand between them when the world-pillars crack.\nUnfurl the tempest of hail before entering the dragon’s lair!',
-    lore: 'At Odin’s Gallows-Stone, forge Lightning onto Cold Ray (or Cold onto Lightning Bolt) for a hail-forged spell: it strikes as whichever of cold and lightning its target fears more!',
+    lore: 'At Odin’s Gallows-Stone, forge Lightning onto Cold Ray (or Cold onto Hammer-Throw) for a hail-forged spell: it strikes as whichever of cold and lightning its target fears more!',
     forgePair: ['cold', 'lightning'],
   },
   {
     flag: 'skaldic_runestone_6_resolved',
     title: 'The Twilight Prophecy',
     verse: 'Beyond lies the Heartwood on Floor 50, where Níðhögg uncoils upon the shredded World Root.\nHe who slays the dragon with blind fury shall split the dying root and usher in Ragnarök.\nOnly the warrior who masters both wrath and restraint may preserve Midgard.\nArm yourself with the Thunderer’s wrath for the battle of your saga!',
-    lore: 'At Odin’s Gallows-Stone, forge Physical force onto Lightning Bolt for a thunder-forged spell: the Thunderer’s blow strikes as whichever of lightning and iron its target fears more!',
+    lore: 'At Odin’s Gallows-Stone, forge Physical force onto Hammer-Throw for a thunder-forged spell: the Thunderer’s blow strikes as whichever of lightning and iron its target fears more!',
     forgePair: ['lightning', 'physical'],
   },
 ];

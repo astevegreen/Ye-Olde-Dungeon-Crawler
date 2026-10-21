@@ -11,7 +11,7 @@ export const COTW_FIRST_TIME_HINTS: Partial<Record<FirstTimeHintId, FirstTimeHin
   },
   killRite: {
     title: 'Kill rites',
-    text: 'Some creatures give up their magic only when slain a certain way. The Bestiary ({key:compendium}) keeps a verse that hints at each one\'s rite.',
+    text: 'Spells come from broken learning stones: set a stone\'s shard in it, and it offers you a spell to learn. A creature of the floor carries the shard; slay it the way its kind\'s rite asks, and the stone\'s offer opens on the spot. The Bestiary ({key:compendium}) keeps a verse that hints at each one\'s rite.',
   },
   pactKeeper: {
     title: 'Pacts',
@@ -39,6 +39,6 @@ export const COTW_FIRST_TIME_HINTS: Partial<Record<FirstTimeHintId, FirstTimeHin
   },
   grimoire: {
     title: 'Your grimoires',
-    text: 'Where a spell sits in your grimoires shapes it: the stat on each axis grows away from the centre, and each spell lends something to the spells touching it. Open the Spellbook ({key:cast_spell}) and point at a slot to see what it does. Sage Mimir rearranges a grimoire\'s stats for a fee.',
+    text: 'A spell is cast only from a grimoire slot, and where it sits shapes it. Each axis starts unpicked: you pick its stat, which grows away from the centre, and each spell lends something to the spells touching it. Open the Spellbook ({key:cast_spell}) and point at a slot to see what it does; Hel\'s altar, or Sage Mimir for a fee, re-picks a grimoire\'s stats.',
   },
 };

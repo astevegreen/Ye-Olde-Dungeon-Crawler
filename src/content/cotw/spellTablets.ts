@@ -2,9 +2,10 @@ import { getCounter, incrementCounter } from '../../engine';
 import type { ActionHook, ItemDefinition, Predicate, SpellDefinition } from '../../engine';
 
 /**
- * Catch-up for spells a hero missed. Kill rites (killRites.ts) are the main way to learn
- * magic; once the hero has gone past the zone where a spell is normally learned, Astrid
- * sells a rune tablet that teaches it. Reading a tablet casts its "learn_*" spell, whose
+ * Catch-up for spells a hero missed. Learning stones (learningStones.ts) are the main way to
+ * learn a spell, and a carrier's kill rite (killRites.ts) is the shortcut to its stone's spell;
+ * once the hero has gone past the zone where a spell is normally learned, Astrid sells a rune
+ * tablet that teaches it. Reading a tablet casts its "learn_*" spell, whose
  * only effect is the engine's `learn_spell` primitive.
  */
 

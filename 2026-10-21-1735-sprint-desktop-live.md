@@ -4,9 +4,6 @@
 ## Goal
 Owner: "Move YODC's sprint to the desktop; Terminal Dusk stays on the laptop." Done: the "YODC Sprint" rc host runs on the desktop (env_0157HwSnMQCykikhVk9tpWUC), the supervisor triggers point at it and are on, and lanes started there at 17:33Z.
 
-## Decide first
-- R3 (#53, closed) read a soak cut short by the move (5 seeds), so its hearth-cold numbers are thin — recommend: leave it closed and let the owner pick from its proposal, because a re-soak costs lane time the sprint needs for M-issues.
-
 ## Done
 - d35b0b74 chore(sprint): point the supervisor at the desktop's rc environment
 - 04592eb4 fix(sprint): an archived lane session counts as finished, not stuck
@@ -20,6 +17,7 @@ Owner: "Move YODC's sprint to the desktop; Terminal Dusk stays on the laptop." D
 Complete
 
 ## Decisions
+- R3 stays closed on its thin sample — owner: "Leave R3 closed; I'll pick from its proposal."
 - Dead laptop lane sessions (aids, fixes, ux) archived by the owner in claude.ai.
 
 ## Dead ends

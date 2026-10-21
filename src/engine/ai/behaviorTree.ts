@@ -311,7 +311,11 @@ export class MonsterAI {
         monster.intent.turnsRemaining -= 1;
       }
 
-      if (monster.intent.turnsRemaining === 0) {
+      // A fast monster may act twice before the hero does: the strike waits until the hero
+      // has had a turn since the warning (an intent saved without the field strikes as before).
+      const declaredOnTurn = monster.intent.declaredOnTurn;
+      const heroHasActed = declaredOnTurn === undefined || engine.turnCount !== declaredOnTurn;
+      if (monster.intent.turnsRemaining === 0 && heroHasActed) {
         const targetTile = { ...monster.intent.targetTile };
         const ability = monster.intent.abilityName ?? 'Power Slam';
         const mult = monster.intent.multiplier ?? (monster.aiType === BUILTIN_AI_TYPES.BRUTE ? 2.5 : 2.0);

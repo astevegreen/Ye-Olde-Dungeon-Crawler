@@ -497,6 +497,7 @@ export class WindUpDeclareAction implements Action {
       warningMessage: this.warningMessage,
       // A family perk against this monster's family may warn the hero longer (Wyrm-Bane).
       turnsRemaining: (this.options?.turnsRemaining ?? 1) + sumAgainst(engine, engine.player, this.monster, 'windUpWarningBonus'),
+      declaredOnTurn: engine.turnCount,
       multiplier: this.options?.multiplier ?? 2.2,
       element: this.options?.element,
       spawnSurface: this.options?.spawnSurface,

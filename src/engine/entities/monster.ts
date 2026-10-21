@@ -49,6 +49,8 @@ export interface MonsterIntent {
   abilityName?: string;
   warningMessage?: string;
   turnsRemaining: number;
+  /** `engine.turnCount` when a wind-up was declared: it strikes only after the hero's next turn. */
+  declaredOnTurn?: number;
   multiplier?: number;
   element?: ElementType;
   statusOnHit?: { type: StatusType; duration: number; potency?: number };

@@ -7,7 +7,7 @@
  * Reads every `<folder>/<seed>/summary.json`; `--sha` keeps the runs of one game commit.
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { soakReport, type ReportSummary } from './lib/soak-report';
 
 /** `src/content/cotw/hearthCold.ts` HEARTH_COLD_STAGES, in turns below town. */
@@ -29,7 +29,7 @@ for (const dir of dirs) {
     if (!existsSync(file)) continue;
     try {
       const s = JSON.parse(readFileSync(file, 'utf-8')) as ReportSummary;
-      if (!sha || s.sha === sha) summaries.push(s);
+      if (!sha || s.sha === sha) summaries.push({ ...s, folder: resolve(dir) });
     } catch {
       console.error(`skipped ${file}: not JSON`);
     }

@@ -96,4 +96,20 @@ describe('soak report', () => {
     expect(report).toContain('skaldic_runestone_1=left 1');
     expect(report).toContain('| bug: magic: cast of slow succeeded without spending its turn | 2 | 4 |');
   });
+
+  it('counts the same seed in two folders as two affected runs', () => {
+    const twoFolders = soakReport([run(3, 'caster', 'first', { folder: 'player' }), run(3, 'caster', 'first', { folder: 'player-floor12' })], {
+      coldStages: [300],
+    });
+    expect(twoFolders).toContain('| bug: magic: cast of slow succeeded without spending its turn | 2 | 4 |');
+  });
+
+  it('counts the same seed in one folder, or with no folder, once', () => {
+    const oneFolder = soakReport([run(3, 'caster', 'first', { folder: 'player' }), run(3, 'caster', 'first', { folder: 'player' })], {
+      coldStages: [300],
+    });
+    expect(oneFolder).toContain('| bug: magic: cast of slow succeeded without spending its turn | 1 | 4 |');
+    const noFolder = soakReport([run(3, 'caster', 'first'), run(3, 'caster', 'first')], { coldStages: [300] });
+    expect(noFolder).toContain('| bug: magic: cast of slow succeeded without spending its turn | 1 | 4 |');
+  });
 });

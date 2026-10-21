@@ -21,6 +21,9 @@ interface FloorTally {
 
 export interface ReportSummary {
   seed: number;
+  /** The soak folder the summary was read from: with `seed`, it names the run. Two folders
+   *  can both have run seed 3, and those are two runs. */
+  folder?: string;
   startFloor: number;
   sha: string;
   partial: boolean;
@@ -298,12 +301,13 @@ export function soakReport(all: ReportSummary[], opts: ReportOptions): string {
 
   // --- 5. Is magic broken? -------------------------------------------------------
   out.push('\n## 5. Is magic broken?');
-  const fam = new Map<string, { seeds: Set<number>; count: number; example: string }>();
+  // A run is (folder, seed): seed 3 in two folders is two affected runs.
+  const fam = new Map<string, { seeds: Set<string>; count: number; example: string }>();
   for (const s of runs) {
     for (const [sig, n] of Object.entries(s.findings ?? {})) {
       const k = family(sig);
-      const e = fam.get(k) ?? { seeds: new Set<number>(), count: 0, example: sig };
-      e.seeds.add(s.seed);
+      const e = fam.get(k) ?? { seeds: new Set<string>(), count: 0, example: sig };
+      e.seeds.add(JSON.stringify([s.folder ?? '', s.seed]));
       e.count += n;
       fam.set(k, e);
     }

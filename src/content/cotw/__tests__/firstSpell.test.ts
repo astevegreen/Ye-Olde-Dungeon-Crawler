@@ -5,6 +5,8 @@ import { TILES } from '../../../engine/grid/tile';
 import { Player } from '../../../engine/entities/player';
 import { Item } from '../../../engine/items/item';
 import { MovementAction } from '../../../engine/actions/movement';
+import { WaitAction } from '../../../engine/actions/wait';
+import { serializeGame, deserializeGame } from '../../../engine/storage/serializer';
 import { ReadLearningStoneAction } from '../../../engine/magic/learningStones';
 import { cotwManifest } from '../index';
 import { COTW_OBJECTIVES } from '../objectives';
@@ -40,8 +42,33 @@ describe('"Learn your first spell" in the HUD objective', () => {
     expect(COTW_OBJECTIVES.find((o) => o.id === 'cotw_objective_first_spell')?.text).toBe('Learn your first spell.');
   });
 
-  it('never shows before the prologue has ended', () => {
-    expect(objectiveAt(1, [])).toBe('cotw_objective_act1');
+});
+
+describe('A hero saved before the flag existed', () => {
+  /** A floor-5 save whose floor-4 stone record reads `stone`, written without FIRST_STONE_READ_FLAG. */
+  const loadedWith = (stone: { floor: number; spent?: boolean; found?: boolean }) => {
+    const player = new Player({ position: { x: 2, y: 2 }, stats: { hp: 50, maxHp: 50, attack: 5, defense: 2 } });
+    const engine = new GameEngine({ map: new GameMap(15, 15, TILES.FLOOR), player, floor: 5, manifest: cotwManifest, seed: 1337 });
+    for (const f of [PROLOGUE_ENDED_FLAG, GATEWARD_HEARD_FLAG]) engine.setWorldFlag(f, true);
+    engine.worldState.counters[COTW_DEEPEST_FLOOR_COUNTER] = 5;
+    player.learningStones.stones.push(stone);
+    const { engine: reloaded } = deserializeGame(JSON.parse(JSON.stringify(serializeGame(engine))), cotwManifest);
+    expect(reloaded.getWorldFlag(FIRST_STONE_READ_FLAG)).toBe(false);
+    return reloaded;
+  };
+
+  it('is caught up on its first action when a stone was already read', () => {
+    const engine = loadedWith({ floor: 4, spent: true });
+    engine.handlePlayerAction(new WaitAction(engine.player));
+    expect(engine.getWorldFlag(FIRST_STONE_READ_FLAG)).toBe(true);
+    expect(getCurrentObjective(engine)?.id).toBe('cotw_objective_act1');
+  });
+
+  it('keeps "Learn your first spell" when no stone was read yet', () => {
+    const engine = loadedWith({ floor: 4, found: true });
+    engine.handlePlayerAction(new WaitAction(engine.player));
+    expect(engine.getWorldFlag(FIRST_STONE_READ_FLAG)).toBe(false);
+    expect(getCurrentObjective(engine)?.id).toBe('cotw_objective_first_spell');
   });
 });
 

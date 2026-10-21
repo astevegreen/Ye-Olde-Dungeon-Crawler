@@ -24,7 +24,8 @@ Stop when `date -u +%Y%m%dT%H%M` is outside the window on line 3 of `docs/sprint
 - Clear any half-finished git operation a stopped session left: run `git -C I cherry-pick --abort`,
   `git -C I revert --abort` and `git -C I rebase --abort`, each on its own, ignoring "no ... in progress".
 - `gh run list --workflow deploy.yml --branch main --limit 1 --json conclusion,status,headSha,url`. If it is
-  completed with conclusion `failure`, main is red: comment on issue #19 "Integrator: main is red at <headSha>
+  completed with conclusion `failure` and its `headSha` is `git -C I rev-parse origin/main` (a later push
+  with no run of its own is not red), main is red: comment on issue #19 "Integrator: main is red at <headSha>
   (<url>); integration paused." (once; skip if your previous comment there says the same) and stop. Another
   session or the owner fixes main first.
 

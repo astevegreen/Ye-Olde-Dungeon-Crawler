@@ -6,7 +6,7 @@ import { Player } from '../../entities/player';
 import { Monster } from '../../entities/monster';
 import { MonsterAI } from '../behaviorTree';
 import { MovementAction } from '../../actions/movement';
-import { WindUpDeclareAction } from '../../actions/combat';
+import { MeleeAttackAction, WindUpDeclareAction } from '../../actions/combat';
 import { cotwManifest } from '../../../content/cotw';
 import { createScaledMonster } from '../../dungeon/spawner';
 
@@ -53,5 +53,52 @@ describe('immobile turrets', () => {
       woundUp = MonsterAI.decideAction(turret, testEngine) instanceof WindUpDeclareAction;
     }
     expect(woundUp).toBe(true);
+  });
+});
+
+describe('a turret winds up only at a hero it perceives (B5)', () => {
+  const turretDef = cotwManifest.monsters.find((m) => m.aiType === 'immobile_turret' && m.telegraphedAbility)!;
+
+  /** A 15×15 hall, the hero at (5,5), a hunting cotw turret at `at`, every chance roll passing. */
+  function setup(at: { x: number; y: number }) {
+    const engine = new GameEngine({
+      map: new GameMap(15, 15, TILES.FLOOR),
+      player: new Player({ id: 'hero', position: { x: 5, y: 5 }, stats: { hp: 500, maxHp: 500, attack: 1, defense: 0 } }),
+      manifest: cotwManifest,
+      seed: 4,
+    });
+    engine.rng = () => 0;
+    const turret = createScaledMonster(turretDef, 'captive', at, turretDef.minFloor ?? 1);
+    turret.aiState = 'hunting';
+    turret.spellCooldown = 0;
+    engine.addEntity(turret);
+    return { engine, turret };
+  }
+
+  it('never winds up at a hero hidden in dense steam', () => {
+    for (let t = 0; t < 20; t++) {
+      const { engine, turret } = setup({ x: 8, y: 5 });
+      engine.surfaces.layGas(engine, 5, 5, 'dense_steam', 50);
+      expect(MonsterAI.decideAction(turret, engine)).not.toBeInstanceOf(WindUpDeclareAction);
+    }
+  });
+
+  it('never winds up while blinded', () => {
+    for (let t = 0; t < 20; t++) {
+      const { engine, turret } = setup({ x: 8, y: 5 });
+      turret.statusManager.applyStatus({ type: 'blindness', duration: 10 }, [], turret, engine);
+      expect(MonsterAI.decideAction(turret, engine)).not.toBeInstanceOf(WindUpDeclareAction);
+    }
+  });
+
+  it('winds up at a hero it sees', () => {
+    const { engine, turret } = setup({ x: 8, y: 5 });
+    expect(MonsterAI.decideAction(turret, engine)).toBeInstanceOf(WindUpDeclareAction);
+  });
+
+  it('still strikes a hero beside it in dense steam', () => {
+    const { engine, turret } = setup({ x: 6, y: 5 });
+    engine.surfaces.layGas(engine, 5, 5, 'dense_steam', 50);
+    expect(MonsterAI.decideAction(turret, engine)).toBeInstanceOf(MeleeAttackAction);
   });
 });

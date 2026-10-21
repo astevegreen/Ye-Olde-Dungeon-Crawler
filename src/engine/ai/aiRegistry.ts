@@ -306,15 +306,16 @@ export class ImmobileTurretStrategy implements AIStrategy {
       return new MeleeAttackAction(actor, player);
     }
 
-    const inSight = hasLineOfSight(engine, actor.x, actor.y, player.x, player.y);
+    // A wind-up or a cast needs a target it can see and perceives: casting at a wall wasted the
+    // spell and logged an unseen turret's name to the hero (R-ai-11), and a blinded turret, or
+    // one whose target hid in dense steam, still aimed its blast at it (B5).
+    const inSight = hasLineOfSight(engine, actor.x, actor.y, player.x, player.y) && perceives(engine, monster, player);
     if (inSight) {
       const windUp = telegraphedAbilityAction(engine, monster, player, chebyshevDist);
       if (windUp) return windUp;
     }
 
-    // A cast needs a target it can see and perceives, as the wind-up does: casting at a
-    // wall wasted the spell and logged an unseen turret's name to the hero (R-ai-11).
-    if (dist <= 6 && inSight && perceives(engine, monster, player)) {
+    if (dist <= 6 && inSight) {
       if (monster.spells && monster.spells.length > 0 && monster.spellCooldown <= 0 && castWouldReach(engine, monster, monster.spells[0], player.position)) {
         const chosenSpell = monster.spells[0];
         monster.spellCooldown = 2;

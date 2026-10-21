@@ -27,3 +27,4 @@ Sonnet 5.5 at low thinking. Each firing is a mechanical check-and-archive.
 
 ## Read first
 - `C:\Users\astev\.claude\projects\C--Antigravity-YODC\memory\rc-idle-sessions-memory.md` — why idle rc sessions are archived
+Resumed: 2026-10-21 23:46 UTC

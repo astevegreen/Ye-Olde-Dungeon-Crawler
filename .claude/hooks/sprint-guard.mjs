@@ -57,8 +57,8 @@ const ALWAYS = [
 for (const [re, why] of ALWAYS) if (re.test(command)) deny(why);
 
 const isPush = (w) => w[0] === 'git' && w.includes('push');
-// Git Bash writes C:/x as /c/x.
-const native = (p) => p.replace(/^\/([a-z])(\/|$)/i, '$1:/');
+// Git Bash on Windows writes C:/x as /c/x; elsewhere /c/x is a real path.
+const native = (p) => (process.platform === 'win32' ? p.replace(/^\/([a-z])(\/|$)/i, '$1:/') : p);
 // The main checkout has a `.git` folder; a linked worktree has a `.git` file.
 function isMainCheckout(dir) {
   let root = path.resolve(dir);

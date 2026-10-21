@@ -7,6 +7,7 @@ import type { DispatchedAction } from './policies';
 import { lineOfFire } from './lineOfFire';
 import { healReserve, shouldHeal } from './healPlan';
 import { telegraphChoice, telegraphExit } from './telegraphExit';
+import { quickBarMove } from './quickBarPlan';
 
 /** `lineOfFire` as source text: the page can't import it, so each decision rebuilds it there. */
 const LINE_OF_FIRE_SRC = lineOfFire.toString();
@@ -16,6 +17,8 @@ const HEAL_RESERVE_SRC = healReserve.toString();
 /** The way out of a telegraph one step can't clear, and the choice under one (telegraphExit.ts). */
 const TELEGRAPH_EXIT_SRC = telegraphExit.toString();
 const TELEGRAPH_CHOICE_SRC = telegraphChoice.toString();
+/** The next spell to put on the quick bar (quickBarPlan.ts). */
+const QUICK_BAR_MOVE_SRC = quickBarMove.toString();
 
 /**
  * The player bot's builds (P-36), so a soak compares play styles instead of one: the level-up
@@ -105,6 +108,10 @@ export interface PlayerBotState {
   statFailures: number;
   /** The cast whose aim the open targeting reticle is being moved to (P-36). */
   castPlan: CastPlan | null;
+  /** A spell being put on the quick bar through the Spellbook (quickBarPlan.ts); `pressed` once its digit was. */
+  quickWant: { spellId: string; slot: number; pressed: boolean } | null;
+  /** The last quick-bar move begun, as "spellId:slot:turn": the same one again that turn is not retried. */
+  quickLast: string;
   /** The turn each spell was last chosen, for the summon, terrain and control cooldowns. */
   lastCast: Record<string, number>;
   /** Spell altars ("floor:x:y") the bot has answered or found waiting, each once (P-36). */
@@ -161,6 +168,8 @@ export interface BotTelemetry {
   castsChosen: Partial<Record<CastKind, number>>;
   /** Learning-stone cards answered with a face. */
   stoneFacesRead: number;
+  /** Spells put on the quick bar through the Spellbook, so every castable spell gets cast. */
+  quickBarMoves: number;
   /** Spell altars reached, by "altarId:outcome": `performed`, `waits` (the altar refused to
    *  open), `no-offering` (nothing the bot can spare), `skipped` (a restat: the bot has no
    *  stat preference), `refused` (no choice the altar takes), `stuck` (the card never readied). */
@@ -296,6 +305,8 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
       lastUnspent: -1,
       statFailures: 0,
       castPlan: null,
+      quickWant: null,
+      quickLast: '',
       lastCast: {},
       altarsTried: [],
       altarPending: null,
@@ -320,6 +331,7 @@ export function getBotState(page: Page, actionIndex: number): PlayerBotState {
         heldPerks: {},
         castsChosen: {},
         stoneFacesRead: 0,
+        quickBarMoves: 0,
         altars: {},
         spellOffers: {},
         forgeOffers: {},
@@ -386,6 +398,11 @@ interface DecisionResult {
   cast?: CastPlan;
   /** The decision answered the open targeting reticle. */
   targeting?: boolean;
+  /** Z pressed to put this spell on this quick slot (quickBarPlan.ts). */
+  quickMove?: { spellId: string; slot: number };
+  /** The quick slot's digit was pressed in the Spellbook; `quickDone` once the menu is left. */
+  quickPressed?: boolean;
+  quickDone?: boolean;
   /** A learning stone's face was read. */
   stoneFace?: boolean;
   /** A spell altar's rite card was answered; `outcome` once the bot confirms or leaves. */
@@ -433,6 +450,8 @@ export interface PlayerDecisionContext {
  * Magic (P-36): it casts every spell on its quick bar by type: a heal when hurt, an escape
  * when badly hurt in melee or ringed, summons, terrain and control to open a real fight,
  * a blast or cone on two foes beside it, and the hardest-hitting damage spell from range.
+ * With no awake foe in sight it puts each spell it can cast but has off the bar onto it, in the
+ * Spellbook (quickBarPlan.ts), so every spell gets cast.
  * It hunts each floor's learning-stone carrier, takes the shard to the stone and reads the
  * face of the type it has fewest of. It walks onto each spell altar it sees and performs the
  * rite with an offering it can spare (no restat: it has no stat preference), forges a free
@@ -484,6 +503,9 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       healReserveSrc: string;
       telegraphExitSrc: string;
       telegraphChoiceSrc: string;
+      quickWant: { spellId: string; slot: number; pressed: boolean } | null;
+      quickLast: string;
+      quickBarMoveSrc: string;
     }) => {
       const w = window as any;
       const e = w.__cotwEngine;
@@ -971,6 +993,28 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         // However the menu got stuck, leave it after 40 decisions.
         if (args.charMenuDecisions >= 40) {
           return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor, useDone: true };
+        }
+
+        // A spell to put on the quick bar (quickBarPlan.ts), as a player does it: the Spellbook,
+        // the spell, the slot's digit, then out of the menu.
+        if (args.quickWant) {
+          const want = args.quickWant;
+          const done = { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor, quickDone: true };
+          if (want.pressed || p.quickSpells?.[want.slot] === want.spellId) return done;
+          if (modal && modal.activeTabId !== 'spellbook') {
+            return { action: { type: 'key' as const, key: 'KeyZ' }, curPos, curTurn, curFloor };
+          }
+          const book = modal?.tabs?.find?.((t: any) => t.id === 'spellbook');
+          if (book?.view === 'all') return { action: { type: 'key' as const, key: 'KeyV' }, curPos, curTurn, curFloor };
+          const list: any[] = book?.spells ?? [];
+          const target = list.findIndex((s: any) => s?.id === want.spellId);
+          const at = list.findIndex((s: any) => s?.id === book?.selectedSpell?.id);
+          if (target < 0 || at < 0) return done;
+          if (at !== target) {
+            const down = (target - at + list.length) % list.length;
+            return { action: { type: 'key' as const, key: down <= list.length - down ? 'ArrowDown' : 'ArrowUp' }, curPos, curTurn, curFloor };
+          }
+          return { action: { type: 'key' as const, key: want.slot === 9 ? 'Digit0' : `Digit${want.slot + 1}` }, curPos, curTurn, curFloor, quickPressed: true };
         }
 
         // A pack item to use (C2): the backpack panel, its cell, then Enter (drink or read).
@@ -1560,6 +1604,27 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
         }
         return null;
       };
+
+      // --- Quick bar: every spell the hero can cast goes on it (quickBarPlan.ts) ----
+      // Only with no awake foe in sight: the Spellbook takes no turn, but a fight comes first.
+      // The same move twice on one turn means the last one did not take: leave it.
+      if (!hostiles.some((m: any) => e.fov.isVisible(m.x, m.y) && m.aiState !== 'sleeping')) {
+        const quickBarMoveFn = new Function(`return (${args.quickBarMoveSrc})`)() as typeof quickBarMove;
+        const castable = (slotted ? [...slotted] : ((p.spellsKnown ?? []) as string[])).filter((id) => spellDefs.some((d: any) => d.id === id));
+        const castTally: Record<string, number> = {};
+        for (const f of Object.values<any>(w.__soakMagic?.floors ?? {})) {
+          for (const [id, n] of Object.entries<number>(f.casts ?? {})) castTally[id] = (castTally[id] ?? 0) + n;
+        }
+        const move = quickBarMoveFn({
+          castable,
+          quickBar: (p.quickSpells ?? []) as Array<string | null>,
+          casts: castTally,
+          heals: castable.filter((id) => spellDefs.find((d: any) => d.id === id)?.spellType === 'heal'),
+        });
+        if (move && `${move.spellId}:${move.slot}:${curTurn}` !== args.quickLast) {
+          return { action: { type: 'key' as const, key: 'KeyZ' }, curPos, curTurn, curFloor, quickMove: move };
+        }
+      }
 
       // --- 2. The Raid Phase ---------------------------------------------------
       const isRaid = Boolean(e.getWorldFlag('cotw_prologue_started')) && !e.getWorldFlag('cotw_prologue_ended');
@@ -2191,6 +2256,9 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       healReserveSrc: HEAL_RESERVE_SRC,
       telegraphExitSrc: TELEGRAPH_EXIT_SRC,
       telegraphChoiceSrc: TELEGRAPH_CHOICE_SRC,
+      quickWant: state.quickWant,
+      quickLast: state.quickLast,
+      quickBarMoveSrc: QUICK_BAR_MOVE_SRC,
     }
   );
 
@@ -2287,6 +2355,18 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
     if (evalResult.used === 'phase') tel.phaseDoors++;
     state.useWant = null;
     state.useKind = null;
+  }
+  // A spell for the quick bar: remembered from the Z press until the menu is left.
+  if (evalResult.quickMove) {
+    state.quickWant = { ...evalResult.quickMove, pressed: false };
+    state.quickLast = `${evalResult.quickMove.spellId}:${evalResult.quickMove.slot}:${curTurn}`;
+  } else if (state.quickWant) {
+    if (evalResult.quickPressed) {
+      state.quickWant.pressed = true;
+      tel.quickBarMoves++;
+    } else if (evalResult.quickDone || !evalResult.inCharMenu) {
+      state.quickWant = null;
+    }
   }
   if (evalResult.trapTried) {
     tel.disarmAttempts++;

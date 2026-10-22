@@ -33,15 +33,17 @@ describe('the cotw item sprites draw their own pixels', () => {
     Object.entries(COTW_ITEM_PIXEL_SPRITES).map(([id, sprite]) => [id, Array.from({ length: sprite.frames ?? 1 }, (_, f) => sprite.render(f, 64))]),
   );
   const first = Object.fromEntries(Object.entries(baked).map(([id, all]) => [id, all[0]]));
+  /** Byte comparison: `toEqual` walks a 16 384-byte array element by element, which timed out under load. */
+  const bytes = (px: Uint8ClampedArray) => Buffer.from(px.buffer, px.byteOffset, px.byteLength);
 
   it('bake 64 × 64 pixels, the same every time, and animated ones move', () => {
     expect(Object.values(COTW_ITEM_PIXEL_SPRITES).some((sprite) => (sprite.frames ?? 1) > 1)).toBe(true);
     for (const [id, sprite] of Object.entries(COTW_ITEM_PIXEL_SPRITES)) {
       expect(first[id].length).toBe(64 * 64 * 4);
-      expect(sprite.render(0, 64)).toEqual(first[id]);
-      if ((sprite.frames ?? 1) > 1) expect(baked[id][1], id).not.toEqual(first[id]);
+      expect([id, bytes(sprite.render(0, 64)).equals(bytes(first[id]))]).toEqual([id, true]);
+      if ((sprite.frames ?? 1) > 1) expect([id, bytes(baked[id][1]).equals(bytes(first[id]))]).toEqual([id, false]);
     }
-  }, 30_000);
+  });
 
   it('draw something and leave the corners clear', () => {
     for (const [id, px] of Object.entries(first)) {

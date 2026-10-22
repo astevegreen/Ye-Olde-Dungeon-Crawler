@@ -77,6 +77,10 @@ class FakeEl {
     return false;
   }
   public addEventListener(): void {}
+  public clicks = 0;
+  public click(): void {
+    this.clicks++;
+  }
   public focus(): void {
     if (this.isConnected && !this.hasAttribute('disabled')) this.doc.activeElement = this;
   }
@@ -243,5 +247,88 @@ describe('Shop focus across redraws', () => {
     root.innerHTML = '<button data-act="heal" disabled></button><button class="shop-choice is-selected" data-choice="0"></button>';
     restoreFocus(root as unknown as HTMLElement, mark, '.shop-choice.is-selected');
     expect(doc.activeElement?.getAttribute('data-choice')).toBe('0');
+  });
+});
+
+/**
+ * A service panel (temple, sage) keeps focus on the Choose button its click rebuilt, and
+ * the dialog let Enter and Space through: the browser clicked that button again on every
+ * press and every auto-repeat, past the arming and repeat guard (R6-4).
+ */
+describe('Service panel: Enter or Space on a focused button', () => {
+  let doc: FakeDoc;
+  let engine: GameEngine;
+  let shop: ShopDialog;
+  let now: number;
+
+  beforeEach(() => {
+    doc = new FakeDoc();
+    vi.stubGlobal('document', doc);
+    now = 0;
+    vi.spyOn(Date, 'now').mockImplementation(() => (now += 1000));
+    engine = new GameEngine({
+      map: new GameMap(20, 20),
+      player: new Player({ id: 'hero', name: 'Hero', position: { x: 5, y: 5 } }),
+      floor: 0,
+    });
+    vi.spyOn(engine.commandBus, 'dispatch').mockReturnValue({ success: true, message: 'Done.' });
+    shop = new ShopDialog();
+    const priest = new NPC({ id: 'npc_priest', name: 'Priest', position: { x: 6, y: 5 }, role: 'priest', dialogText: 'Peace.' });
+    shop.open(priest, null, engine);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  const scrim = () => shop.root as unknown as FakeEl;
+  const press = (k: string, repeat = false) => {
+    const event = { key: k, code: k === ' ' ? 'Space' : k, repeat, defaultPrevented: false, preventDefault() { this.defaultPrevented = true; } };
+    shop.handleKeyDown(event as unknown as KeyboardEvent, engine);
+    return event;
+  };
+
+  it('keeps focus on the rebuilt offer button, and swallows Enter and Space so the browser does not click it', () => {
+    const btn = scrim().querySelector('[data-act]');
+    expect(btn).not.toBeNull();
+    btn!.focus();
+    // A redraw (as after a click on Choose) puts focus back on the rebuilt button...
+    (shop as unknown as { render(): void }).render();
+    expect(doc.activeElement?.hasAttribute('data-act')).toBe(true);
+    // ...so the browser would turn Enter into a click on it unless the dialog swallows the key.
+    expect(press('Enter').defaultPrevented).toBe(true);
+    expect(press(' ').defaultPrevented).toBe(true);
+  });
+
+  it('presses the focused button once per key press, never on an auto-repeat', () => {
+    const btn = scrim().querySelector('[data-act]')!;
+    btn.focus();
+    press('Enter');
+    expect(btn.clicks).toBe(1);
+    expect(press('Enter', true).defaultPrevented).toBe(true);
+    expect(press(' ', true).defaultPrevented).toBe(true);
+    expect(btn.clicks).toBe(1);
+  });
+
+  it('holds Enter back in the first moment after the dialog opened', () => {
+    vi.mocked(Date.now).mockImplementation(() => now); // the clock stands still
+    const btn = scrim().querySelector('[data-act]')!;
+    btn.focus();
+    expect(press('Enter').defaultPrevented).toBe(true);
+    expect(btn.clicks).toBe(0);
+  });
+
+  it('presses nothing when focus is on the dialog itself or outside it', () => {
+    const btn = scrim().querySelector('[data-act]')!;
+    scrim().focus();
+    press('Enter');
+    const other = doc.createElement('button');
+    doc.body.appendChild(other);
+    other.focus();
+    press('Enter');
+    expect(btn.clicks).toBe(0);
+    expect(scrim().clicks).toBe(0);
+    expect(other.clicks).toBe(0);
   });
 });

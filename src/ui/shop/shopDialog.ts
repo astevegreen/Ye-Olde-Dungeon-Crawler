@@ -229,10 +229,25 @@ export class ShopDialog {
       this.selectChoice((panel.selected ?? 0) + (key === 'ArrowDown' ? 1 : -1), panel.choices.length);
       return true;
     }
+    // A click rebuilds the panel and focus returns to the rebuilt button, where the browser
+    // would turn each Enter or Space, auto-repeats too, into another click: the dialog
+    // presses it itself, once per press, past the same guard as the letter keys.
+    if (key === 'Enter' || key === ' ') {
+      event.preventDefault();
+      if (!this.holdsBack(event)) this.pressFocused();
+      return true;
+    }
     const offer = panel?.offers.find((o) => o.key === letter);
     if (offer && !offer.disabled && !this.holdsBack(event)) this.run(offer.act, engine, offer.arg);
     // Every other key is swallowed while the dialog is open.
     return true;
+  }
+
+  /** Clicks the enabled control that has focus inside the dialog, if any. */
+  private pressFocused(): void {
+    const active = typeof document === 'undefined' ? null : (document.activeElement as HTMLElement | null);
+    if (!active || !this.scrim || active === this.scrim || !this.scrim.contains(active)) return;
+    if (!active.hasAttribute('disabled')) active.click();
   }
 
   // ---- Merchant state ----------------------------------------------------------

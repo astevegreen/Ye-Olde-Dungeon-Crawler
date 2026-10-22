@@ -59,8 +59,8 @@ Work exists for:
 - a lane session (not `research`): the lane has a ready issue; or one labelled `in-progress`; or `blocked`
   with an owner reply; or `held` whose newest comment is an owner reply, or starts "Integrator:" and is newer
   than the newest comment starting "Lane:" (the same rules `sprint-lane` follows);
-- `YODC lane: research`: an open `lane:research` issue whose precondition in `docs/sprint.md` holds (R2 waits
-  for M3–M6 to close), or a research backlog ID with no issue yet;
+- `YODC lane: research`: an open `lane:research` issue whose precondition in `docs/sprint.md` holds (R4 waits
+  for the T5 issues to close, R5 for T6 and T7), or a research backlog ID with no issue yet;
 - a plan session: the lane has fewer than 3 open `sprint-ready` issues and its backlog has an ID that is not
   done. An ID is done when an issue title starts `[task] <ID>:` or `[task] <ID>` plus a letter and a colon.
   Get every title once with `gh issue list --state all --search "[task] in:title" --limit 500 --json title`

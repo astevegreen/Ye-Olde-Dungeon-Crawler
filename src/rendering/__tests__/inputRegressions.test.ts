@@ -346,6 +346,7 @@ describe('a keypress stops a rest even while effects hold input', () => {
 describe('B3 · a buffered arrow step never fires under a dialog that opened inside the chord window', () => {
   // Arrow, then I (or a click on a HUD button) within 40 ms: the step the chord buffer was
   // holding used to fire under the open dialog, a turn the paused monsters never answered (§6).
+  // S6 (R6 finding): the same for Look mode and the "Close which door?" prompt.
   afterEach(() => vi.useRealTimers());
 
   function chordHandler() {
@@ -423,6 +424,33 @@ describe('B3 · a buffered arrow step never fires under a dialog that opened ins
     ih.handleKeyDown(ev('ArrowRight'));
     (ih.mapOverlay as unknown as { isOpen: boolean }).isOpen = true;
     ih.handleKeyUp(ev('ArrowRight'));
+    vi.advanceTimersByTime(200);
+    ih.destroy();
+
+    expect(moves).toEqual([]);
+    expect(engine.player.position).toEqual({ x: 10, y: 10 });
+  });
+
+  it.each(['keyup', 'timer'] as const)('opening Look mode inside the window does not step the hero (dropped on %s)', (dropOn) => {
+    const { engine, ih, moves } = chordHandler();
+    ih.inspectOverlay = { isOpen: false, close() {}, moveCursor() {} } as never;
+
+    ih.handleKeyDown(ev('ArrowRight'));
+    (ih.inspectOverlay as unknown as { isOpen: boolean }).isOpen = true;
+    if (dropOn === 'keyup') ih.handleKeyUp(ev('ArrowRight'));
+    vi.advanceTimersByTime(200);
+    ih.destroy();
+
+    expect(moves).toEqual([]);
+    expect(engine.player.position).toEqual({ x: 10, y: 10 });
+  });
+
+  it.each(['keyup', 'timer'] as const)('the close-door prompt opening inside the window does not step the hero (dropped on %s)', (dropOn) => {
+    const { engine, ih, moves } = chordHandler();
+
+    ih.handleKeyDown(ev('ArrowRight'));
+    ih.pendingCloseDoorDirection = true;
+    if (dropOn === 'keyup') ih.handleKeyUp(ev('ArrowRight'));
     vi.advanceTimersByTime(200);
     ih.destroy();
 

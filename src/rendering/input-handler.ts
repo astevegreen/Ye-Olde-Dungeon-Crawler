@@ -265,9 +265,10 @@ export class InputHandler {
     this.chordBuffer = new ChordBuffer({
       onMove: (dx, dy) => {
         if (!this.enabled || this.isInputLocked) return;
-        // A step buffered before a dialog or the map opened is dropped, not run under it as
-        // a turn the paused monsters never answer (§6). The buffer has already let go of it.
+        // A step buffered before a dialog, the map, Look mode or the "Close which door?"
+        // prompt opened is dropped, not run under it (§6). The buffer has already let go of it.
         if (!this.modalStack.isEmpty() || this.mapOverlay?.isOpen) return;
+        if (this.inspectOverlay?.isOpen || this.pendingCloseDoorDirection) return;
         this.engine.handlePlayerAction(new MovementAction(this.engine.player, dx, dy));
         this.onActionProcessed();
       },

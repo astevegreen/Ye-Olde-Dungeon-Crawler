@@ -19,6 +19,12 @@ interface FloorTally {
   lent?: Record<string, Record<string, number>>;
 }
 
+interface EnergyTally {
+  actions: number;
+  debt: number;
+  debtEnergy: number;
+}
+
 export interface ReportSummary {
   seed: number;
   /** The soak folder the summary was read from: with `seed`, it names the run. Two folders
@@ -38,6 +44,8 @@ export interface ReportSummary {
     stones?: Record<string, string>;
     altars?: Record<string, string>;
     catalog?: Record<string, { type: string; stoneFrom: number | null; ownDamage?: boolean }>;
+    /** Absent from soaks before the energy counter (21 Oct 2026). */
+    energy?: Record<string, Record<'hero' | 'foes', EnergyTally>>;
   };
   pace?: Record<string, { turns: number; actions: number; wallMs: number; visits: number; firstTurn: number; spellsOnEntry: number }>;
   belowTurns?: number;
@@ -348,6 +356,29 @@ export function soakReport(all: ReportSummary[], opts: ReportOptions): string {
   );
   const belowEnd = town.map((s) => s.belowTurns).filter((x): x is number => typeof x === 'number');
   out.push(`At the run's end (the cold's own counter): median ${fmt(median(belowEnd))}, max ${belowEnd.length ? Math.max(...belowEnd) : '-'}.`);
+  out.push(
+    '\nEnergy spent per floor: actions, the share dearer than the energy banked (in debt), and the median debt energy per run (what the old floor at 0 forgave). `foes`: every actor but the hero.'
+  );
+  const withEnergy = runs.filter((s) => s.magic?.energy);
+  const energyRows: Array<Array<string | number>> = [];
+  const energyFloors = [...new Set(withEnergy.flatMap((s) => Object.keys(s.magic!.energy!).map(Number)))].sort((a, b) => a - b);
+  for (const f of energyFloors) {
+    const tallies = withEnergy
+      .map((s) => s.magic!.energy![String(f)])
+      .filter((t): t is NonNullable<typeof t> => Boolean(t) && (t.hero?.actions ?? 0) + (t.foes?.actions ?? 0) > 0);
+    if (!tallies.length) continue;
+    const cells = (who: 'hero' | 'foes') => {
+      const actions = tallies.reduce((a, t) => a + (t[who]?.actions ?? 0), 0);
+      const debt = tallies.reduce((a, t) => a + (t[who]?.debt ?? 0), 0);
+      return [actions, pct(debt, actions), median(tallies.map((t) => t[who]?.debtEnergy ?? 0))];
+    };
+    energyRows.push([f, tallies.length, ...cells('hero'), ...cells('foes')]);
+  }
+  out.push(
+    withEnergy.length
+      ? table(['floor', 'runs', 'hero actions', 'hero in debt', 'hero median debt energy', 'foe actions', 'foes in debt', 'foes median debt energy'], energyRows)
+      : 'No energy counts: the soak predates the energy counter.'
+  );
 
   // --- 4. Runestones -------------------------------------------------------------
   out.push('\n## 4. Do the Runestones matter?');

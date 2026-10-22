@@ -137,6 +137,18 @@ export interface MagicTelemetry {
    * that doesn't deals comes from what its neighbours lent it.
    */
   catalog: Record<string, { type: string; stoneFrom: number | null; ownDamage?: boolean }>;
+  /** Energy spent, by floor ("0": town and the raid), for the hero and every other actor
+   *  (`foes`). Absent from soaks before 21 Oct 2026. */
+  energy?: Record<string, { hero: EnergyTally; foes: EnergyTally }>;
+}
+
+/** One actor group's `consumeEnergy` calls on a floor. */
+interface EnergyTally {
+  actions: number;
+  /** Calls dearer than the energy banked before them. */
+  debt: number;
+  /** Over those calls, `amount - max(0, energy before)`: what the old floor at 0 forgave. */
+  debtEnergy: number;
 }
 
 /** One floor's pace (P-36): what the hero spent there, over every visit. */

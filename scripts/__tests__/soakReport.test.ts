@@ -91,6 +91,50 @@ describe('soak report', () => {
     expect(report).toContain('| 2 | 2 | 400 | 400 | 400 | 1 |');
   });
 
+  describe('energy debt per floor', () => {
+    const spent = (actions: number, debt: number, debtEnergy: number) => ({ actions, debt, debtEnergy });
+    const withEnergy = (seed: number, energy: NonNullable<ReportSummary['magic']>['energy']) =>
+      run(seed, 'caster', 'first', { magic: { ...run(seed, 'caster', 'first').magic!, energy } });
+    const energyReport = soakReport(
+      [
+        withEnergy(1, {
+          '1': { hero: spent(100, 10, 500), foes: spent(200, 50, 2000) },
+          '2': { hero: spent(0, 0, 0), foes: spent(0, 0, 0) },
+        }),
+        withEnergy(2, {
+          '1': { hero: spent(300, 30, 1500), foes: spent(200, 0, 0) },
+          '2': { hero: spent(0, 0, 0), foes: spent(0, 0, 0) },
+        }),
+      ],
+      { coldStages: [300] }
+    );
+    // The energy table: its header row down to the first line that is no table row.
+    const energyTable = (text: string): string[] => {
+      const lines = text.split('\n');
+      const start = lines.findIndex((l) => l.startsWith('| floor | runs | hero actions |'));
+      if (start < 0) return [];
+      const end = lines.findIndex((l, i) => i > start && !l.startsWith('|'));
+      return lines.slice(start, end < 0 ? undefined : end);
+    };
+
+    it('sums the actions, shares the debt, and takes the median debt energy over the runs', () => {
+      // Hero: 40 of 400 in debt, median of 500 and 1500; foes: 50 of 400, median of 2000 and 0.
+      expect(energyTable(energyReport)).toContain('| 1 | 2 | 400 | 10% | 1000 | 400 | 13% | 1000 |');
+    });
+
+    it('leaves out a floor with no actions', () => {
+      const rows = energyTable(energyReport);
+      expect(rows).toHaveLength(3);
+      expect(rows.some((l) => l.startsWith('| 2 |'))).toBe(false);
+    });
+
+    it('says an older soak predates the counter', () => {
+      expect(report).toContain('No energy counts: the soak predates the energy counter.');
+      expect(energyTable(report)).toEqual([]);
+      expect(energyReport).not.toContain('predates the energy counter');
+    });
+  });
+
   it('splits outcome by Runestone policy, and ranks magic findings by seeds', () => {
     expect(report).toMatch(/\| leave \| 0 \| 1 \| 1 \| 3 \|/);
     expect(report).toContain('skaldic_runestone_1=left 1');

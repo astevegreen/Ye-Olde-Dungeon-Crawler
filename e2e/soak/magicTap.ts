@@ -48,6 +48,7 @@ export async function tapMagic(page: Page): Promise<void> {
             return [sp.id, { type: sp.spellType ?? 'none', stoneFrom: from, ownDamage }];
           })
       ),
+      energy: {},
       // Events since the last time new spells were put down to a route.
       recent: [] as string[],
       anomalies: [] as string[],
@@ -124,6 +125,32 @@ export async function tapMagic(page: Page): Promise<void> {
         return result;
       };
       proto.__soakDamageTap = true;
+    }
+
+    // Energy every actor spends, and the spends dearer than what it had banked: since the floor
+    // at 0 went (e310fad6) those leave a debt, the energy the floor used to forgive.
+    let energyProto = Object.getPrototypeOf(e.player);
+    while (energyProto && !Object.prototype.hasOwnProperty.call(energyProto, 'consumeEnergy')) energyProto = Object.getPrototypeOf(energyProto);
+    if (energyProto && !energyProto.__soakEnergyTap) {
+      const original = energyProto.consumeEnergy;
+      energyProto.consumeEnergy = function (this: any, ...args: unknown[]) {
+        const before = this.energy;
+        const result = original.apply(this, args);
+        const amount = args[0];
+        const eng = w.__cotwEngine;
+        const byFloor = w.__soakMagic?.energy;
+        if (byFloor && typeof amount === 'number' && typeof before === 'number') {
+          const blank = () => ({ actions: 0, debt: 0, debtEnergy: 0 });
+          const row = (byFloor[String(eng?.currentFloor ?? 0)] ??= { hero: blank(), foes: blank() })[this === eng?.player ? 'hero' : 'foes'];
+          row.actions++;
+          if (amount > before) {
+            row.debt++;
+            row.debtEnergy += amount - Math.max(0, before);
+          }
+        }
+        return result;
+      };
+      energyProto.__soakEnergyTap = true;
     }
 
     // The hero's actions: what each one is, while it runs, and whether a cast spent the turn.

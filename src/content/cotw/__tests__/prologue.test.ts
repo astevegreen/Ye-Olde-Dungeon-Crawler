@@ -301,6 +301,18 @@ describe('cotw prologue: the night raid', () => {
     expect(engine.player.hp).toBe(engine.player.maxHp);
   });
 
+  it('a blow held at the HP floor as the coven flees still counts as struck down', () => {
+    const engine = newRun();
+    setFlag(engine.worldState, 'cotw_prologue_coven_fled', true);
+    engine.player.takeDamage(engine.player.hp + 100); // held at the HP floor
+    wait(engine);
+
+    expect(isPrologueRunning(engine.worldState, COTW_PROLOGUE)).toBe(false);
+    expect(engine.getWorldFlag('cotw_prologue_struck_down')).toBe(true);
+    expect(engine.messages.some((m) => m.includes('A blow takes you off your feet.'))).toBe(true);
+    expect(engine.messages.some((m) => m.includes('The chant breaks off.'))).toBe(false);
+  });
+
   it("Hallvard dies once his last words are heard, and the cellar opens", () => {
     const engine = newRun();
     engine.player.takeDamage(engine.player.hp + 100);

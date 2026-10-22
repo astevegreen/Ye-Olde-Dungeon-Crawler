@@ -351,6 +351,8 @@ function captorBeside(ctx: EngineContext, npc: NPC): Monster | undefined {
  */
 function endRaid(ctx: EngineContext): void {
   if (!isPrologueRunning(ctx.worldState, COTW_PROLOGUE)) return;
+  // A blow the HP floor held back strikes the hero down, even on the action the coven flees.
+  if (ctx.player.wasHeldAtHpFloor) setFlag(ctx.worldState, FLAG_STRUCK_DOWN, true);
   const struckDown = getFlag(ctx.worldState, FLAG_STRUCK_DOWN);
   setFlag(ctx.worldState, FLAG_COUNTDOWN_STOPPED, true);
   ctx.log(
@@ -455,14 +457,9 @@ const PROLOGUE_RAID_HOOK: ActionHook = {
       return;
     }
 
-    // The countdown ran out after the last action: the night ends first, so no villager
-    // goes free on a thrall's death once the coven has fled.
-    if (getFlag(engine.worldState, FLAG_COVEN_FLED)) {
-      endRaid(engine);
-      return;
-    }
-    if (engine.player.wasHeldAtHpFloor) {
-      setFlag(engine.worldState, FLAG_STRUCK_DOWN, true);
+    // The countdown ran out after the last action, or a blow struck the hero down: the night
+    // ends first, so no villager goes free on a thrall's death once it is over.
+    if (getFlag(engine.worldState, FLAG_COVEN_FLED) || engine.player.wasHeldAtHpFloor) {
       endRaid(engine);
       return;
     }

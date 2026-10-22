@@ -50,7 +50,8 @@ export const COTW_FIRST_TIME_HINTS: NonNullable<GameContentManifest['firstTimeHi
   },
   learningStone: {
     title: 'Hrefna the völva: the stone',
-    showOn: [{ type: 'learning_stone_read' }],
+    // Only a read that taught a spell: taking the Essence-Rune teaches nothing to slot.
+    showOn: [{ type: 'learning_stone_read', where: { learned: true } }],
     text: 'A spell taken from a stone sits in a grimoire slot, and only from a slot is it cast. An axis left unpicked waits for you to choose its stat: open the Spellbook ({key:cast_spell}) and pick it.',
   },
   unidentified: {

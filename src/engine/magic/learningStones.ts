@@ -459,11 +459,12 @@ export class ReadLearningStoneAction implements Action {
       message = formatMagicMessage(config.messages.learned, { spell: spell?.name ?? this.spellId, stone: stoneName(engine) }) + waiting;
       engine.log(message);
     }
+    // `learned` tells a read that taught a spell from one that made the shard a rune.
     engine.emitGameEvent({
       type: 'learning_stone_read',
       turn: engine.turnCount,
       actorId: this.entity.id,
-      data: { floor: engine.currentFloor, spellId: this.spellId ?? undefined, shortcut },
+      data: { floor: engine.currentFloor, spellId: this.spellId ?? undefined, learned: this.spellId !== null, shortcut },
     });
     const cost = this.entity.getActionCost(BASE_ACTION_COST);
     this.entity.consumeEnergy(cost);

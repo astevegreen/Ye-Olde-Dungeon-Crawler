@@ -49,7 +49,7 @@ describe('first-time hints', () => {
   it("offers Hrefna's Void Debt and stone hints once each, on their events, and not once flagged", () => {
     const engine = buildEngine({ firstTimeHints: cotwManifest.firstTimeHints });
     const debt: GameEvent = { type: 'void_debt_accrued', turn: 3, actorId: 'hero', data: { deficit: 4, totalDebt: 4, tier: 1 } };
-    const read: GameEvent = { type: 'learning_stone_read', turn: 3, actorId: 'hero', data: { floor: 2, spellId: 'spark', shortcut: false } };
+    const read: GameEvent = { type: 'learning_stone_read', turn: 3, actorId: 'hero', data: { floor: 2, spellId: 'spark', learned: true, shortcut: false } };
     expect(hintsMetByEvent(engine, debt)).toEqual(['voidDebt']);
     expect(hintsMetByEvent(engine, read)).toEqual(['learningStone']);
     expect(unseenHints(engine, [...hintsMetByEvent(engine, debt), ...hintsMetByEvent(engine, debt)])).toEqual(['voidDebt']);
@@ -58,6 +58,13 @@ describe('first-time hints', () => {
     engine.player.markTutorialSeen(hintFlag('learningStone'));
     expect(unseenHints(engine, hintsMetByEvent(engine, debt))).toEqual([]);
     expect(unseenHints(engine, hintsMetByEvent(engine, read))).toEqual([]);
+  });
+
+  it("leaves Hrefna's stone hint unseen when the read made the shard a rune and taught no spell", () => {
+    const engine = buildEngine({ firstTimeHints: cotwManifest.firstTimeHints });
+    const rune: GameEvent = { type: 'learning_stone_read', turn: 1, actorId: 'hero', data: { floor: 4, learned: false, shortcut: false } };
+    expect(hintsMetByEvent(engine, rune)).toEqual([]);
+    expect(hintsMetByEvent(engine, { type: 'learning_stone_read', turn: 1, data: { floor: 4, shortcut: false } } as any)).toEqual([]);
   });
 
   it("cotw's Seiðr hints use the pack's terms, name only bound keys and run two sentences at most", () => {

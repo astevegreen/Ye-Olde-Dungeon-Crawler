@@ -211,7 +211,9 @@ describe('Shard and stone', () => {
     expect(card.shortcut).toBe(false);
 
     const picked = card.faces[0].id;
+    const read = engine.beginEventCapture();
     expect(engine.handlePlayerAction(new ReadLearningStoneAction(player, picked)).success).toBe(true);
+    expect(read.find((e) => e.type === 'learning_stone_read')?.data).toMatchObject({ spellId: picked, learned: true });
     expect(player.spellsKnown).toEqual([picked]);
     expect(player.inventory.getAllCarriedItems().some((i) => i.definitionId === 'test_shard')).toBe(false);
     expect(learningStoneCard(engine)).toBeUndefined();
@@ -238,7 +240,9 @@ describe('Shard and stone', () => {
   it('turns the shard into a rune of a face when both are turned down', () => {
     player.addItem(shard());
     stepOn();
+    const read = engine.beginEventCapture();
     engine.handlePlayerAction(new ReadLearningStoneAction(player, null));
+    expect(read.find((e) => e.type === 'learning_stone_read')?.data?.learned).toBe(false);
     expect(player.spellsKnown).toEqual([]);
     expect(runes()).toHaveLength(1);
     expect(learningStoneCard(engine)).toBeUndefined();

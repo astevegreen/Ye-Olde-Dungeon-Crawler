@@ -29,6 +29,7 @@
 - A push deploys the Pages site, which other people play. The task's summary lists, one line each, what players will see change, or says "nothing player-visible".
 - Pre-push red: rerun once, since flakes are known. Red again: leave the commits unpushed and report the failure.
 - Push landed: run `npm run ci:watch` in the background. It waits for GitHub's deploy and browser runs, which run on Linux and can fail where the Windows hooks pass. Red: the site stays on the last green deploy, so read the failed log it names, fix, and push again.
+- A pull request's SonarCloud findings: `npm run sonar -- <pr>`. Never hand-write `gh api` loops for SonarCloud findings, `curl` sonarcloud.io or handle a SonarCloud token; findings past GitHub's limit are the owner's to read, signed in.
 - Ask first for force-pushes, history rewrites, deleting a branch or tag, and skipping hooks. The ask is two lines: why it isn't automatic, and what you recommend. Pruning merged local branches and stale worktrees needs no ask.
 
 ## Working with the owner

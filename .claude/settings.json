@@ -13,7 +13,8 @@
     "allow": [
       "Bash(git push)",
       "Bash(git push origin main)",
-      "Bash(git -C C:/Antigravity/YODC-integrate push origin HEAD:main)"
+      "Bash(git -C C:/Antigravity/YODC-integrate push origin HEAD:main)",
+      "Bash(npm run sonar:*)"
     ],
     "deny": [
       "Read(dist/**)",

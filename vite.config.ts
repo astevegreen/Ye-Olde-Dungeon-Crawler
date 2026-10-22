@@ -119,7 +119,9 @@ export default defineConfig(({ mode }) => {
       // when the tooling changed (scripts/gate-stamp.ts).
       projects: [
         { extends: true, test: { name: 'unit', exclude: TOOLING_TESTS } },
-        { extends: true, test: { name: 'tooling', include: TOOLING_TESTS } },
+        // Tooling setup builds throwaway git repos, which outlast the default 10 s hook limit
+        // when a soak shares the machine.
+        { extends: true, test: { name: 'tooling', include: TOOLING_TESTS, hookTimeout: 30_000 } },
       ],
     },
   };

@@ -32,3 +32,4 @@ Sonnet 5.5 at low thinking — a rebase, gates and a push.
 - `npm run sonar -- 17`: printed "Quality Gate passed", the five counts, "No findings."; no PR in this repo has had Sonar annotations yet, so the findings path is covered by the fake-gh tests only
 - sim, build, Playwright: not run (pre-push will)
 - Resumed once at 04:03 UTC (window still open, nothing done); this note replaces 2026-10-22-0333-sonar-findings-push.md
+Resumed: 2026-10-22 18:05 UTC

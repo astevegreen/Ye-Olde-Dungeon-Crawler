@@ -108,6 +108,32 @@ describe("Hliðskjálf's loot sensing stays on the floor it was cast on", () => 
     expect(objectSensedAt(engine, 40, 20)).toBe(false);
   });
 
+  it('cast again on a new floor while it lasts, senses near the new cast point', () => {
+    const { engine, hero } = floorTwo();
+    executeReveal(engine, hero, SIGHT, 12);
+    engine.changeFloor(3);
+    expect(engine.currentFloor).toBe(3);
+    expect(hero.statusManager.hasStatus(SENSING_OBJECTS_STATUS as StatusType)).toBe(true);
+    // The stairs put the hero somewhere new; a pile five paces west of where they stand.
+    const anchor = { x: hero.x, y: hero.y };
+    const near = { x: anchor.x > 5 ? anchor.x - 5 : anchor.x + 5, y: anchor.y };
+    pile(engine, near.x, near.y, 'near-rock');
+    expect(objectSensedAt(engine, near.x, near.y)).toBe(false);
+    executeReveal(engine, hero, SIGHT, 12);
+    expect(hero.statusManager.getStatus(SENSING_OBJECTS_STATUS)?.data).toEqual({ ...anchor, radius: 12, floor: 3 });
+    expect(objectSensedAt(engine, near.x, near.y)).toBe(true);
+  });
+
+  it('cast again on the same floor, follows the hero to the new cast point', () => {
+    const { engine, hero } = floorTwo();
+    executeReveal(engine, hero, SIGHT, 12);
+    expect(objectSensedAt(engine, 40, 20)).toBe(false);
+    hero.x = 35;
+    executeReveal(engine, hero, SIGHT, 12);
+    expect(objectSensedAt(engine, 40, 20)).toBe(true);
+    expect(objectSensedAt(engine, 20, 32)).toBe(false);
+  });
+
   it('Detect Objects still senses every tile on any floor', () => {
     const { engine, hero } = floorTwo();
     executeReveal(engine, hero, SIGHT, 12);

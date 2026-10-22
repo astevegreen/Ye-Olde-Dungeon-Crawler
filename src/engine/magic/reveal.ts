@@ -55,6 +55,9 @@ export function executeReveal(engine: GameEngine, caster: Entity, effect: Reveal
       return;
     case 'objects':
     case 'items': {
+      // A new cast re-anchors the sensing where it was cast: merging into the old status would
+      // keep the old floor and spot, and recasting on a new floor would sense nothing.
+      caster.statusManager.removeStatus(SENSING_OBJECTS_STATUS);
       caster.statusManager.applyStatus(
         { type: SENSING_OBJECTS_STATUS, duration, sourceEntityId: caster.id, data: { x: caster.x, y: caster.y, radius, floor: engine.currentFloor } },
         [],

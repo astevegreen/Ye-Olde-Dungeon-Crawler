@@ -38,3 +38,4 @@ Sonnet 5.5 at medium thinking: the close-out is a specified, mechanical deletion
 ## Verification
 - S2 be34383f: build and browsers/test green on CI (run 39820813252); deploy job queued since 17:21Z, never started
 - e3256bd2: build green; pending behind the stuck run at 18:23Z
+Resumed: 2026-10-22 18:40 UTC

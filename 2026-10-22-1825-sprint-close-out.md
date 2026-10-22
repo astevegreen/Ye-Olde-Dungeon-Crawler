@@ -25,6 +25,8 @@ Sonnet 5.5 at medium thinking: the close-out is a specified, mechanical deletion
 ## Decisions
 - U7 and S2 were retried from the main session, because the lane rules only count a reply from astevegreen and agents comment as greenbeanbot. Owner: "Once the soak is done, retry the two tasks".
 - S2 was parked until both R4 soaks had ended, and R4 ran both soaks. Owner: "Proceed as recommended".
+- Sprint machinery stays in for now. Owner: "Not yet"
+- Raise the tooling tests' setup limit as its own commit. Owner: "Yes, separate commit"
 
 ## Dead ends
 - `gh run cancel 39820813252` was denied by the auto-mode permission check, and so was a polling loop after it; `update_trigger` on the Thursday supervisor was refused, because it was created via http_api.

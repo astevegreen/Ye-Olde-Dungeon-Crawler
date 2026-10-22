@@ -7,6 +7,7 @@ import type { GameMap } from '../grid/map';
 import type { Item } from '../items/item';
 import type { ActionResult, Position } from '../types';
 import { BASE_ACTION_COST } from '../types';
+import { Visibility } from '../fov/types';
 import { createScaledItem } from '../dungeon/lootSpawner';
 import { getSpell } from './spellRegistry';
 import { formatMagicMessage, type LearningStoneConfig, type LearningStoneDefinition } from './magicConfig';
@@ -389,12 +390,18 @@ export function learningStoneCard(engine: GameEngine): LearningStoneCard | undef
   };
 }
 
-/** What the map marks for this floor's stone: the stone while its shard is held, and the carrier. */
+/**
+ * What the map marks for this floor's stone, and its living carrier. The stone is marked until
+ * it is spent, once the hero has seen its tile or holds its shard; an unseen stone stays unmarked.
+ */
 export function learningStoneMarks(engine: GameEngine): { stone?: Position; carrierId?: string } {
   const config = getLearningStoneConfig(engine);
   if (!config || !stoneDefinitionFor(config, engine.currentFloor)) return {};
-  const stone = holdsStoneShard(engine) ? findLearningStone(engine) : undefined;
-  return { stone, carrierId: stoneCarrier(engine)?.id };
+  const carrierId = stoneCarrier(engine)?.id;
+  if (recordFor(engine.player, engine.currentFloor)?.spent) return { stone: undefined, carrierId };
+  const at = findLearningStone(engine);
+  const seen = !!at && engine.fov.getVisibility(at.x, at.y) !== Visibility.Unexplored;
+  return { stone: seen || holdsStoneShard(engine) ? at : undefined, carrierId };
 }
 
 /**

@@ -13,6 +13,7 @@ import { PickUpAction } from '../../actions/inventory-actions';
 import { ClimbStairsAction } from '../../actions/stairs';
 import { effectiveManaCost } from '../castNumbers';
 import { DungeonArc } from '../../quest/dungeonArc';
+import { Visibility } from '../../fov/types';
 import { deserializeGame, serializeGame } from '../../storage/serializer';
 import {
   learningStoneCard,
@@ -157,8 +158,12 @@ describe('Shard and stone', () => {
     expect(engine.messages.some((m: string) => m.includes('Carrier carries the shard of Broken Stone'))).toBe(true);
   });
 
-  it('marks the stone once the shard is picked up, and the carrier while it lives', () => {
+  /** The hero has never seen the stone's tile at (3, 2). */
+  const unseeStone = () => engine.fov.setVisibility(3, 2, Visibility.Unexplored);
+
+  it('marks an unseen stone once the shard is picked up, and the carrier while it lives', () => {
     const m = carrier();
+    unseeStone();
     expect(learningStoneMarks(engine)).toEqual({ stone: undefined, carrierId: m.id });
     DeathResolver.resolveDeath(engine, undefined, m);
     const dropped = engine.map.getItemsAt(m.x, m.y).find((i) => i.definitionId === 'test_shard');
@@ -168,6 +173,44 @@ describe('Shard and stone', () => {
     engine.handlePlayerAction(new PickUpAction(player, dropped!.id));
     expect(engine.messages.some((l: string) => l.includes('The shard marks Broken Stone'))).toBe(true);
     expect(learningStoneMarks(engine)).toEqual({ stone: { x: 3, y: 2 }, carrierId: undefined });
+  });
+
+  describe('the mark on a stone the hero has seen', () => {
+    it('stays while the carrier still holds the shard, in sight or remembered', () => {
+      const m = carrier();
+      expect(engine.fov.getVisibility(3, 2)).toBe(Visibility.Visible);
+      expect(learningStoneMarks(engine)).toEqual({ stone: { x: 3, y: 2 }, carrierId: m.id });
+      engine.fov.setVisibility(3, 2, Visibility.Explored);
+      expect(learningStoneMarks(engine)).toEqual({ stone: { x: 3, y: 2 }, carrierId: m.id });
+    });
+
+    it('is not shown for a stone never seen whose shard the hero lacks', () => {
+      const m = carrier();
+      unseeStone();
+      expect(learningStoneMarks(engine)).toEqual({ stone: undefined, carrierId: m.id });
+    });
+
+    it('goes once a spell is read from it', () => {
+      player.addItem(shard());
+      stepOn();
+      engine.handlePlayerAction(new ReadLearningStoneAction(player, learningStoneCard(engine)!.faces[0].id));
+      const m = carrier('c2');
+      expect(engine.fov.getVisibility(3, 2)).not.toBe(Visibility.Unexplored);
+      expect(learningStoneMarks(engine)).toEqual({ stone: undefined, carrierId: m.id });
+    });
+
+    it('goes once the shard turns into a rune, at the stone or on leaving the floor', () => {
+      player.addItem(shard());
+      stepOn();
+      engine.handlePlayerAction(new ReadLearningStoneAction(player, null));
+      expect(learningStoneMarks(engine).stone).toBeUndefined();
+
+      build(6);
+      player.addItem(shard());
+      shardFadesOnLeaving(engine);
+      expect(engine.fov.getVisibility(3, 2)).not.toBe(Visibility.Unexplored);
+      expect(learningStoneMarks(engine).stone).toBeUndefined();
+    });
   });
 
   describe('the way to the stone', () => {

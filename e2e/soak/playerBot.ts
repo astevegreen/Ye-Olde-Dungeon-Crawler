@@ -8,6 +8,7 @@ import { lineOfFire } from './lineOfFire';
 import { healReserve, shouldHeal } from './healPlan';
 import { telegraphChoice, telegraphExit } from './telegraphExit';
 import { quickBarMove } from './quickBarPlan';
+import { controlTarget, shouldReveal } from './oddSpellPlan';
 
 /** `lineOfFire` as source text: the page can't import it, so each decision rebuilds it there. */
 const LINE_OF_FIRE_SRC = lineOfFire.toString();
@@ -19,6 +20,9 @@ const TELEGRAPH_EXIT_SRC = telegraphExit.toString();
 const TELEGRAPH_CHOICE_SRC = telegraphChoice.toString();
 /** The next spell to put on the quick bar (quickBarPlan.ts). */
 const QUICK_BAR_MOVE_SRC = quickBarMove.toString();
+/** Control spells' targets, a swap's included, and when to cast an untyped self spell (oddSpellPlan.ts). */
+const CONTROL_TARGET_SRC = controlTarget.toString();
+const SHOULD_REVEAL_SRC = shouldReveal.toString();
 
 /**
  * The player bot's builds (P-36), so a soak compares play styles instead of one: the level-up
@@ -122,7 +126,7 @@ export interface PlayerBotState {
 }
 
 /** Why the bot chose a spell (P-36): what the cast was for, by spell type. */
-type CastKind = 'heal' | 'escape' | 'summon' | 'terrain' | 'control' | 'damage' | 'snipe';
+type CastKind = 'heal' | 'escape' | 'summon' | 'terrain' | 'control' | 'damage' | 'snipe' | 'reveal';
 
 /** A spell the bot chose: its quick key was pressed, and a reticle goes to (x, y) or `targetId`. */
 interface CastPlan {
@@ -506,6 +510,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       quickWant: { spellId: string; slot: number; pressed: boolean } | null;
       quickLast: string;
       quickBarMoveSrc: string;
+      controlTargetSrc: string;
+      shouldRevealSrc: string;
     }) => {
       const w = window as any;
       const e = w.__cotwEngine;
@@ -1380,7 +1386,19 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       const shouldHealFn = new Function(`return (${args.shouldHealSrc})`)() as typeof shouldHeal;
       const healReserveFn = new Function(`return (${args.healReserveSrc})`)() as typeof healReserve;
       const escapeCast = () => castables.find((c) => c.type === 'movement' && (c.sp.targetType === 'self' || c.sp.targetingMode === 'self'));
-      // Summons and terrain open a real fight; control goes on its biggest foe.
+      // Whether the hero wants a Heal now; with none castable, only the life threshold counts.
+      const wantsHeal = () =>
+        shouldHealFn({
+          hp: p.hp,
+          maxHp: p.maxHp,
+          mana: p.mana,
+          healCost: healCast()?.cost ?? Infinity,
+          healPower: healCast()?.sp.basePower ?? p.maxHp,
+          bigFight,
+        });
+      const controlTargetFn = new Function(`return (${args.controlTargetSrc})`)() as typeof controlTarget;
+      // Summons and terrain open a real fight; control holds its biggest foe, and a swap (Loki's
+      // Switch) goes on the farthest (oddSpellPlan.ts, rebuilt from source).
       const openingCast = () => {
         if (!bigFight) return null;
         const summon = castables.find((c) => c.type === 'summon' && ready(c));
@@ -1390,16 +1408,43 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           const t = awakeFoes.find((m: any) => cheb(m, p) > area && reaches(c.sp, m));
           if (t) return castAt(c, 'terrain', { x: t.x, y: t.y });
         }
-        const biggest = [...awakeFoes].sort((a: any, b: any) => b.maxHp - a.maxHp || cheb(a, p) - cheb(b, p))[0];
-        if (biggest && biggest.hp > biggest.maxHp * 0.3) {
-          for (const c of castables.filter((k) => k.type === 'control' && ready(k))) {
-            const status = statusOf(c.sp);
-            // Loki's Switch moves foes rather than holding one: not a control cast for the bot.
-            if (!status || biggest.statusManager?.hasStatus?.(status) || !reaches(c.sp, biggest)) continue;
-            return castAt(c, 'control', biggest);
-          }
+        for (const c of castables.filter((k) => k.type === 'control')) {
+          const status = statusOf(c.sp) ?? null;
+          const id = controlTargetFn({
+            bigFight,
+            ready: ready(c),
+            status,
+            wantsHeal: status === null && wantsHeal(),
+            foes: awakeFoes.map((m: any) => ({
+              id: String(m.id),
+              dist: cheb(m, p),
+              hp: m.hp,
+              maxHp: m.maxHp,
+              reached: reaches(c.sp, m),
+              hasStatus: status !== null && Boolean(m.statusManager?.hasStatus?.(status)),
+            })),
+          });
+          const t = id === null ? undefined : awakeFoes.find((m: any) => String(m.id) === id);
+          if (t) return castAt(c, 'control', t);
         }
         return null;
+      };
+      // A self spell with no type (Hliðskjálf): a look over a fresh floor (oddSpellPlan.ts).
+      const shouldRevealFn = new Function(`return (${args.shouldRevealSrc})`)() as typeof shouldReveal;
+      const revealCast = () => {
+        const floorTally = w.__soakMagic?.floors?.[String(curFloor)];
+        const awakeInSight = hostiles.some((m: any) => e.fov.isVisible(m.x, m.y) && m.aiState !== 'sleeping');
+        const stairsSeen = findStairs('down') !== null;
+        return castables.find(
+          (c) =>
+            !c.type &&
+            (c.sp.targetType === 'self' || c.sp.targetingMode === 'self') &&
+            shouldRevealFn({
+              awakeFoeInSight: awakeInSight,
+              downStairsSeen: stairsSeen,
+              triedThisFloor: (floorTally?.casts?.[c.id] ?? 0) + (floorTally?.failed?.[c.id] ?? 0),
+            })
+        );
       };
       // The hardest-hitting damage spell that reaches a foe, leaving the mana for a heal in a big
       // fight or while hurt; area spells only where the hero stands outside the blast, and score
@@ -1916,6 +1961,11 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           }
         }
 
+        // Channelling a spell (Hliðskjálf takes two turns): wait, since any other action breaks it.
+        if (p.statusManager?.hasStatus?.('spell_channel')) {
+          return { action: { type: 'key' as const, key: 'Space' }, curPos, curTurn, curFloor };
+        }
+
         // Two or more foes closing in on open ground: back into a corridor or doorway, so they
         // come one at a time (C2). A nook is a tile with two open neighbours at most.
         const closing = hostiles.filter((m: any) => m.aiState !== 'sleeping' && e.fov.isVisible(m.x, m.y) && cheb(m, p) <= 3);
@@ -1970,6 +2020,9 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
             return { action: { type: 'key' as const, key: 'KeyR' }, curPos, curTurn, curFloor, restAttempted: true };
           }
         }
+
+        const reveal = revealCast();
+        if (reveal) return castAt(reveal, 'reveal');
 
         // A trap found underfoot or beside the hero: try to disarm it, once, with nothing in sight.
         if (visibleHostiles.length === 0) {
@@ -2259,6 +2312,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       quickWant: state.quickWant,
       quickLast: state.quickLast,
       quickBarMoveSrc: QUICK_BAR_MOVE_SRC,
+      controlTargetSrc: CONTROL_TARGET_SRC,
+      shouldRevealSrc: SHOULD_REVEAL_SRC,
     }
   );
 

@@ -148,6 +148,13 @@ export const cotwManifest: GameContentManifest = {
     '"The Norns spin for the bold and the wary alike; only the careless find their thread cut short."',
   ],
   firstTimeHints: COTW_FIRST_TIME_HINTS,
+  // F1's Spellbook and aiming cards: how Seiðr comes back (resting, the temple, potions) and
+  // where spells come from (learningStones.ts, killRites.ts, Astrid's tablets).
+  helpNotes: {
+    spellbook:
+      'Seiðr returns as you rest, at the Temple of Thor and from Seiðr potions. Spells come from broken runestones (bring each the shard a monster of its floor holds), kill rites, and Astrid’s tablets for a stone you missed.',
+    targeting: 'Seiðr returns by resting, at the Temple of Thor and from Seiðr potions; new spells come from broken runestones, kill rites and Astrid’s rune tablets.',
+  },
   traps: [
     { type: 'pit', name: 'Hidden Pit', damage: 10, disarmDifficulty: 12, minFloor: 1 },
     { type: 'arrow', name: 'Tripwire Dart Trap', damage: 8, disarmDifficulty: 14, minFloor: 3 },

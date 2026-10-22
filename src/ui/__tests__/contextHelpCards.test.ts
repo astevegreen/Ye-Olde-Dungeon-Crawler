@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { GameEngine, GameMap, Player } from '../../engine';
 import { ContextHelp } from '../help/contextHelp';
 import { cotwManifest } from '../../content/cotw';
+import { fixtureManifest } from '../../../tests/fixtures/fixture-pack';
 
 describe('F1 cards for altars, the Story and the Rune of Return', () => {
   const engine = new GameEngine({ map: new GameMap(10, 10), player: new Player({ position: { x: 5, y: 5 } }) });
@@ -43,6 +44,32 @@ describe('F1 cards for altars, the Story and the Rune of Return', () => {
     expect(card.tip).toContain('casts only from its slot');
     // Without grimoires, the card says nothing about them.
     expect(new ContextHelp().getHelpContent('spellbook', { ...cotwManifest, magic: {} }).tip).not.toContain('slot');
+  });
+
+  it("adds the pack's line on how Seiðr returns and where spells come from to the Spellbook and aiming cards", () => {
+    const help = new ContextHelp();
+    for (const context of ['spellbook', 'targeting'] as const) {
+      const card = help.getHelpContent(context, cotwManifest);
+      expect(card.note).toBe(cotwManifest.helpNotes![context]);
+      expect(card.note).toMatch(/rest/);
+      expect(card.note).toContain('Temple of Thor');
+      expect(card.note).toContain('Seiðr potions');
+      expect(card.note).toContain('runestones');
+      expect(card.note).toContain('rite');
+      expect(card.note).toContain('Astrid');
+    }
+    // Other cards carry no pack line.
+    expect(help.getHelpContent('bestiary', cotwManifest).note).toBeUndefined();
+  });
+
+  it("leaves the fixture pack's cards as they were: it writes no help lines", () => {
+    const help = new ContextHelp();
+    expect(fixtureManifest.helpNotes).toBeUndefined();
+    for (const context of ['spellbook', 'targeting', 'exploration'] as const) {
+      const card = help.getHelpContent(context, fixtureManifest);
+      expect(card.note).toBeUndefined();
+      expect(card).toEqual(help.getHelpContent(context, { ...fixtureManifest, helpNotes: {} }));
+    }
   });
 
   it('has a card for the Bestiary, Character and Pacts tabs, each from its own keys', () => {

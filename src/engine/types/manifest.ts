@@ -1260,6 +1260,11 @@ export interface GameContentManifest {
    * none. Keyed by a `BuiltInFirstTimeHintId` or any id of the pack's own, shown by `showOn`.
    */
   firstTimeHints?: Partial<Record<BuiltInFirstTimeHintId, FirstTimeHintDefinition>> & Record<string, FirstTimeHintDefinition>;
+  /**
+   * One extra line in the pack's own words for an F1 help card, keyed by the card's context id
+   * (`spellbook`, `targeting`, …): shown under the card's tip. A card with no line is unchanged.
+   */
+  helpNotes?: Record<string, string>;
   traps?: TrapDefinition[];
   /** How many of `traps` each generated floor hides; absent, floors hide none. */
   trapPlacement?: TrapPlacementConfig;

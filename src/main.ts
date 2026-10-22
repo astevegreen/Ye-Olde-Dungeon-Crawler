@@ -1211,6 +1211,13 @@ window.addEventListener('DOMContentLoaded', () => {
       const code = settingsManager.getCodesForAction(action)[0];
       return code ? keyLabel(code) : undefined;
     },
+    // Getters: the primer opens after launchGame, once the new hero's engine exists.
+    spellNames: () => {
+      const engine = activeEngine;
+      if (!engine) return [];
+      return engine.player.spellsKnown.map((id) => (engine.manifest?.spells?.find((s) => s.id === id) ?? getSpell(id))?.name ?? id);
+    },
+    manaName: () => resolveBranding(activeEngine?.manifest ?? activeManifest).manaName,
     onOpenControls: () => keybindModal.open(),
     onHideForGood: () => settingsManager.updateSettings({ controlsPrimerEnabled: false }),
     onClose: () => {

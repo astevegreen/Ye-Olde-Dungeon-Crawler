@@ -34,6 +34,8 @@ export interface HelpCardContent {
   contextTag: string;
   bullets: Array<{ key: string; label: string }>;
   tip: string;
+  /** The pack's own line for this card (`manifest.helpNotes`), shown under the tip. */
+  note?: string;
 }
 
 const TOWN_ROLE_HELP: Partial<Record<string, string>> = {
@@ -105,6 +107,12 @@ export class ContextHelp {
   }
 
   public getHelpContent(context: GameHelpContext, manifest?: GameContentManifest): HelpCardContent {
+    const card = this.cardFor(context, manifest);
+    const note = manifest?.helpNotes?.[context];
+    return note ? { ...card, note } : card;
+  }
+
+  private cardFor(context: GameHelpContext, manifest?: GameContentManifest): HelpCardContent {
     switch (context) {
       case 'altar':
         return {
@@ -411,7 +419,8 @@ export class ContextHelp {
             .map((b) => `<div class="fh-row"><span class="fh-key">${escapeHtml(b.key)}</span><span class="fh-label">${escapeHtml(b.label)}</span></div>`)
             .join('')}
         </div>
-        <div class="ui-fact">${escapeHtml(content.tip)}</div>`,
+        <div class="ui-fact">${escapeHtml(content.tip)}</div>${content.note ? `
+        <div class="ui-fact">${escapeHtml(content.note)}</div>` : ''}`,
       footNote: '<span>Move, Esc or F1 to close</span>',
     });
 

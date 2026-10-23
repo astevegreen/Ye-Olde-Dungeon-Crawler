@@ -56,8 +56,10 @@ Run `RemoteTrigger` `list` once. For each title, take the newest trigger with th
   `{"enabled": false}`, and start a new one. Before starting, `update` every enabled trigger with that name
   that has no run to `{"enabled": false}`, so a late start never puts two sessions on one title.
 
-For a finished run, read the end of `get_run_log`: if it stopped on a usage limit and its last event is under
-an hour old, start nothing for that title this hour. An older usage-limit stop is restarted like any other.
+For a finished run, read the end of `get_run_log`: if it stopped on a usage limit, find the reset time the
+error names (it may give a local time and zone: convert it to UTC) and start nothing for that title before it;
+once it has passed, start as usual. If the log names no reset time, start nothing while its last event is
+under an hour old.
 
 Comments: sprint sessions write as `greenbeanbot`, the owner as `astevegreen`; read them with
 `--json comments` and go by `author.login`. An **owner reply** is an `astevegreen` comment newer than the

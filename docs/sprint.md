@@ -67,9 +67,10 @@ The integrator works in `C:/Antigravity/YODC-integrate`. The main checkout is on
 2. `sprint-lane <lane>` takes one at a time: the `implementer` builds it on branch `sprint/<issue>` from
    `origin/main` in the lane's worktree and commits (the pre-commit hook gates each commit); the `reviewer`
    reads `git diff origin/main...sprint/<issue>`. PASS: label `to-integrate`.
-3. `sprint-integrate` takes `to-integrate` issues oldest first, one per push: cherry-picks the branch onto
-   `origin/main`, runs the gates, pushes, watches CI, closes the issue and logs what players will see.
-   A conflict or a red gate sends the issue back to its lane as `held`.
+3. `sprint-integrate` takes up to three `to-integrate` issues per push, oldest first: cherry-picks each
+   branch onto `origin/main` as its own commits, runs the gates once, pushes, watches CI, closes the issues
+   and logs what players will see. A conflict sends back only the issue that caused it; a red gate or a red
+   deploy sends the batch through again one issue at a time, and the one that fails alone goes back as `held`.
 
 Labels: `lane:*`, `sprint-ready`, `in-progress`, `to-integrate`, `held`, `blocked`, `proposal`.
 Progress, questions and every push go to the pinned issue #19 "Sprint log". Its body is the status block,

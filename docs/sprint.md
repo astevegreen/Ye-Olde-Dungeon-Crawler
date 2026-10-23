@@ -72,7 +72,8 @@ The integrator works in `C:/Antigravity/YODC-integrate`. The main checkout is on
    A conflict or a red gate sends the issue back to its lane as `held`.
 
 Labels: `lane:*`, `sprint-ready`, `in-progress`, `to-integrate`, `held`, `blocked`, `proposal`.
-Progress, questions and every push go to the pinned issue #19 "Sprint log".
+Progress, questions and every push go to the pinned issue #19 "Sprint log". Its body is the status block,
+which the supervisor rewrites every hour; comments hold the history.
 
 ## Magic onboarding (approved design)
 

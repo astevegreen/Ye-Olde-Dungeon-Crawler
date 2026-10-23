@@ -102,7 +102,21 @@ For each lane, the open `sprint-ready`, `in-progress`, `to-integrate`, `held` an
 issues closed since the window opened (`gh issue list --state closed --label lane:<lane> --search "closed:>=<window start as YYYY-MM-DDTHH:MM:00Z>"`).
 
 ## 5. Report
-Comment on issue #19 "Sprint log" only on the
-first run of the window, every sixth UTC hour (00, 06, 12, 18), or when a session is stuck or never started,
-a usage limit stopped one, the archiver is not working, or step 2 needed attention. Under 15 lines: the time, one line per lane (counts,
-sessions started), and anything the owner must act on, with links.
+**Status block.** Every run, rewrite the body of issue #19 "Sprint log" with `gh issue edit 19 --body-file -`
+(the text on standard input). Read the old body first (`gh issue view 19 --json body`): its "Needs you" list
+is what the ping below compares against. The body holds:
+- the time;
+- one line per lane: the step 4 counts and the issues closed since the window opened;
+- the last push to `main` and its deploy (`gh run list --workflow deploy.yml --branch main --limit 1`);
+- free memory (step 3);
+- "Needs you", one linked line per item: a `blocked` question with no owner reply, a `held` issue the lanes
+  won't retry (its newest comment is not an owner reply, an "Integrator:" comment or an "Implementer: machine"
+  one), a stuck session, a session that failed to start.
+
+**Comment** on issue #19, under 15 lines, when either holds:
+- "Needs you" has an item the old body didn't: start "@astevegreen", so GitHub notifies the owner, and list
+  only the new items first;
+- it is the first run of the window or a sixth UTC hour (00, 06, 12, 18), a session is stuck or never started,
+  a usage limit stopped one, the archiver is not working, or step 2 needed attention: the time, one line per
+  lane (counts, sessions started), and anything the owner must act on, with links.
+One comment per run at most; when both hold, the ping comes first.

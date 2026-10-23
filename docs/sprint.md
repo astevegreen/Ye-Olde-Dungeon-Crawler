@@ -201,6 +201,16 @@ on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` 
   window. A sprint on another computer still shares the account's usage limit, so one usage-limit stop can halt
   both at once (21 Oct, 02:10 UTC); the supervisor restarts the lanes after it.
 
+## Planning day (the day before the window)
+
+- The owner runs `/sprint-plan <lane>` for each lane, one after another. Plan sessions spec each lane's first 6
+  issues. Every design question goes in one issue, "Sprint questions": one numbered question per comment, with
+  options and a recommended answer. The owner answers them in one sitting before the window opens, by number;
+  plan sessions then file the items those answers settle.
+- The reserve backlog (what the lanes take when the main one runs dry) is proposed and approved the same day.
+- During the window, a new question goes on its task issue as usual, since lanes look for the answer there.
+  The status block links it under "Needs you".
+
 ## Preflight (Claude runs it the evening before; the owner fixes what it finds)
 
 1. GitHub Actions: the budget has room for about 300 more runs.
@@ -209,7 +219,7 @@ on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` 
 3. The sprint archiver is on, and the dry run proved it (Machinery).
 4. The supervisor trigger exists, its id is in Machinery, and the dry run showed an agent can switch it off.
 5. No other project's sprint or soak runs on this computer during the window (Machinery).
-6. The owner has answered the design questions for the first issues, and has approved the reserve backlog.
+6. The "Sprint questions" issue is answered and the reserve backlog approved (Planning day).
 
 ## Turning it off
 

@@ -54,6 +54,9 @@ STATUS: BLOCKED.
   pre-commit hook reads). A visible label changed: grep `e2e/` and `scripts/capture/` for the old text.
 - Commit by `CLAUDE.md`'s Commits rule, with the spec's `Requested:` trailer, one request per commit. Never
   skip a hook. Never push.
+- A check that fails the same way twice, with no code change in between, is the machine, not the code: stop,
+  comment "Implementer: machine" with the first failing lines and the free memory, add `held`, and hand back
+  STATUS: GATE-FAILED. Never run it a third time.
 - When the gates still fail after three honest attempts: comment the failing output (under 20 lines) on the
   issue, add `held`, and hand back STATUS: GATE-FAILED.
 

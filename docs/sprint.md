@@ -197,6 +197,17 @@ on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` 
   It is on before the window opens, and the dry run proves it: one finished session archived, its process gone.
 - Agents: `implementer` and `reviewer` (`.claude/agents/`); guard `.claude/hooks/sprint-guard.mjs`.
 
+## Preflight (Claude runs it the evening before; the owner fixes what it finds)
+
+1. GitHub Actions: the budget has room for about 300 more runs.
+2. This computer: at least 30 GB of free disk and 8 GB of free memory; fewer than 10 sessions on the rc host
+   (archive the rest).
+3. The sprint archiver is on, and the dry run proved it (Machinery).
+4. The supervisor trigger exists, its id is in Machinery, and the dry run showed an agent can switch it off.
+5. Another project's sprint on this account or this computer in the same window has the owner's explicit OK:
+   in October two sprints shared one usage limit and one laptop's memory.
+6. The owner has answered the design questions for the first issues, and has approved the reserve backlog.
+
 ## Turning it off
 
 - Pause: disable the supervisor trigger (its id is under Machinery). Running sessions finish their current task.

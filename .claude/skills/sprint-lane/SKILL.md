@@ -48,7 +48,9 @@ it as part of the spec." It is then ready like any other.
 ## 3. Held work
 `gh issue list --state open --label L --label held --json number,title,comments`. Take at most 2 per session,
 and only one whose newest comment is an owner reply or starts "Integrator:" and is newer than the newest
-"Lane:" comment. Remove `held`, add `in-progress`, run the implementer with "Mode: fix. Issue: <n>. Worktree: W.
+"Lane:" comment, or starts "Implementer: machine" while free memory is now over 4096 MB
+(`powershell.exe -NoProfile -Command "[int]((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory/1024)"`).
+Remove `held`, add `in-progress`, run the implementer with "Mode: fix. Issue: <n>. Worktree: W.
 Concerns: <that comment, one line>", then step 4.3 onward. Any other `held` issue waits for the owner: skip it.
 
 ## 4. Ready issues

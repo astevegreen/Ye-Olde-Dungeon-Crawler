@@ -34,6 +34,12 @@ the branch is `main`, run `git merge --ff-only origin/main`; otherwise leave it 
 Run `git worktree prune`.
 
 ## 3. Sessions
+**Memory floor.** First read free memory:
+`powershell.exe -NoProfile -Command "[int]((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory/1024)"`.
+Under 4096 MB: start nothing this run, though you still read the sessions below and name stuck ones. Comment
+"@astevegreen Supervisor: <n> MB free; started nothing" on issue #19, so GitHub notifies the owner, then go on
+to step 4. Don't archive anything or end any process.
+
 Session titles: `YODC lane: <lane>` for `aids`, `ux`, `fixes`, `tooling`, `research`; `YODC plan: <lane>` for
 `aids`, `ux`, `fixes`, `tooling`; and `YODC integrate`. Ten titles.
 
@@ -61,7 +67,8 @@ in its body's "Depends on" line closed.
 Work exists for:
 - a lane session (not `research`): the lane has a ready issue; or one labelled `in-progress`; or `blocked`
   with an owner reply; or `held` whose newest comment is an owner reply, or starts "Integrator:" and is newer
-  than the newest comment starting "Lane:" (the same rules `sprint-lane` follows);
+  than the newest comment starting "Lane:", or starts "Implementer: machine" while free memory is over 4096 MB
+  (the same rules `sprint-lane` follows);
 - `YODC lane: research`: an open `lane:research` issue whose precondition in `docs/sprint.md` holds (R4 waits
   for the T5 issues to close, R5 for T6 and T7), or a research backlog ID with no issue yet;
 - a plan session: the lane has fewer than 3 open `sprint-ready` issues and its backlog has an ID that is not

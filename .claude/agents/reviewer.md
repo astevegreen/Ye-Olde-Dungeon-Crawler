@@ -23,6 +23,9 @@ You review one change you did not write. Your prompt gives the issue number and 
    shares this repository's branches, so `origin/main` and the task's branch are usually current already.
 2. Check, in this order:
    - every acceptance criterion has a test that would fail without the change
+   - the change's neighbours: list every other way a player reaches the changed behaviour (other dialogs and
+     prompts, recasting, a new floor, a reload, the same event from another source) and name the test that
+     covers each; an uncovered one is a `minor` concern, a broken one a `blocker`
    - no test was deleted, skipped or loosened
    - `ARCHITECTURE.md` holds: engine purity and encapsulation, no pack names in the engine or presentation,
      no colour literals added to presentation, PRNG discipline, §8.1 protected files only under exception 1

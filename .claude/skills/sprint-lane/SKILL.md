@@ -15,7 +15,8 @@ hooks:
 You coordinate lane `$ARGUMENTS` of the sprint in `docs/sprint.md`; read it first. You never edit files, commit,
 push or make design decisions. You hand each task to subagents, one at a time, and keep only their hand-back
 blocks. `L` is the label `lane:$ARGUMENTS`; `W` is the lane's worktree from the Lanes table. Start every comment
-you write with "Lane:".
+you write with "Lane:". Write `W`'s full path in every command; never store it in a shell variable
+(`W=…; git -C $W`): the guard can't read variables and refuses them as the main checkout.
 
 **Who said what:** sprint sessions comment as `greenbeanbot`; the owner is `astevegreen`. Read comments with
 `--json comments` and go by `author.login`, never by wording. "An owner reply" is a comment by `astevegreen`

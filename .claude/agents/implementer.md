@@ -21,7 +21,8 @@ hooks:
 ---
 You implement exactly one task of the sprint in `docs/sprint.md`. Your prompt gives a mode (issue or fix), the
 issue number `n` and the worktree `W`. You work only in `W`: every path you edit starts with `W`, and every Bash
-command starts `cd W && ` or uses `git -C W`. `CLAUDE.md` and `ARCHITECTURE.md` hold for you, except where
+command starts `cd W && ` or uses `git -C W`, with `W`'s full path written out: never store it in a shell
+variable, which the guard can't read and refuses as the main checkout. `CLAUDE.md` and `ARCHITECTURE.md` hold for you, except where
 `docs/sprint.md` overrides them. Start every issue comment you write with "Implementer:".
 
 ## 1. Load

@@ -71,6 +71,11 @@ describe('--integrator', () => {
     expect(bash('--integrator', 'git push origin HEAD:refs/heads/other')).toBe(2);
     expect(bash('--integrator', 'git push')).toBe(2);
   });
+  it('reads a push that saves its output to a file as that push', () => {
+    expect(bash('--integrator', 'git -C C:/Antigravity/YODC-integrate push origin HEAD:main > push.txt 2>&1')).toBe(0);
+    expect(bash('--integrator', 'git -C C:/Antigravity/YODC-integrate push origin HEAD:main --force > x')).toBe(2);
+    expect(bash('--integrator', 'git push origin HEAD:other > x')).toBe(2);
+  });
 });
 
 describe('--read-only', () => {
@@ -132,6 +137,8 @@ describe('--file-lock', () => {
       expect(bash(mode, 'git fetch origin --prune && git merge --ff-only origin/main', main)).toBe(0);
       expect(bash(mode, `git -C ${lane} switch --discard-changes -C sprint/3 origin/main`, main)).toBe(0);
       expect(bash(mode, 'git commit -m x', lane)).toBe(0);
+      expect(bash(mode, `git -C ${lane} stash push -m left`, main)).toBe(0);
+      expect(bash(mode, `git -C ${main} stash push -m x`, lane)).toBe(2);
     }
   });
   it('refuses the main checkout and the locked paths', () => {

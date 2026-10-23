@@ -74,7 +74,7 @@ const ALWAYS = [
 ];
 for (const [re, why] of ALWAYS) if (re.test(command)) deny(why);
 
-const isPush = (w) => w[0] === 'git' && w.includes('push');
+const isPush = (w) => w[0] === 'git' && w.includes('push') && !w.includes('stash');
 // Git Bash on Windows writes C:/x as /c/x; elsewhere /c/x is a real path.
 const native = (p) => (process.platform === 'win32' ? p.replace(/^\/([a-z])(\/|$)/i, '$1:/') : p);
 // The main checkout has a `.git` folder; a linked worktree has a `.git` file.
@@ -113,7 +113,10 @@ if (MODE === '--lane' || MODE === '--integrator') {
 
 if (MODE === '--integrator') {
   for (const p of parts) {
-    const w = words(p).filter((x, i, all) => !(all[i - 1] === '-C' || x === '-C'));
+    const all = words(p).filter((x, i, ws) => !(ws[i - 1] === '-C' || x === '-C'));
+    // `> push.txt 2>&1` saves the output; it is not part of the push.
+    const cut = all.findIndex((x) => /^(\d?>>?|&>)/.test(x));
+    const w = cut >= 0 ? all.slice(0, cut) : all;
     if (isPush(w) && w.slice(w.indexOf('push')).join(' ') !== 'push origin HEAD:main') {
       deny('the integrator pushes only with `git push origin HEAD:main`');
     }

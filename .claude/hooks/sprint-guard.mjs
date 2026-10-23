@@ -39,10 +39,28 @@ if (MODE === '--file-lock') {
 }
 
 const command = String(input.tool_input?.command ?? '');
-// Simple commands: split on control operators, keeping the words of each.
-const parts = command
+// Simple commands: split on control operators, keeping the words of each. Inside quotes, |, ;, & and )
+// are text (a search pattern such as "a\|b"), except in double quotes holding $ or a backtick, which can
+// run a command there.
+const MASK = { '|': '\u0001', ';': '\u0002', '&': '\u0003', ')': '\u0004' };
+const UNMASK = Object.fromEntries(Object.entries(MASK).map(([k, v]) => [v, k]));
+function maskQuoted(s) {
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === '\\') { out += s.slice(i, i + 2); i++; continue; }
+    if (c !== '"' && c !== "'") { out += c; continue; }
+    let j = i + 1;
+    while (j < s.length && s[j] !== c) j += c === '"' && s[j] === '\\' ? 2 : 1;
+    const q = s.slice(i, j + 1);
+    out += c === '"' && /[$`]/.test(q) ? q : q.replace(/[|;&)]/g, (x) => MASK[x]);
+    i = j;
+  }
+  return out;
+}
+const parts = maskQuoted(command)
   .split(/&&|\|\||[;|\n`]|\$\(|\)/)
-  .map((s) => s.trim())
+  .map((p) => p.replace(/[\u0001-\u0004]/g, (c) => UNMASK[c]).trim())
   .filter(Boolean);
 const words = (s) => s.match(/"[^"]*"|'[^']*'|\S+/g)?.map((w) => w.replace(/^(["'])(.*)\1$/, '$2')) ?? [];
 
@@ -108,12 +126,14 @@ if (MODE === '--read-only') {
   if (/(^|[^0-9&])>{1,2}(?!\s*(&1|\/dev\/null))/.test(unquoted)) deny('the reviewer writes no files');
   const ALLOWED = [
     ['git', 'diff'], ['git', 'log'], ['git', 'show'], ['git', 'status'], ['git', 'merge-base'],
-    ['git', 'rev-parse'], ['git', 'branch', '--list'], ['git', 'ls-files'], ['git', 'grep'],
+    ['git', 'rev-parse'], ['git', 'branch', '--list'], ['git', 'ls-files'], ['git', 'grep'], ['git', 'fetch'],
     ['gh', 'issue', 'view'], ['gh', 'pr', 'view'], ['cd'],
     ['cat'], ['head'], ['tail'], ['grep'], ['rg'], ['ls'], ['wc'], ['sort'], ['uniq'], ['date'], ['echo'], ['pwd'],
   ];
   for (const p of parts) {
-    const w = words(p).filter((x, i, all) => !(x === '-C' || all[i - 1] === '-C'));
+    const w = words(p).filter((x, i, all) => !(x === '-C' || all[i - 1] === '-C' || x === '--no-pager'));
+    // A refspec with `:` (main:main) writes a local branch; a plain fetch updates only origin's.
+    if (w[0] === 'git' && w[1] === 'fetch' && w.some((x) => x.includes(':'))) deny('the reviewer fetches only origin\'s branches');
     const ok = ALLOWED.some((a) => a.every((x, i) => w[i] === x)) || (w[0] === 'sed' && w[1] === '-n');
     if (!ok) deny(`the reviewer runs inspection commands only, not \`${w.slice(0, 3).join(' ')}\``);
   }

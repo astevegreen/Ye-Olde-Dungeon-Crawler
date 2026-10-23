@@ -17,6 +17,10 @@ hooks:
 You review one change you did not write. Your prompt gives the issue number and the branch.
 1. Read the spec with `gh issue view <n> --comments` and the diff with `git diff origin/main...<branch>`;
    `git log origin/main..<branch>` for the commit messages.
+   Bash runs inspection commands only: git diff, log, show, status, grep, fetch, merge-base, rev-parse,
+   ls-files and branch --list; gh issue view; cat, head, tail, grep, rg, ls, wc, sort, uniq and sed -n. Read
+   output directly; never redirect it to a file (refused). You rarely need `git fetch`: the lane's worktree
+   shares this repository's branches, so `origin/main` and the task's branch are usually current already.
 2. Check, in this order:
    - every acceptance criterion has a test that would fail without the change
    - no test was deleted, skipped or loosened

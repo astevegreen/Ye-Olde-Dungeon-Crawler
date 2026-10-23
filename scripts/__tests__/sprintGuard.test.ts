@@ -86,6 +86,22 @@ describe('--read-only', () => {
     expect(bash('--read-only', "git log --format='%h > %s'")).toBe(0);
     expect(bash('--read-only', 'cd /w && git diff >> out.txt')).toBe(2);
   });
+  it('reads |, ; and & inside quotes as a search pattern, but still splits command substitutions', () => {
+    expect(bash('--read-only', 'grep -n "wantsHeal\\|repayVoidDebt" src')).toBe(0);
+    expect(bash('--read-only', 'grep -n "a\\|b;c" src')).toBe(0);
+    expect(bash('--read-only', "grep -rn 'x|y' src")).toBe(0);
+    expect(bash('--read-only', 'grep "a" src; git commit -m x')).toBe(2);
+    expect(bash('--lane', 'echo "$(git push)"')).toBe(2);
+    expect(bash('--lane', 'echo "`git push`"')).toBe(2);
+    expect(bash('--lane', 'echo \\"x; git push; y\\"')).toBe(2);
+    expect(bash('--lane', 'grep "a|b" src | git push')).toBe(2);
+  });
+  it('fetches origin and reads with --no-pager', () => {
+    expect(bash('--read-only', 'git fetch -q origin')).toBe(0);
+    expect(bash('--read-only', 'git --no-pager log -3')).toBe(0);
+    expect(bash('--read-only', 'git fetch origin main:main')).toBe(2);
+    expect(bash('--read-only', 'git push')).toBe(2);
+  });
 });
 
 describe('--file-lock', () => {

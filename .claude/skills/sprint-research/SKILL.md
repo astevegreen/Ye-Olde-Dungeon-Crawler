@@ -49,7 +49,9 @@ The item's next soak is the first of its soaks with no started comment.
    cap leaves under an hour, start no soak: step 5. Start the soak detached with the PowerShell tool, so it
    outlives this session:
    `Start-Process -WindowStyle Hidden -WorkingDirectory R -FilePath npm.cmd -ArgumentList 'run','soak','--','<flags>' -PassThru`
-   with the flags the item's line names and that `--until`. Note the process id.
+   with the flags the item's line names and that `--until`. Note the process id, and set its priority at once:
+   `(Get-Process -Id <pid>).PriorityClass = 'BelowNormal'`. Processes the soak starts after that inherit it,
+   so the lanes' tests on the same computer slow down less.
 5. Comment on the issue "Research: started <ID> <folder> pid <pid> sha <origin/main sha> flags <flags>", then
    step 5.
 
@@ -69,19 +71,23 @@ The item's next soak is the first of its soaks with no started comment.
 When every soak of the item is read: comment the item's report, first line "Proposal, not a rule", under 40
 lines, add `proposal`, close the issue, and return to step 1. Otherwise go to step 3 for its next soak.
 
-## 5. R6: bug hunt over the sprint's changes
-R6 runs beside a soak, in its own worktree `H`, `C:/Antigravity/YODC-research-hunt`, so the soak's build in `R`
-stays untouched. Its issue is closed: stop. Missing: create it as in step 1.
+## 5. Bug hunt over the sprint's changes
+The hunt runs beside a soak, in its own worktree `H`, `C:/Antigravity/YODC-research-hunt`, so the soak's build
+in `R` stays untouched. It runs every 12 hours over what landed since the last hunt, each run its own issue
+`[task] H<n>: bug hunt since <sha>` with label `lane:research`. Work on the open hunt issue if there is one.
+Otherwise a hunt is due when the newest closed one closed 12 or more hours ago, or none exists yet: create the
+next one, `<sha>` being the sha its predecessor's candidates comment names (the `pre-sprint-*` tag in
+`docs/sprint.md` for the first). Not due: stop.
 1. If `H` does not exist: `git worktree add --detach H origin/main`, then `cd H && npm ci`. Otherwise
    `git -C H fetch origin` and `git -C H switch --detach --discard-changes origin/main`. Note the sha.
-2. A comment beginning "Research: R6 candidates" exists: take its list to 3. Otherwise hunt. List the commits
-   with `git -C H log --reverse --format='%h %s' pre-sprint-2026-10-20..origin/main -- src/` and split them
+2. A comment beginning "Research: hunt candidates" exists: take its list to 3. Otherwise hunt. List the commits
+   with `git -C H log --reverse --format='%h %s' <the issue's since sha>..origin/main -- src/` and split them
    in three: those touching `src/engine/`, then those touching `src/content/`, then the rest. Dispatch one
    `general-purpose` agent per group in one message, with `model: "opus"`, read-only: it reads each commit
    (`git -C H show <sha>`) and the code around it in `H`, and returns candidate bugs, each as `path:line`, the
    inputs or state that trigger it, and the wrong outcome (crash, softlock, wrong state or text, a broken
    `ARCHITECTURE.md` invariant). The hunt is done when every listed commit was read by one agent. Comment
-   "Research: R6 candidates sha <sha>", one line per candidate.
+   "Research: hunt candidates sha <sha>", one line per candidate.
 3. Confirm each candidate with a failing test: a Vitest case in a new file `H/<dir>/__tests__/r6-<n>.test.ts`,
    run with `cd H && npx vitest run <file>`. Red for the predicted reason confirms it; green, or red for another
    reason, leaves it unconfirmed. Each confirmed bug not already an open issue becomes an issue as in step 4,

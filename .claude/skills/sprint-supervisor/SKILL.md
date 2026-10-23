@@ -71,8 +71,11 @@ Work exists for:
   with an owner reply; or `held` whose newest comment is an owner reply, or starts "Integrator:" and is newer
   than the newest comment starting "Lane:", or starts "Implementer: machine" while free memory is over 4096 MB
   (the same rules `sprint-lane` follows);
-- `YODC lane: research`: an open `lane:research` issue whose precondition in `docs/sprint.md` holds (R4 waits
-  for the T5 issues to close, R5 for T6 and T7), or a research backlog ID with no issue yet;
+- `YODC lane: research`: the bug hunt is due (`sprint-research` step 5), or no soak is running and there is an
+  open `lane:research` issue whose wait in `docs/sprint.md` is over, or a research backlog ID with no issue yet.
+  A soak is running when the newest "Research: started" comment not yet followed by a "Research: read" naming
+  its folder has a pid that is alive, named `cmd`, and started at or after that comment (the same check as
+  `sprint-research` step 2);
 - a plan session: the lane has fewer than 3 open `sprint-ready` issues and its backlog has an ID that is not
   done. An ID is done when an issue title starts `[task] <ID>:` or `[task] <ID>` plus a letter and a colon.
   Get every title once with `gh issue list --state all --search "[task] in:title" --limit 500 --json title`

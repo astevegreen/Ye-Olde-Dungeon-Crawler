@@ -178,7 +178,8 @@ otherwise) and what its report covers. `sprint-research` reads them here and kee
   and energy debt per floor, beside R3's numbers (folder `R3-<folder>`).
 - **R6** A read-only bug hunt over the sprint's own changes (`git diff pre-sprint-2026-10-20..origin/main -- src/`);
   a finding a failing test confirms becomes a `fixes` issue (permission 7). Waits for: nothing. Soaks: none
-  (the bug hunt in `sprint-research` step 5).
+  (the bug hunt in `sprint-research` step 5). It runs every 12 hours over what landed since its last run, each
+  run its own issue `[task] H<n>`, not once at the end.
 
 Not sprint work (the owner's call): P-24, P-27, P-37, the raid's difficulty at level 1, the arrival autosave
 on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` floors), renaming spells.

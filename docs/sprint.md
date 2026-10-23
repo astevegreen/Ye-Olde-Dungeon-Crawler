@@ -159,24 +159,36 @@ provable on its own. Sources: the magic survey and backlog survey of 20 Oct, the
 
 ### research (decides nothing; first line of each report: "Proposal, not a rule")
 
+Each open item's line ends with what it waits for, its soaks (lens `player`, `--workers 2` unless it says
+otherwise) and what its report covers. `sprint-research` reads them here and keeps no copy.
+
 - **R1** A player soak on today's `main` (floors 5, 20, 26, 34) after cd263494 and a65a8f76; findings that are
   bugs become `fixes` issues (permission 6).
 - **R2** After M3–M6 land: a soak comparing stones read and spells cast before and after onboarding.
 - **R3** Measure the hearth-cold stages (turns per floor) and the energy clamp question; options only.
 - **R4** After T5 lands: a magic-coverage soak from town and from floor 20, every known spell cast; findings
-  that are bugs become `fixes` issues (permission 6).
+  that are bugs become `fixes` issues (permission 6). Waits for: every issue titled `[task] T5` closed.
+  Soaks: one from town, then one with `--start-floor 20`. Report: each spell the bot knew and never cast, and
+  each failed cast.
 - **R5** After T6 and T7 land: R3 again with a full sample (30 or more seeds from town): hearth-cold stages
-  and the energy clamp; options only.
+  and the energy clamp; options only. Waits for: the T6 and T7 issues closed. Soaks: one from town,
+  `--count 30`, `--until` 6 hours ahead. Report: turns per floor, the floor each hearth-cold stage arrives on,
+  and energy debt per floor, beside R3's numbers (folder `R3-<folder>`).
 - **R6** A read-only bug hunt over the sprint's own changes (`git diff pre-sprint-2026-10-20..origin/main -- src/`);
-  a finding a failing test confirms becomes a `fixes` issue (permission 7).
+  a finding a failing test confirms becomes a `fixes` issue (permission 7). Waits for: nothing. Soaks: none
+  (the bug hunt in `sprint-research` step 5).
 
 Not sprint work (the owner's call): P-24, P-27, P-37, the raid's difficulty at level 1, the arrival autosave
 on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` floors), renaming spells.
 
 ## Machinery
 
-- An hourly remote trigger, "YODC sprint supervisor", runs `.claude/skills/sprint-supervisor` in this folder
-  (environment `env_0157HwSnMQCykikhVk9tpWUC`).
+- One supervisor trigger, "YODC sprint supervisor", id `trig_…` (filled in at setup), runs
+  `.claude/skills/sprint-supervisor` in this folder (environment `env_0157HwSnMQCykikhVk9tpWUC`) at minute 2 of
+  every hour from the evening before. Outside the window its first step stops it; after the window it switches
+  itself off by this id. It is created from a session the owner started (desktop app or `claude rc`) with the
+  remote `create_trigger` tool, so any agent can edit it later: a trigger made through the HTTP API can be
+  changed only by its own runs or by the owner.
 - It starts `YODC lane: <lane>`, `YODC plan: <lane>` and `YODC integrate` sessions and restarts any that
   stopped, for example after a usage limit.
 - The sprint archiver: an hourly scheduled task at minute 50 that posts into a long-lived session the owner
@@ -187,7 +199,7 @@ on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` 
 
 ## Turning it off
 
-- Pause: disable the "YODC sprint supervisor" triggers. Running sessions finish their current task.
+- Pause: disable the supervisor trigger (its id is under Machinery). Running sessions finish their current task.
 - Afterwards, one commit deletes this file, `.claude/skills/sprint-*`, `.claude/agents/{implementer,reviewer}.md`,
   `.claude/hooks/sprint-guard.mjs`, `scripts/__tests__/sprintGuard.test.ts` and the sprint lines in `CLAUDE.md`
   (`git diff pre-sprint-2026-10-20 -- CLAUDE.md .claude/` lists every machinery change). The lane worktrees go

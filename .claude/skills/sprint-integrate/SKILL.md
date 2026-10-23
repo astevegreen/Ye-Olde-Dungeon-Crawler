@@ -16,7 +16,7 @@ code: a task that does not land cleanly goes back to its lane. `I` is `C:/Antigr
 git command as `git -C I ...` and every npm command as `cd I && npm ...`. Start every comment you write with
 "Integrator:".
 
-Stop when `date -u +%Y%m%dT%H%M` is outside the window on line 3 of `docs/sprint.md`, when no open issue has
+Stop when `date -u +%Y%m%dT%H%M` is outside the window on the `Window (UTC)` line of `docs/sprint.md`, when no open issue has
 `to-integrate`, after 8 pushes this session, or after a usage-limit error.
 
 ## 0. Before anything

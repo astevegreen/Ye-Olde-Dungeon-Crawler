@@ -25,7 +25,7 @@ newer than the newest `greenbeanbot` comment on that issue.
 closed.
 
 Run the `implementer` and the `reviewer` with model `opus` every time. Before every task, stop if:
-- `date -u +%Y%m%dT%H%M` is outside the window on line 3 of `docs/sprint.md`
+- `date -u +%Y%m%dT%H%M` is outside the window on the `Window (UTC)` line of `docs/sprint.md`
 - any subagent reported a usage-limit error
 - you have run 6 tasks this session (the supervisor starts a fresh session next hour)
 - nothing below is left

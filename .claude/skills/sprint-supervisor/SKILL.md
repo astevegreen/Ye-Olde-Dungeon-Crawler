@@ -21,11 +21,12 @@ archives finished and stuck sessions. Finish in a few minutes.
 update and comment nothing. A dry run before the window carries on as if the window were open.
 
 ## 1. Window
-Run `date -u +%Y%m%dT%H%M` and read the window from line 3 of `docs/sprint.md`.
+Run `date -u +%Y%m%dT%H%M` and read the window from the `Window (UTC)` line of `docs/sprint.md`.
 - Before it: print "before the window" and stop.
-- After it: `RemoteTrigger` `list`, then `update` each enabled trigger whose name starts "YODC sprint supervisor"
-  with `{"enabled": false}`, comment "Sprint over" on issue #19 "Sprint log" with one line per lane from
-  step 4, and stop.
+- After it: `RemoteTrigger` `update` the supervisor trigger whose id is in `docs/sprint.md` (Machinery) with
+  `{"enabled": false}`, comment "Sprint over" on issue #19 "Sprint log" with one line per lane from step 4,
+  and stop. Don't look for it with `list`: that returns only the account's newest 20 triggers, and asking for
+  the next page returns the first page again.
 
 ## 2. Sync
 In the main checkout: `git fetch origin --prune`. If `git status --porcelain --untracked-files=no` is empty and

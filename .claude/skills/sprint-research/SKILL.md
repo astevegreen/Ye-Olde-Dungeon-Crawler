@@ -17,21 +17,17 @@ hours, longer than this session: you start it detached, record it, and a later s
 runs at a time (the laptop also runs the lanes and Terminal Dusk). Start every comment you write with
 "Research:". Sprint sessions comment as `greenbeanbot`; go by `author.login`.
 
-Stop when `date -u +%Y%m%dT%H%M` is outside the window on line 3 of `docs/sprint.md`.
+Stop when `date -u +%Y%m%dT%H%M` is outside the window on the `Window (UTC)` line of `docs/sprint.md`.
 
 ## 1. Find the research issue
-R1–R3 are done. The open items, in order:
-
-| ID | Waits for | Work (lens `player`, `--workers 2`) |
-| -- | --------- | ----------------------------------- |
-| R4 | every issue titled `[task] T5` closed | a soak from town, then one with `--start-floor 20` |
-| R5 | the T6 and T7 issues closed | one soak from town, `--count 30`, `--until` 6 hours ahead |
-| R6 | nothing | no soak: the bug hunt in step 5 |
+The items are the `### research` list in `docs/sprint.md`, in order. Each line says what it waits for, its
+soaks (lens `player`, `--workers 2` unless it says otherwise) and what its report covers. Never copy that list
+here: on 22 Oct a copy fell 7 hours behind the second backlog. An item is done when its issue is closed.
 
 Each item's issue is the one titled `[task] <ID>: ...` with label `lane:research`; create it when missing, with
-the backlog line as its Goal. Take the first open soak item (R4, R5) whose wait is over. None: step 5.
+the backlog line as its Goal. Take the first open item with soaks whose wait is over. None: step 5.
 
-An item may need several soaks (R4 names two: one after another). A **started** comment is one beginning
+An item may need several soaks (its line names them, one after another). A **started** comment is one beginning
 "Research: started"; it is **read** once a later comment beginning "Research: read" names its folder.
 
 ## 2. A soak already running?
@@ -48,12 +44,12 @@ The item's next soak is the first of its soaks with no started comment.
 3. The soak writes to `R/.prompts/soak/<lens>` (or `<lens>-floor<n>`) and appends to what is there. If that
    folder exists, it is an earlier item's: `mv` it to `R/.prompts/soak/<that item's ID>-<folder>` first (the
    ID is on the started comment that names it).
-4. `--until` is local wall-clock time, 2 hours ahead unless the table says otherwise: `date -d '+2 hours' +%H:%M`.
+4. `--until` is local wall-clock time, 2 hours ahead unless the item's line says otherwise: `date -d '+2 hours' +%H:%M`.
    It never falls later than 90 minutes before the window closes, so a session can read the soak; when that
    cap leaves under an hour, start no soak: step 5. Start the soak detached with the PowerShell tool, so it
    outlives this session:
    `Start-Process -WindowStyle Hidden -WorkingDirectory R -FilePath npm.cmd -ArgumentList 'run','soak','--','<flags>' -PassThru`
-   with the flags the table names and that `--until`. Note the process id.
+   with the flags the item's line names and that `--until`. Note the process id.
 5. Comment on the issue "Research: started <ID> <folder> pid <pid> sha <origin/main sha> flags <flags>", then
    step 5.
 
@@ -66,11 +62,10 @@ The item's next soak is the first of its soaks with no started comment.
   seeds and the `repro` command; the acceptance criterion is a test that fails before the fix; the Trailer is
   `Requested: "I approve your backlog proposal" (sprint S<n>, soak finding)`;
 - anything about balance or feel goes in the report as an option, never a task;
-- R4 reports each spell the bot knew and never cast, and each failed cast; R5 reports the turns per floor, the
-  floor each hearth-cold stage arrives on, and the energy debt per floor, beside R3's numbers;
+- the report covers what the item's line in `docs/sprint.md` names;
 - comment "Research: read <folder>" with the soak's findings in under 15 lines;
-- `mv` the folder to `R/.prompts/soak/<ID>-<folder>`, so the next soak starts clean and R5 can compare with
-  `R3-<folder>`.
+- `mv` the folder to `R/.prompts/soak/<ID>-<folder>`, so the next soak starts clean and a later item can
+  compare with it.
 When every soak of the item is read: comment the item's report, first line "Proposal, not a rule", under 40
 lines, add `proposal`, close the issue, and return to step 1. Otherwise go to step 3 for its next soak.
 

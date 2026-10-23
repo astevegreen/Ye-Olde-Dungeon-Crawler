@@ -16,7 +16,7 @@ You turn the next backlog items of lane `$ARGUMENTS` in `docs/sprint.md` into is
 build. The owner approved the backlog (permission 1), so you do not wait for the owner. You never edit files,
 write code or invent game rules. `L` below is the label `lane:$ARGUMENTS`.
 
-Stop when `date -u +%Y%m%dT%H%M` is outside the window on line 3 of `docs/sprint.md`, or the lane has 3 open
+Stop when `date -u +%Y%m%dT%H%M` is outside the window on the `Window (UTC)` line of `docs/sprint.md`, or the lane has 3 open
 `sprint-ready` issues, or its backlog has no item left without an issue.
 
 ## 1. Pick

@@ -14,7 +14,8 @@
       "Bash(git push)",
       "Bash(git push origin main)",
       "Bash(git -C C:/Antigravity/YODC-integrate push origin HEAD:main)",
-      "Bash(npm run sonar:*)"
+      "Bash(npm run sonar:*)",
+      "Bash(gh run cancel:*)"
     ],
     "deny": [
       "Read(dist/**)",

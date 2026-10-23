@@ -197,6 +197,9 @@ on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` 
   finished sessions after an hour, and stuck ones (no event in 60 minutes, or 30 minutes waiting for an answer).
   It is on before the window opens, and the dry run proves it: one finished session archived, its process gone.
 - Agents: `implementer` and `reviewer` (`.claude/agents/`); guard `.claude/hooks/sprint-guard.mjs`.
+- One sprint per computer (owner, 22 Oct): no other project's sprint or soak runs on this computer during the
+  window. A sprint on another computer still shares the account's usage limit, so one usage-limit stop can halt
+  both at once (21 Oct, 02:10 UTC); the supervisor restarts the lanes after it.
 
 ## Preflight (Claude runs it the evening before; the owner fixes what it finds)
 
@@ -205,8 +208,7 @@ on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` 
    (archive the rest).
 3. The sprint archiver is on, and the dry run proved it (Machinery).
 4. The supervisor trigger exists, its id is in Machinery, and the dry run showed an agent can switch it off.
-5. Another project's sprint on this account or this computer in the same window has the owner's explicit OK:
-   in October two sprints shared one usage limit and one laptop's memory.
+5. No other project's sprint or soak runs on this computer during the window (Machinery).
 6. The owner has answered the design questions for the first issues, and has approved the reserve backlog.
 
 ## Turning it off

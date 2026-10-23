@@ -14,7 +14,7 @@ hooks:
 You run lane `research` of the sprint in `docs/sprint.md`; read it and `.claude/skills/soak/SKILL.md` first.
 You never edit tracked files, commit or decide a rule. `R` is `C:/Antigravity/YODC-research`. A soak runs for
 hours, longer than this session: you start it detached, record it, and a later session reads it. Only one soak
-runs at a time (the laptop also runs the lanes and Terminal Dusk). Start every comment you write with
+runs at a time (the same computer runs the lanes). Start every comment you write with
 "Research:". Sprint sessions comment as `greenbeanbot`; go by `author.login`.
 
 Stop when `date -u +%Y%m%dT%H%M` is outside the window on the `Window (UTC)` line of `docs/sprint.md`.

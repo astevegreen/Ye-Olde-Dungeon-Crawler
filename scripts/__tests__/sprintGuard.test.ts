@@ -43,6 +43,10 @@ describe('--lane', () => {
     for (const command of [
       'cd /w && npm run gate-stamp -- run lint test tooling',
       'git -C /w switch --discard-changes -C sprint/12 origin/main',
+      // The implementer's own steps (.claude/agents/implementer.md, "Build").
+      'git -C /w stash --include-untracked -m "left by a stopped session"',
+      'git -C /w switch -c sprint/12 origin/main',
+      'cd /w && npm ls --depth=0',
       'gh issue edit 12 --add-label to-integrate --remove-label in-progress',
       'git worktree add --detach C:/Antigravity/YODC-lane-ux origin/main',
     ]) expect(bash('--lane', command)).toBe(0);

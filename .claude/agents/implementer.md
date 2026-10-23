@@ -34,12 +34,20 @@ protected file beyond exception 1. Comment one specific question on the issue, a
 STATUS: BLOCKED.
 
 ## 3. Build
-- Issue mode: `git -C W fetch origin`, `git -C W switch --discard-changes -C sprint/n origin/main`.
-  Fix mode: `git -C W switch --discard-changes sprint/n`; when the concern is a conflict with main, rebase it:
+- First clear what a stopped session left: if `git -C W status --porcelain` lists anything, run
+  `git -C W stash --include-untracked -m "left by a stopped session"` (kept, not lost). Then
+  `git -C W fetch origin`.
+- Issue mode: if `sprint/n` exists, it holds earlier work: `git -C W switch sprint/n` and continue it as in
+  fix mode. Otherwise `git -C W switch -c sprint/n origin/main`.
+  Fix mode: `git -C W switch sprint/n`; when the concern is a conflict with main, rebase it:
   `git -C W fetch origin` then `git -C W rebase --reapply-cherry-picks origin/main` (main may hold this task
   and its revert, which a plain rebase would silently drop), resolving conflicts in the task's favour only
   where the task owns the lines.
-- If `package-lock.json` differs from the last `npm ci` in `W` (or `node_modules` is missing), run `npm ci`.
+- Run `cd W && npm ls --depth=0`. Only if it fails (packages missing or not matching `package.json`), run
+  `cd W && npm ci`. Never list, read or diff `node_modules` or `package-lock.json` yourself: the project's
+  permission rules refuse it.
+- Keep unfinished work as commits on `sprint/n`, never as a patch file: a later session applying a patch
+  looks like running untrusted code, and the safety check refuses it.
 - A bug: first a test that reproduces it and fails. Each acceptance criterion: a test that fails without the
   change. Then implement.
 - While iterating: `npx vitest run <file>`. Before each commit, the spec's Gates (they write the stamp the

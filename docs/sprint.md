@@ -178,7 +178,11 @@ on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` 
 - An hourly remote trigger, "YODC sprint supervisor", runs `.claude/skills/sprint-supervisor` in this folder
   (environment `env_0157HwSnMQCykikhVk9tpWUC`).
 - It starts `YODC lane: <lane>`, `YODC plan: <lane>` and `YODC integrate` sessions and restarts any that
-  stopped, for example after a usage limit. It archives finished ones, which otherwise hold memory on the host.
+  stopped, for example after a usage limit.
+- The sprint archiver: an hourly scheduled task at minute 50 that posts into a long-lived session the owner
+  started (`claude rc` or the desktop app), because scheduled sessions have no `archive_session`. It archives
+  finished sessions after an hour, and stuck ones (no event in 60 minutes, or 30 minutes waiting for an answer).
+  It is on before the window opens, and the dry run proves it: one finished session archived, its process gone.
 - Agents: `implementer` and `reviewer` (`.claude/agents/`); guard `.claude/hooks/sprint-guard.mjs`.
 
 ## Turning it off

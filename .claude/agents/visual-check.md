@@ -18,10 +18,10 @@ Each takes `OUT=<dir>`; write to `.prompts/captures/<topic>-before/` and `-after
 
 `g00`, `hud.mjs` and `map-scene.mjs` repeat to the pixel on an unchanged tree. Other menu views carry small noise (the animated portrait, backdrop blur, the save code's timestamp), so capture their before twice and diff the two: what differs there is noise.
 
-## Dev server
-- `curl -s -o /dev/null -w '%{http_code}' http://localhost:5173/` printing 200 means it is up: use it.
-- Otherwise start it in the background (`npm run dev -- --port 5173 --strictPort > .prompts/captures/dev-server.txt 2>&1`) and poll the curl until 200 (a minute at most). When you finish, stop what you started: `netstat -ano | grep :5173` gives the PID, then `taskkill //PID <pid> //T //F`.
-- Vite serves the working tree as it is now. You write only under `.prompts/captures/`; the main session's edits are in the tree, so stashing or checking out is the caller's call, never yours.
+## The build, not a dev server
+- Capture this worktree's own build: `npm run build > .prompts/captures/build.txt 2>&1`, then run each script with `URL=dist`. Build again before each phase, since the tree changed between them.
+- Never use or stop a server on a port. Sprint lanes, other worktrees and other projects on this computer serve on 5173 too, so what answers there may be another tree's game, and its process is not yours to kill.
+- The build reads the working tree as it is now. You write only under `.prompts/captures/` and `dist/`; the main session's edits are in the tree, so stashing or checking out is the caller's call, never yours.
 
 ## Look
 1. Run the captures; a `pageerror` or `failed` line in the script output is a finding.

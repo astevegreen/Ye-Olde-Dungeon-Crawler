@@ -6,6 +6,7 @@
 
 ## Sessions
 - One task per session. When a task is committed and leaves open questions, or the session has run long, write the handoff (`/handoff`) without asking; when the next request is unrelated, offer it. Suggest `/clear` only after the note is published; the owner then `/clear`s and resumes.
+- When compacting, keep word for word: the owner's request as it will be quoted in `Requested:`, the task, the files changed, and each check run with its result.
 - Delegate reading to the project agents; the main session reads only the files it changes.
   - `scout`: "where is X / what calls Y", answered as `path:line`. "How does X work" goes to Explore.
   - `visual-check`: captures before and after a presentation change and returns a verdict with image paths. Open an image only when the owner needs to see it.

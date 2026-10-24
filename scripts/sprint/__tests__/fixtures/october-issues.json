@@ -1,0 +1,2265 @@
+{
+ "note": "YODC issues as the October sprint ended, from `gh issue list --state all --limit 500 --json number,title,body,labels,state,comments,closedAt,createdAt` on 23 Oct 2026. Trimmed to what scripts/sprint/queue-rules.mjs reads: each body keeps only its \"Depends on\" and \"Waits for\" lines and the two after each; each comment keeps author, time and its first 300 characters; the sprint log (#19) keeps no comments.",
+ "issues": [
+  {
+   "number": 3,
+   "title": "[Bug]: UXstuckbug",
+   "state": "CLOSED",
+   "createdAt": "2026-09-24T01:52:14Z",
+   "closedAt": "2026-09-24T21:32:46Z",
+   "labels": [],
+   "body": "",
+   "comments": []
+  },
+  {
+   "number": 4,
+   "title": "[Bug]: Crash: Script error.",
+   "state": "CLOSED",
+   "createdAt": "2026-09-25T00:02:01Z",
+   "closedAt": "2026-09-25T16:50:01Z",
+   "labels": [],
+   "body": "",
+   "comments": [
+    {
+     "author": {
+      "login": "astevegreen"
+     },
+     "createdAt": "2026-09-25T16:50:01Z",
+     "body": "Thanks for the report! This one wasn't a bug in the game itself.\n\n\"Script error.\" with no stack is what browsers report when an error comes from code they won't expose to the page, such as an extension, a content blocker, or an in-app browser's injected script. The only frame in the report was the g"
+    }
+   ]
+  },
+  {
+   "number": 5,
+   "title": "[Bug]: [TEST] Relay round-trip check, please ignore",
+   "state": "CLOSED",
+   "createdAt": "2026-09-25T21:04:13Z",
+   "closedAt": "2026-09-25T21:04:45Z",
+   "labels": [
+    {
+     "name": "bug"
+    },
+    {
+     "name": "triage"
+    }
+   ],
+   "body": "",
+   "comments": [
+    {
+     "author": {
+      "login": "astevegreen"
+     },
+     "createdAt": "2026-09-25T21:04:44Z",
+     "body": "End-to-end test of the report relay: filed from the live site, screenshot served, and `npm run replay:report` reproduced the reported state exactly. Closing."
+    }
+   ]
+  },
+  {
+   "number": 6,
+   "title": "[Bug]: [Floor 0 | Turn 84] Crash / Freeze Issue",
+   "state": "CLOSED",
+   "createdAt": "2026-09-25T21:13:44Z",
+   "closedAt": "2026-09-25T21:49:09Z",
+   "labels": [
+    {
+     "name": "bug"
+    },
+    {
+     "name": "crash"
+    }
+   ],
+   "body": "",
+   "comments": []
+  },
+  {
+   "number": 7,
+   "title": "[Bug]: [Floor 5 | Turn 1624] Combat & Spells Issue",
+   "state": "CLOSED",
+   "createdAt": "2026-09-25T21:45:40Z",
+   "closedAt": "2026-09-25T21:54:53Z",
+   "labels": [
+    {
+     "name": "bug"
+    },
+    {
+     "name": "area:combat"
+    },
+    {
+     "name": "area:magic"
+    }
+   ],
+   "body": "",
+   "comments": [
+    {
+     "author": {
+      "login": "astevegreen"
+     },
+     "createdAt": "2026-09-25T21:54:53Z",
+     "body": "Fixed in c39a23a: telegraphed wind-up attacks (e.g. Gálmr's Rime Shockwave blast) no longer hit their own caster. Regression test added."
+    }
+   ]
+  },
+  {
+   "number": 8,
+   "title": "[Bug]: [Floor 1 | Turn 550] Other Issue",
+   "state": "CLOSED",
+   "createdAt": "2026-09-26T18:08:50Z",
+   "closedAt": "2026-09-27T10:57:52Z",
+   "labels": [
+    {
+     "name": "bug"
+    },
+    {
+     "name": "triage"
+    }
+   ],
+   "body": "",
+   "comments": []
+  },
+  {
+   "number": 9,
+   "title": "[Bug]: [Floor 5 | Turn 4647] Items & Inventory Issue",
+   "state": "CLOSED",
+   "createdAt": "2026-09-27T18:20:35Z",
+   "closedAt": "2026-09-27T19:08:57Z",
+   "labels": [
+    {
+     "name": "bug"
+    },
+    {
+     "name": "area:inventory"
+    }
+   ],
+   "body": "",
+   "comments": [
+    {
+     "author": {
+      "login": "astevegreen"
+     },
+     "createdAt": "2026-09-27T19:08:56Z",
+     "body": "Resolved in commit 658c6b5. Containers on the ground now only display a grey checkmark (\\✓\\) once they are completely empty. Opened containers that still contain items (such as the Rune of Return or other loot) display an amber dot (\\•\\), while unopened containers display a gold star (\\★\\)."
+    }
+   ]
+  },
+  {
+   "number": 10,
+   "title": "[Bug]: [Floor 3 | Turn 508] Combat & Spells Issue",
+   "state": "CLOSED",
+   "createdAt": "2026-10-02T11:28:04Z",
+   "closedAt": "2026-10-07T10:03:06Z",
+   "labels": [
+    {
+     "name": "bug"
+    },
+    {
+     "name": "area:combat"
+    },
+    {
+     "name": "area:magic"
+    }
+   ],
+   "body": "",
+   "comments": []
+  },
+  {
+   "number": 11,
+   "title": "[Bug]: [Floor 0 | Turn 193] Other Issue",
+   "state": "CLOSED",
+   "createdAt": "2026-10-05T12:20:37Z",
+   "closedAt": "2026-10-07T10:03:05Z",
+   "labels": [
+    {
+     "name": "bug"
+    },
+    {
+     "name": "triage"
+    }
+   ],
+   "body": "",
+   "comments": []
+  },
+  {
+   "number": 18,
+   "title": "Relay health check (test report, safe to ignore)",
+   "state": "CLOSED",
+   "createdAt": "2026-10-16T21:13:26Z",
+   "closedAt": "2026-10-16T21:13:58Z",
+   "labels": [],
+   "body": "",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-16T21:13:31Z",
+     "body": "Relay health check passed; closing."
+    }
+   ]
+  },
+  {
+   "number": 19,
+   "title": "Sprint log",
+   "state": "OPEN",
+   "createdAt": "2026-10-21T00:01:19Z",
+   "closedAt": null,
+   "labels": [],
+   "body": "",
+   "comments": []
+  },
+  {
+   "number": 20,
+   "title": "[task] R1: player soak on main, floors 5, 20, 26, 34",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T00:48:46Z",
+   "closedAt": "2026-10-21T13:21:11Z",
+   "labels": [
+    {
+     "name": "lane:research"
+    },
+    {
+     "name": "proposal"
+    }
+   ],
+   "body": "",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T00:49:43Z",
+     "body": "Research: started R1 player-floor5 pid 34660 sha ae5a2d27 flags --lens player --start-floor 5 --workers 2 --until 22:49"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T03:10:17Z",
+     "body": "Research: read player-floor5\n9 seeds, sha ae5a2d27, all ended by death, none partial. 230 findings, all ux/S4: no crash, softlock, oracle failure or wrong-text finding, so no new fixes issues (permission 6).\n- Deepest floor: 18-20 in 8 seeds; seed 4 (caster) died on floor 5 after 54 turns to Gálmr ("
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T03:10:37Z",
+     "body": "Research: started R1 player-floor20 pid 45524 sha ae5a2d27 flags --lens player --start-floor 20 --workers 2 --until 01:10"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T06:16:49Z",
+     "body": "Research: read player-floor20\n63 finished seeds (2 more unfinished/no summary), sha ae5a2d27, none partial. Ended: death 57, softlock 4, action cap 2. Deepest floor 20-24 (median 21 in all three builds).\n- Bug: softlock S1 \"input stayed locked for ~5040 ms\" in 4 seeds (8, 7, 45, 53), after spell pic"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T06:17:20Z",
+     "body": "Research: started R1 player-floor26 pid 31204 sha ae5a2d27 flags --lens player --start-floor 26 --workers 2 --until 04:16"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T11:30:30Z",
+     "body": "Research: read player-floor26\n13 finished seeds, sha ae5a2d27, none partial. Ended: death 10, action cap 2, softlock 1. Deepest floor 27-30 (median: caster 28.5, hybrid 30, warrior 27).\n- Bug: the same softlock signature as #47 (\"input stayed locked for ~5040 ms\"), seed 1 on floor 29, action 2139 (s"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T11:31:04Z",
+     "body": "Research: started R1 player-floor34 pid 29284 sha ae5a2d27 flags --lens player --start-floor 34 --workers 2 --until 09:30"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T13:20:56Z",
+     "body": "Research: read player-floor34\n100 finished seeds, sha ae5a2d27, none partial. All ended by death. Deepest floor 34-36 (median 34 in all three builds; best 35 caster/hybrid, 36 warrior).\n- No crash, softlock, oracle failure or wrong-text finding, and no magic finding: 4124 casts, 0 failed. No new fix"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T13:21:07Z",
+     "body": "Research: R1 report\nProposal, not a rule.\n\nFour player soaks on main (sha ae5a2d27), floors 5, 20, 26 and 34: 185 finished seeds, all `partial: false`, 0 failed casts in about 22,000 casts.\n\nBugs\n- One: softlock S1, \"input stayed locked for ~5040 ms\", 5 seeds (floor 20: 4, floor 26: 1; none on floor"
+    }
+   ]
+  },
+  {
+   "number": 21,
+   "title": "[task] T1: soak-report counts affected runs by (folder, seed), not seed number",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T00:49:53Z",
+   "closedAt": "2026-10-21T11:53:22Z",
+   "labels": [
+    {
+     "name": "lane:tooling"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**\nNone.\n",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T01:14:53Z",
+     "body": "Lane: ready to integrate, branch sprint/21.\nWHAT CHANGED: soak-report now counts affected runs by (folder, seed): ReportSummary gets an optional folder, the CLI sets it to the resolved path, section 5 keys on [folder, seed]. Two new tests.\nPLAYER-VISIBLE: nothing player-visible."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T11:53:21Z",
+     "body": "Integrator: landed d9b9a2cb. Players will see: nothing player-visible."
+    }
+   ]
+  },
+  {
+   "number": 22,
+   "title": "[task] B1: Taking an item out of a worn belt, purse or pouch moves it to the pack",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T00:49:53Z",
+   "closedAt": "2026-10-21T12:09:14Z",
+   "labels": [
+    {
+     "name": "lane:fixes"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none.\n\n**Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T01:12:43Z",
+     "body": "Lane: ready to integrate, branch sprint/22.\nWHAT CHANGED: Taking a potion, scroll or wand out of the worn belt, coins out of the worn purse, or an essence out of the rune pouch now puts it in the pack (storeItem/storeCoins take an optional container to skip; LootFromContainerAction passes it for wor"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T12:09:13Z",
+     "body": "Integrator: landed a765a2d6. Players will see: Taking an item out of the belt, purse or rune pouch now moves it into the pack, instead of wasting a turn."
+    }
+   ]
+  },
+  {
+   "number": 23,
+   "title": "[task] B2: Disarm while standing on a disarmed trap scans all neighbours",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T00:49:54Z",
+   "closedAt": "2026-10-21T12:22:07Z",
+   "labels": [
+    {
+     "name": "lane:fixes"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none.\n\n**Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T01:18:28Z",
+     "body": "Lane: ready to integrate, branch sprint/23.\nWHAT CHANGED: disarm.ts neighbour scan uses a labelled break, so standing on a disarmed trap no longer stops the scan after the first row. Tests added in failedDisarmTurn.test.ts. Commit 3535c75f.\nPLAYER-VISIBLE: Disarm works on a trap next to the hero whi"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T12:22:07Z",
+     "body": "Integrator: landed 3068c892. Players will see: Disarm works on a trap next to the hero while standing on one already disarmed."
+    }
+   ]
+  },
+  {
+   "number": 24,
+   "title": "[task] B3: A buffered arrow step never fires under a just-opened modal",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T00:49:55Z",
+   "closedAt": "2026-10-21T12:43:25Z",
+   "labels": [
+    {
+     "name": "lane:fixes"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none.\n\n**Protected files**: no protected file. Lane note: this fix lives in `src/rendering/` (and possibly `src/ui/input/`), outside the lane's usual `src/engine/`/`src/content/`, as the backlog assigns it.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T01:30:43Z",
+     "body": "Lane: ready to integrate, branch sprint/24.\nWHAT CHANGED: the chord buffer's onMove in input-handler.ts drops a held arrow step if a modal is on the stack or the map overlay is open, so it neither fires under the dialog nor late after it closes. Tests in inputRegressions.test.ts. Commit 4c201016. (T"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T12:43:24Z",
+     "body": "Integrator: landed 2fa8a9c9. Players will see: Pressing an arrow and then quickly opening a menu (I, E, Z, a HUD dialog button, or the map) no longer moves or bump-attacks with the hero behind it."
+    }
+   ]
+  },
+  {
+   "number": 25,
+   "title": "[task] T2: soak oracles: raid-death only after a played raid; tag latency and stairs findings",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T00:50:35Z",
+   "closedAt": "2026-10-21T12:58:22Z",
+   "labels": [
+    {
+     "name": "lane:tooling"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "- The key-latency finding (wall-clock, depends on machine load) and the \"more than 300 turns without seeing the stairs down\" finding are still written, but tagged, and the runner's per-category counts leave tagged findings out, so the `ux` count means real UX findings again.\nWorkflow-only: the soak output the owner and the research lane read gets quieter, with nothing lost.\n\n**Depends on**\nNone. (#21, T1, touches `scripts/lib/soak-report.ts` only; no overlap.)\n",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T01:23:18Z",
+     "body": "Lane: ready to integrate, branch sprint/25.\nWHAT CHANGED: the raid-death oracle moved to a pure e2e/soak/oracleRules.ts and stays quiet when the opening was skipped; Finding gets an optional tag (latency, pacing) on the key-latency and stairs findings; per-run findingCounts leave tagged ones out (co"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T12:58:21Z",
+     "body": "Integrator: landed e70641ca. Players will see: nothing player-visible."
+    }
+   ]
+  },
+  {
+   "number": 26,
+   "title": "[task] M1: Fix stale and misleading magic text",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T00:51:02Z",
+   "closedAt": "2026-10-21T13:09:56Z",
+   "labels": [
+    {
+     "name": "lane:aids"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "## Depends on\nNone.\n",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T01:13:39Z",
+     "body": "Lane: ready to integrate, branch sprint/26.\nWHAT CHANGED: Runestone lore (floors 20, 38, 48) names Hammer-Throw not Lightning Bolt; killRite and grimoire hints rewritten; Hel's altar defines Void Debt; Astrid's default dialogue mentions rune tablets; spellTablets.ts comment fixed. Tests added.\nPLAYE"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T13:09:55Z",
+     "body": "Integrator: landed 992570cc. Players will see: kill-rite hint explains learning stones and shards; grimoire hint says spells cast only from a slot and the hero picks each axis; runestone lore names Hammer-Throw; Hel's altar defines Void Debt; Astrid mentions her rune tablets."
+    }
+   ]
+  },
+  {
+   "number": 27,
+   "title": "[task] T3: soak bot fires a projectile only when its flight reaches the target",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T00:51:18Z",
+   "closedAt": "2026-10-21T13:20:33Z",
+   "labels": [
+    {
+     "name": "lane:tooling"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**\nNone.\n",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T01:43:19Z",
+     "body": "Lane: ready to integrate, branch sprint/27.\nWHAT CHANGED: new e2e/soak/lineOfFire.ts mirrors the engine's projectile flight; the soak bot's Magic Arrow targeting and the P-36 reach check for flying spells now require a clear flight to the target instead of a sight line. Five new tests; a 2-seed soak"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T13:20:32Z",
+     "body": "Integrator: landed 9d5df43b. Players will see: nothing player-visible."
+    }
+   ]
+  },
+  {
+   "number": 28,
+   "title": "[task] M2: Pack-declared first-time hints shown by game events",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T00:51:32Z",
+   "closedAt": "2026-10-21T18:07:03Z",
+   "labels": [
+    {
+     "name": "lane:aids"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "## Depends on\nNone.\n",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T01:30:50Z",
+     "body": "Lane: ready to integrate, branch sprint/28.\nWHAT CHANGED: closed FirstTimeHintId replaced by an open pack-declared hint record with showOn event triggers (hintsMetByEvent); ALL_HINTS removed; cotw altar and killRite hints declare showOn; docs updated. Note: branch cut before sprint/26, expect a smal"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T13:20:46Z",
+     "body": "Integrator: conflicts with main in src/content/cotw/hints.ts (M1 landed there). Rebase sprint/28 onto origin/main using the reapply-cherry-picks option, then resolve hints.ts.\n"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T17:49:56Z",
+     "body": "Lane: ready to integrate, branch sprint/28 (rebased onto origin/main, tip 1e956dcf; the rebase was clean).\nWHAT CHANGED: closed FirstTimeHintId replaced by an open pack-declared hint record with showOn event triggers; cotw altar and killRite declare showOn; docs updated.\nPLAYER-VISIBLE: nothing play"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T18:07:03Z",
+     "body": "Integrator: landed 578936e5. Players will see: nothing player-visible."
+    }
+   ]
+  },
+  {
+   "number": 29,
+   "title": "[task] U1a: Recent-messages strips collapse repeats before taking their last lines",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T00:51:47Z",
+   "closedAt": "2026-10-21T13:33:17Z",
+   "labels": [
+    {
+     "name": "lane:ux"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none.\n\n**Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T01:16:12Z",
+     "body": "Lane: ready to integrate, branch sprint/29.\nWHAT CHANGED: the character menu's Recent messages strip and the death screen's How it ended strip merge repeated lines into one row first, then keep the last N rows (messageLogRows gains an optional limit).\nPLAYER-VISIBLE: those two strips show a repeated"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T13:33:17Z",
+     "body": "Integrator: landed 1b899ad1. Players will see: those two strips show a repeated line once with (×N), so they hold more of what happened."
+    }
+   ]
+  },
+  {
+   "number": 30,
+   "title": "[task] U1b: Log shows a line one action repeats, even with lines between, once with its count",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T00:52:13Z",
+   "closedAt": "2026-10-21T18:19:01Z",
+   "labels": [
+    {
+     "name": "lane:ux"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: #29 (U1a).\n\n**Protected files**: no protected file. Do not touch `src/engine/engine.ts`: the boundary lives in presentation.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T17:34:00Z",
+     "body": "Lane: re-queued, the previous lane session stopped."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T17:48:57Z",
+     "body": "Lane: ready to integrate, branch sprint/30.\n\nWHAT CHANGED: new ActionLogGroups in src/ui/logClassifier.ts groups log lines by action; collapseByAction replaces collapseRepeats, so a line one action repeats (even with lines between) shows once with (×N). HUD strip, history modal, death strip and char"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T18:19:00Z",
+     "body": "Integrator: landed c9edf943. Players will see: when one action writes a line several times, the log shows it once with (×N) where it first appeared."
+    }
+   ]
+  },
+  {
+   "number": 31,
+   "title": "[task] U2: First-time hint for unidentified items: Mimir, Scroll of Identify, Lore-Keeper",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T00:52:59Z",
+   "closedAt": "2026-10-21T13:46:02Z",
+   "labels": [
+    {
+     "name": "lane:ux"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none (see the M2 note).\n\n**Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T01:40:25Z",
+     "body": "Lane: ready to integrate, branch sprint/31.\nWHAT CHANGED: new first-time hint 'unidentified' (id added to the FirstTimeHintId union and ALL_HINTS; met when a carried item, worn containers included, is unidentified and identifiable); cotw text names Sage Mimir, Scroll of Identify and the Lore-Keeper "
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T13:46:02Z",
+     "body": "Integrator: landed 7f9a330e. Players will see: the first time a hero carries an unidentified item, a one-time hint card explains how such things get named."
+    }
+   ]
+  },
+  {
+   "number": 32,
+   "title": "[task] M3a: Hrefna the völva in town after the raid",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T00:55:14Z",
+   "closedAt": "2026-10-21T15:35:18Z",
+   "labels": [
+    {
+     "name": "lane:aids"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "",
+   "comments": [
+    {
+     "author": {
+      "login": "astevegreen"
+     },
+     "createdAt": "2026-10-21T01:44:00Z",
+     "body": "Approved: (a), beside the plaza fountain."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T02:09:10Z",
+     "body": "Lane: unblocked by the owner's answer; the implementer reads it as part of the spec."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T04:12:18Z",
+     "body": "Lane: re-queued, the previous lane session stopped."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T04:33:05Z",
+     "body": "Lane: ready to integrate, branch sprint/32.\nWHAT CHANGED: new town NPC Hrefna the Völva (npc-hrefna) at (27,18) beside the plaza fountain, seated by a post-action hook once the raid has ended; walking into her opens a one-option choice with three Seiðr lines (owner's line verbatim); new sprite and p"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T15:35:18Z",
+     "body": "Integrator: landed 6ecd1ec1. Players will see: after the night raid Hrefna sits by the fountain, the log announces her once, and she speaks three lines about Seiðr (Nod / Step back)."
+    }
+   ]
+  },
+  {
+   "number": 33,
+   "title": "[task] M3b: Objective \"Learn your first spell\"",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T00:55:16Z",
+   "closedAt": "2026-10-21T18:29:25Z",
+   "labels": [
+    {
+     "name": "lane:aids"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "",
+   "comments": [
+    {
+     "author": {
+      "login": "astevegreen"
+     },
+     "createdAt": "2026-10-21T01:44:01Z",
+     "body": "Approved: (a), Hallvard → \"Gear up … take the stairs down\" → \"Learn your first spell\" → the main-quest line."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T02:09:12Z",
+     "body": "Lane: unblocked by the owner's answer; the implementer reads it as part of the spec."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T04:47:34Z",
+     "body": "Lane: held after one fix round, branch sprint/33 (commits 8510d9f5, 03d71a28). Remaining reviewer concern (blocker): the catch-up hook in firstSpell.ts sets the flag whenever any stone record is `spent`, but `shardFadesOnLeaving` -> `shardToRune` (src/engine/magic/learningStones.ts:270, 349-358; sta"
+    },
+    {
+     "author": {
+      "login": "astevegreen"
+     },
+     "createdAt": "2026-10-21T11:29:00Z",
+     "body": "Approved: accept `spent` for old saves only. A save made before this change counts any spent stone record (read or faded shard) as \"first spell learned\"; new runs set the flag only from the `ReadLearningStoneAction` hook (8510d9f5). Taking the rune counts as read.\n\n---\n_Generated by [Claude Code](ht"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T11:42:06Z",
+     "body": "Lane: branch sprint/33 (bbe98282) is reviewed; code passes, the commit trailer is fixed. One product question for the owner: the HUD line \"Learn your first spell\" ends only when a stone is read, and it sits above the Act 1, Hearth-Tear, Act 2 and Níðhögg lines, so a hero who never reads a stone lose"
+    },
+    {
+     "author": {
+      "login": "astevegreen"
+     },
+     "createdAt": "2026-10-21T13:20:45Z",
+     "body": "Yes: end the \"Learn your first spell\" line when the Hearth-Tear is recovered, as well as when a stone is read (owner: \"33: yes\", answering the recommendation above).\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_\n"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T17:53:44Z",
+     "body": "Lane: ready to integrate, branch sprint/33 (rebased onto origin/main; new commit 7d1c8cba).\nWHAT CHANGED: the 'Learn your first spell' line now also ends when the Hearth-Tear is recovered, as well as when a stone is read (owner: '33: yes'); test added.\nPLAYER-VISIBLE: a hero who never reads a learni"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T18:29:25Z",
+     "body": "Integrator: landed eec57821. Players will see: a hero who never reads a learning stone sees the line change to 'Carry the Hearth-Tear home to Bjarnarhaven.' once the Hearth-Tear is recovered, instead of the first-spell line staying all run (plus the new 'Learn your first spell' objective)."
+    }
+   ]
+  },
+  {
+   "number": 34,
+   "title": "[task] M4: The raid's Seiðr draught",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T00:56:52Z",
+   "closedAt": "2026-10-21T15:47:16Z",
+   "labels": [
+    {
+     "name": "lane:aids"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "",
+   "comments": [
+    {
+     "author": {
+      "login": "astevegreen"
+     },
+     "createdAt": "2026-10-21T01:44:03Z",
+     "body": "Approved: (a), Sigrun gives the draught; her 12 silver becomes a Minor Seiðr Potion and her freed line becomes the draught line."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T02:09:16Z",
+     "body": "Lane: unblocked by the owner's answer; the implementer reads it as part of the spec."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T04:52:23Z",
+     "body": "Lane: ready to integrate, branch sprint/34.\nWHAT CHANGED: freed Sigrun now drops a Minor Seiðr Potion (mana_potion) instead of 12 silver; her freed line becomes the draught line; unused silver option removed; one new test.\nPLAYER-VISIBLE: freeing Sigrun in the night raid leaves a Minor Seiðr Potion "
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T15:47:15Z",
+     "body": "Integrator: landed 8548d51f. Players will see: freeing Sigrun in the night raid leaves a Minor Seiðr Potion and the line \"Your well runs dry fast. Drink, and aim true.\" instead of 12 silver."
+    }
+   ]
+  },
+  {
+   "number": 35,
+   "title": "[task] M5a: Hrefna's hints on Void Debt, the shard and the stone",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T00:58:42Z",
+   "closedAt": "2026-10-21T20:46:06Z",
+   "labels": [
+    {
+     "name": "lane:aids"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "## Depends on\n#28 (M2).\n",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T19:24:03Z",
+     "body": "Lane: ready to integrate, branch sprint/35.\n\nWHAT CHANGED: engine emits a built-in `void_debt_accrued` event when a cast goes short of Seiðr (no protected file touched); cotw gets `voidDebt` and `learningStone` hints from Hrefna and a Runestone Shard pickup hint; 7 new tests.\nPLAYER-VISIBLE: first s"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T20:46:04Z",
+     "body": "Integrator: landed d8b1cb44. Players will see: first short cast shows a Void Debt hint card; first Runestone Shard pickup shows a \"carry it to the broken stone\" hint; first learning stone read shows a grimoire-slot/Spellbook hint."
+    }
+   ]
+  },
+  {
+   "number": 36,
+   "title": "[task] M5b: Hrefna's hints on a sleeping shard-carrier and full grimoires",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T01:00:04Z",
+   "closedAt": "2026-10-21T21:19:11Z",
+   "labels": [
+    {
+     "name": "lane:aids"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "## Depends on\n#28 (M2). Independent of #35, but if both are open, rebase on whichever lands first (both add to `hints.ts`).\n",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T19:37:27Z",
+     "body": "Lane: ready to integrate, branch sprint/36.\n\nWHAT CHANGED: two new built-in hint ids (`shardCarrier`, `grimoireFull`) with their state checks in `hintModel.ts`; cotw gets two Hrefna hints; 5 new tests. Note: #35 also edits `hints.ts`, so the integrator may see a trivial conflict.\nPLAYER-VISIBLE: fir"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T21:19:10Z",
+     "body": "Integrator: landed db072aaa. Players will see: first sight of a sleeping shard-carrier shows \"It dreams with a shard. Let it sleep, or wake it your own way.\"; first spell offer with every grimoire slot full shows a hint on how to make room."
+    }
+   ]
+  },
+  {
+   "number": 37,
+   "title": "[task] U3: Primer names the starting spells, Seiðr and the Spellbook key; F1 magic cards say how Seiðr returns and where spells come from",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T02:09:26Z",
+   "closedAt": "2026-10-22T01:43:51Z",
+   "labels": [
+    {
+     "name": "lane:ux"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none.\n\n**Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T03:33:28Z",
+     "body": "Implementer: the change is built and its own tests pass, but `npm run gate-stamp -- run lint test tooling` failed 12 times in a row (once per attempt, over about 20 minutes), always at knip. The machine ran out of memory each time. The code did not fail: knip's parser could not reserve its buffer, b"
+    },
+    {
+     "author": {
+      "login": "astevegreen"
+     },
+     "createdAt": "2026-10-21T17:49:51Z",
+     "body": "Retry on the desktop."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T18:13:50Z",
+     "body": "Implementer: the retry stopped before the gates. The tool permission check refused every attempt to move this lane's worktree onto the `sprint/37` branch (a plain branch switch on a clean tree, and recreating the branch at current main), and then refused a read-only log of `origin/main` too, labelli"
+    },
+    {
+     "author": {
+      "login": "astevegreen"
+     },
+     "createdAt": "2026-10-21T20:33:32Z",
+     "body": "Retry: branch switches and log are now allowed in the ux worktree."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T21:07:58Z",
+     "body": "Lane: unblocked by the owner's answer; the implementer reads it as part of the spec."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T21:08:23Z",
+     "body": "Lane: the implementer could not start. The tool permission check denied the run (reason given: untrusted code integration), most likely because the task points at the saved patch .prompts/sprint-37.patch. Question: may the lane apply that patch in the ux worktree and build on it, or should the imple"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T23:19:43Z",
+     "body": "Owner's answer, given in chat to a Claude Code session at 23:2xZ on 21 Oct and relayed word for word (this account is the sprint bot's, so it is quoted here): \"U3: the lane may apply .prompts/sprint-37.patch in the ux worktree and build on it.\""
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T23:19:56Z",
+     "body": "Lane: unblocked by the owner's answer; the implementer reads it as part of the spec."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T00:31:56Z",
+     "body": "Lane: ready to integrate, branch sprint/37.\nWHAT CHANGED: primer names the hero's known spells, the mana name and the Spellbook key chip (getters wired in main.ts); new optional manifest field helpNotes keyed by F1 context id; cotw sets spellbook and targeting notes; tests added.\nPLAYER-VISIBLE: pri"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T01:43:51Z",
+     "body": "Integrator: landed 5304da5a. Players will see: primer names your two starting spells, Seiðr and the Spellbook key; F1 Spellbook says how Seiðr returns and where spells come from; F1 while aiming says the same in one line."
+    }
+   ]
+  },
+  {
+   "number": 38,
+   "title": "[task] M6: On floor 4 the objective points to the shard-carrier, then the stone",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T02:09:38Z",
+   "closedAt": "2026-10-21T21:31:27Z",
+   "labels": [
+    {
+     "name": "lane:aids"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "## Depends on\n#33 (M3b).\n",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T19:50:36Z",
+     "body": "Lane: ready to integrate, branch sprint/38.\n\nWHAT CHANGED: engine helper `learningStoneTarget` (carrier, then dropped shard, then stone) exported via the engine index; optional `pointToLearningStone` labels on `ObjectiveDefinition`; `getObjectiveLine` uses them; cotw's \"Learn your first spell.\" carr"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T21:31:27Z",
+     "body": "Integrator: landed deeb4878. Players will see: on floor 4, while \"Learn your first spell\" is the objective, the HUD bearing points to the shard-carrier, then a dropped shard, then the broken stone, instead of the stairs down."
+    }
+   ]
+  },
+  {
+   "number": 39,
+   "title": "[task] B4: Hliðskjálf's loot sensing stays on the floor it was cast on",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T02:09:54Z",
+   "closedAt": "2026-10-21T18:40:54Z",
+   "labels": [
+    {
+     "name": "lane:fixes"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none.\n\n**Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T03:48:05Z",
+     "body": "Implementer: the fix and its tests are written, but nothing is committed, because the lint gate fails in `knip` for a reason outside the code. The machine is short of memory: about 6.2 GB of free commit charge, with 100+ node processes from the other lanes. oxc-parser's raw-transfer buffer can't be "
+    },
+    {
+     "author": {
+      "login": "astevegreen"
+     },
+     "createdAt": "2026-10-21T13:23:33Z",
+     "body": "Retry: the machine's memory is freed (16 GB free commit charge at 13:25Z, after archiving finished sprint sessions), so the knip out-of-memory hold no longer applies. Please re-run the gates and commit (owner: \"Yes, re-queue all three\").\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_\n"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T17:34:02Z",
+     "body": "Lane: re-queued, the previous lane session stopped."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T17:57:01Z",
+     "body": "Implementer: committed on sprint/39 (030dbb48, from origin/main 04e26472). All gates pass now that memory is free, knip included: lint + test (452 files, 3457 tests) + tooling, sim, validate:schema. Without the fix, criteria 1, 2 and 4 fail as the spec expects."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T17:57:55Z",
+     "body": "Lane: ready to integrate, branch sprint/39.\n\nWHAT CHANGED: Hliðskjálf's item reveal records the floor it was cast on; objectSensedAt senses through it only on that floor (old saves with no floor behave as before). New test seerSensingFloor.test.ts (3 of 6 fail without the fix).\nPLAYER-VISIBLE: After"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T18:40:53Z",
+     "body": "Integrator: landed c3a1e17e. Players will see: after casting Hliðskjálf and taking the stairs, the new floor no longer shows loot through walls."
+    }
+   ]
+  },
+  {
+   "number": 40,
+   "title": "[task] B5: A turret winds up its blast only at a hero it perceives",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T02:09:55Z",
+   "closedAt": "2026-10-21T16:00:01Z",
+   "labels": [
+    {
+     "name": "lane:fixes"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none.\n\n**Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T04:22:21Z",
+     "body": "Lane: ready to integrate, branch sprint/40.\nWHAT CHANGED: ImmobileTurretStrategy (aiRegistry.ts) now needs perceives() as well as line of sight before winding up or casting; tests added in turret.test.ts.\nPLAYER-VISIBLE: A turret (Captive of the Chariot, floor 22+) no longer winds up its blast at a "
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T16:00:00Z",
+     "body": "Integrator: landed d72411b4. Players will see: a turret (Captive of the Chariot, floor 22+) no longer winds up its blast at a hero hidden in dense steam, or while it is blinded."
+    }
+   ]
+  },
+  {
+   "number": 41,
+   "title": "[task] B6: A telegraphed blast always leaves the hero one turn to react",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T02:09:59Z",
+   "closedAt": "2026-10-21T17:09:49Z",
+   "labels": [
+    {
+     "name": "lane:fixes"
+    }
+   ],
+   "body": "**Depends on**: none.\n\n**Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T04:29:52Z",
+     "body": "Lane: ready to integrate, branch sprint/41.\nWHAT CHANGED: WindUpDeclareAction records declaredOnTurn; the monster AI strikes only once the turn counter has moved past it (old saves without the field strike as before). Tests in windupHeroTurn.test.ts.\nPLAYER-VISIBLE: A fast monster's telegraphed blas"
+    },
+    {
+     "author": {
+      "login": "astevegreen"
+     },
+     "createdAt": "2026-10-21T17:09:49Z",
+     "body": "Integrator: landed a805194c (deploy green, 16:04 UTC). Players will see: a fast monster's telegraphed blast always leaves the hero one turn to react before it strikes.\n\nClosed by hand: the integrator session was stopped right after this push, when the sprint moved to the desktop."
+    }
+   ]
+  },
+  {
+   "number": 42,
+   "title": "[task] U4: Command palette finds casting, aiming and resting to regain Seiðr",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T02:10:21Z",
+   "closedAt": "2026-10-21T17:54:44Z",
+   "labels": [
+    {
+     "name": "lane:ux"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none.\n\n**Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T11:30:02Z",
+     "body": "Lane: ready to integrate, branch sprint/42.\n\nWHAT CHANGED: palette gains \"Cast Quick Spell 1\" (same path as the key); Spellbook description mentions cast/aim; rest entry reads \"Rest to Regain HP and Seiðr\" (pack-filled via catalogForPack); palette search extracted to testable filterCommands.\nPLAYER-"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T17:54:44Z",
+     "body": "Integrator: landed 04e26472. Players will see: palette has \"Cast Quick Spell 1\"; rest command names Seiðr; searching \"aim\", \"cast\" or \"Seiðr\" finds spell and rest commands."
+    }
+   ]
+  },
+  {
+   "number": 43,
+   "title": "[task] U5: Sage Mimir's all-clear advice ends with a saying in the pack's voice",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T04:12:45Z",
+   "closedAt": "2026-10-21T18:52:38Z",
+   "labels": [
+    {
+     "name": "lane:ux"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none.\n\n**Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T11:39:39Z",
+     "body": "Lane: ready to integrate, branch sprint/43.\n\nWHAT CHANGED: cotw manifest sets advisorQuotes: five sayings in Sage Mimir voice (two echo Hávamál 10 and 76); new advisorQuotes.test.ts. No engine change.\nPLAYER-VISIBLE: when Sage Mimir finds nothing to warn about, his advice ends with a Norse saying in"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T18:52:38Z",
+     "body": "Integrator: landed 131ae55f. Players will see: when Sage Mimir finds nothing to warn about, his advice ends with a Norse saying in his voice instead of a stock one."
+    }
+   ]
+  },
+  {
+   "number": 44,
+   "title": "[task] B7: After a blink or an ice slide, the step's tile effects follow the tile the hero lands on",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T04:13:37Z",
+   "closedAt": "2026-10-21T19:04:57Z",
+   "labels": [
+    {
+     "name": "lane:fixes"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none.\n\n**Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T05:19:09Z",
+     "body": "Implementer: the fix and its tests are written but not committed. The lint gate keeps failing in `knip` for the same out-of-memory reason as B4 (#39), not because of the code. oxc-parser needs about 6 GB of free commit charge for its buffer, and the machine had 2.3 to 4.5 GB free, with about 100 nod"
+    },
+    {
+     "author": {
+      "login": "astevegreen"
+     },
+     "createdAt": "2026-10-21T13:23:35Z",
+     "body": "Retry: the machine's memory is freed (16 GB free commit charge at 13:25Z, after archiving finished sprint sessions), so the knip out-of-memory hold no longer applies. Please re-run the gates and commit (owner: \"Yes, re-queue all three\").\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_\n"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T17:43:17Z",
+     "body": "Implementer: with memory freed, the gates pass and the fix is committed on sprint/44 as 7deba71f (not pushed). Lint, including knip, passed; unit tests 3382/3382 passed and tooling 45/45; `npm run sim` and `npm run validate:schema` passed. The new stepLandingTile test fails 4 of 5 without the fix an"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T17:44:22Z",
+     "body": "Lane: ready to integrate, branch sprint/44.\n\nWHAT CHANGED: movement step 6 (stairs, portal, learning stone, altar, tile choice) checks the tile the hero ends on; after Trickster's Step the hero gets the landing surface's effect (landOn), ending the step if it kills them. New test stepLandingTile.tes"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T19:04:56Z",
+     "body": "Integrator: landed c28ffb57. Players will see: after a blink or an ice slide, the landing tile's effects (not the start tile's) apply to the hero."
+    }
+   ]
+  },
+  {
+   "number": 45,
+   "title": "[task] B8: Mirror Hide's heal carry survives a save; the coven's flight ends the raid before the next rescue",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T04:15:12Z",
+   "closedAt": "2026-10-21T19:18:08Z",
+   "labels": [
+    {
+     "name": "lane:fixes"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none.\n\n**Protected files**: no protected file (`serializer.ts` and `types.ts` are not §8.1 files; `migrator.ts` is not touched).",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T06:33:28Z",
+     "body": "Implementer: gates fail on this machine's memory, not on the change. Five attempts across ~20 minutes; nothing is committed, since the pre-commit hook would hit the same wall and hooks are never skipped.\n\n`npm run gate-stamp -- run lint test tooling`: tsc and every `check:*` pass, then knip dies all"
+    },
+    {
+     "author": {
+      "login": "astevegreen"
+     },
+     "createdAt": "2026-10-21T13:23:36Z",
+     "body": "Retry: the machine's memory is freed (16 GB free commit charge at 13:25Z, after archiving finished sprint sessions), so the knip out-of-memory hold no longer applies. Please re-run the gates and commit (owner: \"Yes, re-queue all three\").\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_\n"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T17:50:39Z",
+     "body": "Implementer: gates re-run with memory freed and all green (lint incl. knip, 3447 unit, 45 tooling, sim, validate:schema). The saved patch was applied onto current origin/main (merged cleanly with main's Sigrun-gift change in prologue.ts) and committed as bdf92ae4 on sprint/45."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T17:52:25Z",
+     "body": "Lane: ready to integrate, branch sprint/45.\n\nWHAT CHANGED: saves keep the fraction of a hit point a reduced heal (Mirror Hide) carries over (optional healCarry field, no schema bump); in the prologue, once the coven has fled, the move and raid hooks end the raid first. New tests in healCarryRoundTri"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T19:18:08Z",
+     "body": "Integrator: landed 3459b968. Players will see: In the prologue, once the coven has fled with the shard, the hero can no longer free a villager on the next move. A Mirror Hide wearer's healing no longer loses a fraction of a point across save and load."
+    }
+   ]
+  },
+  {
+   "number": 46,
+   "title": "[task] B9: Input locked during a rest and a free Magic Arrow: prove both fixed on today's build, or fix",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T05:14:13Z",
+   "closedAt": "2026-10-21T19:29:21Z",
+   "labels": [
+    {
+     "name": "lane:fixes"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none.\n\n**Protected files**: no protected file. If criterion 2 fails inside `spell-actions.ts`, that file is not protected; `engine.ts` and `actionPipeline.ts` should not be needed.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T11:41:08Z",
+     "body": "Implementer: both findings are fixed on today's `origin/main`; no code change needed. Branch `sprint/46` (30f1c557) adds them as regression tests, for the close once it lands:\n\n- Lock (S1): `src/ui/__tests__/autoRestRunnerUnseenCaster.test.ts` drives `AutoRestRunner` on fake timers with a blinded he"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T11:42:12Z",
+     "body": "Lane: ready to integrate, branch sprint/46. WHAT CHANGED: both soak findings already fixed on main (4a429034, 5fe6181d); branch adds two regression tests (AutoRestRunner unseen caster; Magic Arrow with stacked Enchanted discounts). PLAYER-VISIBLE: nothing player-visible."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T11:59:29Z",
+     "body": "Implementer: for #47 (S1 softlock on floor 20): its cause was a stall in the browser's frames (no `requestAnimationFrame` for 6 s, in two runs at once), not the rest path here. The fix is on `sprint/47`, pending review: an effect batch now ends by its own length when frames stop.\n"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T19:29:20Z",
+     "body": "Integrator: landed 08ea7413. Players will see: nothing player-visible (tests only prove both fixed)."
+    }
+   ]
+  },
+  {
+   "number": 47,
+   "title": "[task] S1: Input stays locked over 5 s after a cast or rest on floor 20 (soak softlock S1)",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T06:16:38Z",
+   "closedAt": "2026-10-21T19:43:01Z",
+   "labels": [
+    {
+     "name": "bug"
+    },
+    {
+     "name": "lane:fixes"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "## Depends on\nnone (see #46)\n",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T11:59:28Z",
+     "body": "Implementer: cause found and fixed on `sprint/47` (5005e1c1), pending review.\n\nThe hold was not a long effect and not a leaked hold. Seeds 7 and 8 locked at the same wall-clock instant: both traces show the browser's screencast stop at 1792552873.7 s and resume at 1792552880.1 s, a 6.3 s gap in two "
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T12:01:42Z",
+     "body": "Lane: ready to integrate, branch sprint/47. WHAT CHANGED: fxRunner.ts frees the tactical-effect input hold by the batch's own length (+250 ms) when the browser stops drawing frames (cause: 6.3 s frame stall in seeds 7 and 8, not a leaked hold); test fxLoopGuard.test.ts. PLAYER-VISIBLE: if the browse"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T19:43:01Z",
+     "body": "Integrator: landed a650db6b. Players will see: if the browser stops drawing frames mid-spell (a GPU hiccup), keys work again as soon as the spell would have finished, instead of only once frames come back; nothing changes on a healthy machine."
+    }
+   ]
+  },
+  {
+   "number": 48,
+   "title": "[task] T4a: soak bot keeps Seiðr for a Heal in a big fight and tops up early with Seiðr to spare",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T11:21:23Z",
+   "closedAt": "2026-10-21T19:56:10Z",
+   "labels": [
+    {
+     "name": "lane:tooling"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: #27, which edits `playerBot.ts` and sets up the source-text pattern this item reuses.\n**Protected files**: no protected file.\n**Player-visible**: nothing player-visible.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T14:21:07Z",
+     "body": "Lane: ready to integrate, branch sprint/48.\nWHAT CHANGED: new import-free e2e/soak/healPlan.ts (shouldHeal, healReserve) passed into the page as source text; the soak bot keeps one Heal's Seiðr in reserve in a big fight and tops up early with Seiðr to spare. 7 tests in scripts/__tests__/soakHealPlan"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T19:56:10Z",
+     "body": "Integrator: landed 26a87a6b. Players will see: nothing player-visible."
+    }
+   ]
+  },
+  {
+   "number": 49,
+   "title": "[task] T4b: soak bot under a telegraph it cannot step out of heals or walks toward the edge instead of waiting",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T11:21:41Z",
+   "closedAt": "2026-10-21T21:45:07Z",
+   "labels": [
+    {
+     "name": "lane:tooling"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: #27 and #48 (it reuses T4a's heal rule and edits the lines next to it).\n**Protected files**: no protected file.\n**Player-visible**: nothing player-visible.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T20:28:18Z",
+     "body": "Lane: ready to integrate, branch sprint/49.\nWHAT CHANGED: new pure module e2e/soak/telegraphExit.ts (telegraphExit BFS + telegraphChoice); playerBot.ts under a telegraph now dodges, else heals if hurt, else steps toward the nearest blast-free tile, else melee/Space. 8 tests in scripts/__tests__/soak"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T21:45:06Z",
+     "body": "Integrator: landed 4cf6c21f. Players will see: nothing player-visible."
+    }
+   ]
+  },
+  {
+   "number": 50,
+   "title": "[task] U6a: Rest at full HP and Seiðr says so: prove the line shows, or make it show",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T11:36:16Z",
+   "closedAt": "2026-10-21T20:08:05Z",
+   "labels": [
+    {
+     "name": "lane:ux"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none. If #30 (U1b) lands first, the row still ends with \"(×2)\" for repeats in a row.\n\n**Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T12:35:28Z",
+     "body": "Implementer: Not reproducible on 3068c892: the line shows; test added (e2e/gameplay.spec.ts, 'resting at full HP and mana says so in the log and spends no turn', branch sprint/50). R shows 'You are already fully rested (HP and Seiðr full).' with no turn spent, a second R reads '(×2)', and the HUD Re"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T12:36:30Z",
+     "body": "Lane: ready to integrate, branch sprint/50. WHAT CHANGED: bug did not reproduce on 3068c892 (rest at full HP and Seiðr already shows the line, spends no turn); no source change, added a Chromium regression test in e2e/gameplay.spec.ts. PLAYER-VISIBLE: nothing player-visible (test only). Note: on a f"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T20:08:05Z",
+     "body": "Integrator: landed 86049b4e. Players will see: nothing player-visible (test only)."
+    }
+   ]
+  },
+  {
+   "number": 51,
+   "title": "[task] U6b: Focus stays inside the shop after a trade, a list switch or a row click",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T11:36:18Z",
+   "closedAt": "2026-10-21T20:21:06Z",
+   "labels": [
+    {
+     "name": "lane:ux"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none.\n\n**Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T12:49:53Z",
+     "body": "Lane: ready to integrate, branch sprint/51. WHAT CHANGED: new src/ui/keepFocus.ts; ShopDialog.render() marks focus before the redraw and restores it after (same control, else selected row, else the dialog). Unit and Chromium tests added. PLAYER-VISIBLE: in a shop, after buying, selling, switching li"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T20:21:06Z",
+     "body": "Integrator: landed dce1059d. Players will see: in a shop, after buying, selling, switching list or clicking a row, keyboard focus stays on the control you were on instead of falling out of the dialog."
+    }
+   ]
+  },
+  {
+   "number": 52,
+   "title": "[task] Rest at full HP and Seiðr settles Void Debt above the lingering floor",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T11:44:06Z",
+   "closedAt": "2026-10-21T20:35:50Z",
+   "labels": [
+    {
+     "name": "lane:fixes"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none. Touches the same function #50 (U6a) reads, but #50 changes presentation only.\n\n**Protected files**: none.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T12:32:28Z",
+     "body": "Lane: ready to integrate, branch sprint/52.\n\nWHAT CHANGED: Rest at full HP and Seiðr no longer refuses when Void Debt is above the lingering floor; the rest takes one turn and settles the debt to the floor (`AutoRestManager.startRefusal`, `autoRest.ts`). Other refusals (hostile, timed event, rest-fo"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T20:35:50Z",
+     "body": "Integrator: landed 4f564a0c. Players will see: With HP and Seiðr full but Void Debt still owed above the lingering floor, pressing Rest now spends one turn and clears the debt down to that floor (\"Fully rested…\") instead of refusing."
+    }
+   ]
+  },
+  {
+   "number": 53,
+   "title": "[task] R3: hearth-cold stages and the energy clamp",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T14:15:00Z",
+   "closedAt": "2026-10-21T17:34:25Z",
+   "labels": [
+    {
+     "name": "lane:research"
+    },
+    {
+     "name": "proposal"
+    }
+   ],
+   "body": "",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T14:16:35Z",
+     "body": "Research: started R3 player pid 48576 sha 7f9a330e flags --lens player --workers 2 --until 13:15"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T15:25:35Z",
+     "body": "Research: read player (first attempt): the soak (pid 48576) ended about 6 minutes in, with seeds 1 and 2 unfinished (no runs.jsonl, no completed seed); cause unknown, console shows nothing. Only S4 ux findings (repeated line, latency) before it stopped. Folder moved to R3-player-aborted."
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T15:25:36Z",
+     "body": "Research: started R3 player pid 5224 sha 7f9a330e flags --lens player --workers 2 --until 14:25 (restart)"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T17:34:14Z",
+     "body": "Research: read player (R3-player)\n- Run ended early: 5 seeds finished (1-6 minus a partial), seed 7 partial at action 280, pid gone ~12:04 local before --until 14:25; cause unknown. Sample is small (sha 7f9a330e, all 5 died: out_of_potions 4, telegraph 1 by Gálmr on floor 5).\n- No bug/softlock/text "
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T17:34:23Z",
+     "body": "Research: Proposal, not a rule\nR3 hearth-cold stages and the energy clamp. Data: 5 finished player seeds from town (R3-player, sha 7f9a330e); the soak stopped early, so the sample is thin.\n\nHearth-cold stages (3000 / 7000 / 12000 / 20000 turns below town)\n- Pace is steady: about 430-500 turns per fl"
+    }
+   ]
+  },
+  {
+   "number": 54,
+   "title": "[task] M7: Hrefna reacts in town to the first spell, the first Void Debt and the first altar rite",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T20:12:36Z",
+   "closedAt": "2026-10-21T21:54:54Z",
+   "labels": [
+    {
+     "name": "lane:aids"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: #35 (the `void_debt_accrued` event).\n\n**Player-visible**",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T21:18:08Z",
+     "body": "Implementer: built on `sprint/54` (1a942c74). One deviation from criterion 1's wording: a post hook's `result` does not carry the action's events yet (`actionPipeline.ts` attaches the captured events only when it returns, after post hooks), and changing that is a protected-file engine change. So `co"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T21:22:56Z",
+     "body": "Lane: ready to integrate, branch sprint/54.\nWHAT CHANGED: Hrefna gets three reaction choices (first spell, first Void Debt, first altar rite) via new flags cotw_first_void_debt and cotw_first_altar_rite; the newest wins and she is re-seated once on the hero's next action in town. Content only, no en"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T21:54:54Z",
+     "body": "Integrator: landed 6d9450b5. Players will see: back in town, Hrefna says something new after the hero reads a first stone, first goes into Void Debt, or first performs an altar rite, instead of repeating her opening lines."
+    }
+   ]
+  },
+  {
+   "number": 55,
+   "title": "[task] M8: Playwright: a new hero meets Hrefna after the raid and the first-spell objective; a capture view of her",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T20:13:09Z",
+   "closedAt": "2026-10-21T22:06:48Z",
+   "labels": [
+    {
+     "name": "lane:aids"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none (M3a #32 and M3b #33 are on main). If #54 lands first, assert her intro choice, which a hero with no stone read still gets.\n\n**Player-visible**: nothing player-visible.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T21:31:13Z",
+     "body": "Implementer: built on `sprint/55` (1cebc298).\n\n- **AC1 deviation:** on main the HUD shows \"Gear up … take the stairs down\" right after Hallvard, not \"Learn your first spell\": the owner approved that order on #33 (option a), and `firstSpell.test.ts` pins it. The test asserts \"Gear up\" in town, then `"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T21:32:34Z",
+     "body": "Lane: ready to integrate, branch sprint/55.\nWHAT CHANGED: A Chromium Playwright test in e2e/prologue.spec.ts plays a new hero past the raid to Hrefna, opens her dialogue and checks the first-spell objective (shown on floor 1, after the 'Gear up' step the owner chose on #33); new capture view g-hrefn"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T22:06:47Z",
+     "body": "Integrator: landed 39db190a. Players will see: nothing player-visible."
+    }
+   ]
+  },
+  {
+   "number": 56,
+   "title": "[task] R2: stones read and spells cast, before and after onboarding",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T22:11:00Z",
+   "closedAt": "2026-10-22T02:09:23Z",
+   "labels": [
+    {
+     "name": "lane:research"
+    },
+    {
+     "name": "proposal"
+    }
+   ],
+   "body": "",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T22:11:37Z",
+     "body": "Research: started R2 player pid 41612 sha 39db190a flags --lens player --workers 2 --until 21:11"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T02:09:10Z",
+     "body": "Research: read player (sha 39db190a, 12 seeds from town, all finished, all deaths)\n- Bugs (crash, softlock, oracle failure, wrong text): none. 284 findings, all category `ux`; magic tap anomalies none (6713 casts, 0 failed).\n- ux noise: \"no stairs seen in N turns\" 12/12 seeds (T2 territory), key lat"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T02:09:22Z",
+     "body": "Proposal, not a rule\n\nResearch: R2, stones read and spells cast before and after onboarding. Options only.\n\n**Arms.** After: `R2-player`, sha 39db190a (M4, M6, M7 landed), 12 seeds from town, all finished. Before: `R3-player`, sha 7f9a330e, only 5 finished runs (2 partial). The arms ran at different"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T02:09:31Z",
+     "body": "Research: correction to the report above. \"11 spells cast before vs 17 after\" should read 5 distinct spells cast before (fafnirs_breath, sols_glare, cold_ray, magic_arrow, heal_spell) vs 15 after. Nothing else changes."
+    }
+   ]
+  },
+  {
+   "number": 57,
+   "title": "[task] U7: A runestone the hero has seen stays marked on the map until read",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T22:11:38Z",
+   "closedAt": "2026-10-22T12:32:12Z",
+   "labels": [
+    {
+     "name": "lane:ux"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "**Depends on**: none.\n\n**Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T23:26:26Z",
+     "body": "Implementer: the change is built and its tests pass, but `npm run gate-stamp -- run lint test tooling` failed three runs in a row on timeouts in unrelated tests. About 37 node processes were running on the host (other lanes gating), and each run timed out on different tests:\n\n```\nrun 1: FAIL src/con"
+    },
+    {
+     "author": {
+      "login": "astevegreen"
+     },
+     "createdAt": "2026-10-22T04:19:23Z",
+     "body": "retry the gate"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T05:35:43Z",
+     "body": "Lane: ready to integrate, branch sprint/57.\nWHAT CHANGED: learningStoneMarks now marks this floor's stone once the hero has seen its tile or holds its shard; never once spent. Tests added (learningStones.test.ts 33/33); gates green (lint, unit, tooling, sim, schema, Playwright Chromium).\nPLAYER-VISI"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T06:41:01Z",
+     "body": "Integrator: pre-push red twice on origin/main 6ae54d87 + this commit. Push 1: gateStamp.test.ts hook timeout (host load). Push 2: Playwright firefox 'a full spell belt keeps clear of the context button and the tray', webkit 'the map stays inside its column on a very wide window' (canvas image-data e"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T07:47:23Z",
+     "body": "Implementer: rebased sprint/57 onto origin/main 6ae54d87 (now 31fda0db, no conflicts). `npm run gate-stamp -- run lint test tooling` failed three runs in a row, each on a different timeout in a test this change doesn't touch. Lint passed every time. A research-lane soak (`--workers 2 --until 07:12`)"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T11:53:20Z",
+     "body": "Lane: ready to integrate, branch sprint/57. Retried from the owner's main session after the R5 soak ended; the owner asked in chat on 22 Oct: \"Once the soak is done, retry the two tasks\".\nWHAT CHANGED: rebased onto origin/main 9a68ce67 with no conflicts and no code change (tip 86dc298e, still one co"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T12:32:11Z",
+     "body": "Integrator: landed 85b88163. Players will see: A broken runestone you have seen stays marked on the map until you read it, even before you hold its shard."
+    }
+   ]
+  },
+  {
+   "number": 58,
+   "title": "[task] T5a: soak bot keeps every spell it can cast on the quick bar",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T22:16:23Z",
+   "closedAt": "2026-10-22T05:34:38Z",
+   "labels": [
+    {
+     "name": "lane:tooling"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "## Depends on\nnone\n",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T23:40:35Z",
+     "body": "Lane: reviewer concern left after one fix round (minor, no code change needed): quickBarPlan.ts:52 deliberately narrows criteria 1-2. Once the bar is full, a spell is swapped out only if it was cast more than the incoming (least-cast off-bar) spell, else the rule returns null even with spells off th"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T04:22:12Z",
+     "body": "Owner (relayed from the owner's status session, 04:20 UTC): \"T5a: I accept the rule.\"\n\nCriterion 2 stands as amended at `quickBarPlan.ts:52`: once the quick bar is full, the least-cast spell off the bar swaps in only for a bar spell cast more often than it; otherwise the bar stays as it is. The revi"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T05:34:38Z",
+     "body": "Integrator: landed 6ae54d87. Players will see: nothing player-visible."
+    }
+   ]
+  },
+  {
+   "number": 59,
+   "title": "[task] T5b: soak bot casts Loki's Switch and Hliðskjálf",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T22:16:24Z",
+   "closedAt": "2026-10-22T07:51:07Z",
+   "labels": [
+    {
+     "name": "lane:tooling"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "## Depends on\nT5a (issue #58)\n",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T06:46:21Z",
+     "body": "Lane: ready to integrate, branch sprint/59.\n\nWHAT CHANGED: new e2e/soak/oddSpellPlan.ts (reveal once per floor when no awake foe in sight and down stairs unseen; swap on the farthest awake foe at range 2+ in a big fight; status spells keep the old rule). playerBot.ts uses it, casts the reveal after "
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T07:51:06Z",
+     "body": "Integrator: landed 8b68189f. Players will see: nothing player-visible."
+    }
+   ]
+  },
+  {
+   "number": 60,
+   "title": "[task] T6: soak records why a run or the runner stopped, and soak-report shows it",
+   "state": "CLOSED",
+   "createdAt": "2026-10-21T22:16:45Z",
+   "closedAt": "2026-10-22T02:00:07Z",
+   "labels": [
+    {
+     "name": "lane:tooling"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "## Depends on\nnone\n",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-21T23:52:18Z",
+     "body": "Lane: ready to integrate, branch sprint/60. WHAT CHANGED: runs.jsonl seed lines gain signal and stoppedBy (exit, error, signal:<NAME>, no-summary); the runner writes its own {runner:true, stoppedBy, unfinishedSeeds} line on SIGINT/SIGTERM/SIGHUP/SIGBREAK, crash, --until or done; soak:report shows a "
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T02:00:06Z",
+     "body": "Integrator: landed 1295486b. Players will see: nothing player-visible."
+    }
+   ]
+  },
+  {
+   "number": 61,
+   "title": "[task] T7: soak counts actions dearer than the energy banked, and soak-report shows the debt per floor",
+   "state": "CLOSED",
+   "createdAt": "2026-10-22T00:13:59Z",
+   "closedAt": "2026-10-22T02:13:05Z",
+   "labels": [
+    {
+     "name": "lane:tooling"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "## Depends on\nNone. T6 (#60) also edits `scripts/lib/soak-report.ts`; if it lands first, rebase onto it.\n",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T01:32:23Z",
+     "body": "Implementer: T7 evidence (acceptance 5), branch `sprint/61` at db4633f0.\n\n`npm run soak -- --lens player --from 7 --count 1 --actions 400 --start-floor 20`, then `npm run soak:report -- .prompts/soak/player-floor20`:\n\n```\nsummary.json magic.energy: {\"20\":{\"hero\":{\"actions\":483,\"debt\":90,\"debtEnergy\""
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T01:33:50Z",
+     "body": "Lane: ready to integrate, branch sprint/61. WHAT CHANGED: the soak tap wraps consumeEnergy once and tallies, per floor, hero and foe actions, debt calls and debt energy into magic.energy in summary.json; soak-report's Pacing section prints a per-floor table (or a 'predates the counter' line for olde"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T02:13:05Z",
+     "body": "Integrator: landed 8a3dfe70. Players will see: nothing player-visible."
+    }
+   ]
+  },
+  {
+   "number": 62,
+   "title": "[task] R5: hearth-cold stages and the energy clamp, full sample",
+   "state": "CLOSED",
+   "createdAt": "2026-10-22T05:11:52Z",
+   "closedAt": "2026-10-22T12:29:06Z",
+   "labels": [
+    {
+     "name": "lane:research"
+    },
+    {
+     "name": "proposal"
+    }
+   ],
+   "body": "",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T05:13:04Z",
+     "body": "Research: started R5 player pid 31660 sha 74e30d5e flags --lens player --workers 2 --count 30 --until 07:12"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T12:28:49Z",
+     "body": "Research: read player (R5, sha 74e30d5e, 28 finished seeds, runner stopped by `until`, seeds 29 and 30 unfinished)\n- Outcome: 28 deaths (out_of_potions 15, telegraph 8, other 5). Deepest floor: median 13.5, best 21; eight seeds ended on floor 5, seven on floor 18.\n- No crash, softlock, oracle or mag"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T12:29:04Z",
+     "body": "Proposal, not a rule\n\nResearch: R5 report. One soak, lens player, 2 workers, sha 74e30d5e (before T5b: the bot's Loki/Hliðskjálf casting was not in this build), 28 finished seeds from town; folder R5-player.\n\nCold stages (turns below town; stages at 3000, 7000, 12000, 20000):\n- Stage 1 arrives on fl"
+    }
+   ]
+  },
+  {
+   "number": 63,
+   "title": "[task] R6: bug hunt over the sprint's changes",
+   "state": "CLOSED",
+   "createdAt": "2026-10-22T05:13:11Z",
+   "closedAt": "2026-10-22T05:26:36Z",
+   "labels": [
+    {
+     "name": "lane:research"
+    },
+    {
+     "name": "proposal"
+    }
+   ],
+   "body": "",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T05:22:39Z",
+     "body": "Research: R6 candidates sha 74e30d5e\n1. src/engine/magic/reveal.ts:58 + statusManager.ts:120 — recasting Hliðskjálf's item reveal on a new floor within 15 turns keeps the old floor in `data`, so nothing is sensed there (c3a1e17e).\n2. src/content/cotw/hints.ts:51 — `learningStone` hint fires on `lear"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T05:26:34Z",
+     "body": "Proposal, not a rule\nR6 bug hunt over the 33 `src/` commits since pre-sprint-2026-10-20 (sha 74e30d5e). Three agents read every commit; a failing Vitest case confirmed five candidates (test files deleted; code is in each issue).\n\nConfirmed, filed as `lane:fixes` `sprint-ready` (permission 7 + 6):\n- "
+    }
+   ]
+  },
+  {
+   "number": 64,
+   "title": "[task] S2: Recasting Hliðskjálf's loot sense on a new floor senses nothing",
+   "state": "CLOSED",
+   "createdAt": "2026-10-22T05:26:18Z",
+   "closedAt": "2026-10-22T18:14:40Z",
+   "labels": [
+    {
+     "name": "lane:fixes"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "- **Depends on**: none\n- **Player-visible**: Hliðskjálf's loot sense works when recast on a new floor.\n- **Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T06:34:09Z",
+     "body": "Implementer: fix built and red-then-green, but the gates failed three times on machine load (about 60 node processes from parallel lanes), not on this change. Nothing is committed.\n\nThe fix: `reveal.ts` removes the old `sensing_objects` status before applying the new one, so a recast re-anchors (x, "
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T11:58:33Z",
+     "body": "Lane: ready to integrate, branch sprint/64. Retried from the owner's main session after the R5 soak ended; the owner asked in chat on 22 Oct: \"Once the soak is done, retry the two tasks\".\nWHAT CHANGED: sprint/64 recreated from origin/main 9a68ce67 and the saved patch applied cleanly (commit 1251458a"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T12:39:40Z",
+     "body": "Integrator: pre-push red twice on origin/main 85b88163 + this commit; gates passed locally (lint, unit 3623/3623, tooling). Push 1: tooling gateStamp.test.ts 'reads a corrupt or foreign stamp file as empty' hook timeout (10 s). Push 2: tooling handoffNotes.test.ts beforeEach hook timeout (10 s). Nei"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T12:42:37Z",
+     "body": "Lane: parked until the host is quiet; no change needed. Both pre-push reds were 10 s hook timeouts in tooling tests that spawn git (gateStamp, handoffNotes) while R4's soak (pid 14760, started 12:29Z) ran beside the push; the change passed every gate on the quiet host at 11:58Z. The owner's main ses"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T16:32:29Z",
+     "body": "Lane: ready to integrate, branch sprint/64 (1251458a, reviewer PASS, every gate green on the quiet host at 11:58Z). R4's second soak (pid 50788) ended at 16:32Z, so the host is quiet again for the push; no code change since the last hand-over.\nPLAYER-VISIBLE: Hliðskjálf's loot sense now shows loot w"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T18:14:39Z",
+     "body": "Integrator: landed be34383f; deploy.yml was still queued when the sprint window closed, CI unconfirmed. Players will see: Hliðskjálf's loot sense now shows loot when you cast it again on a new floor (or after moving on the same floor) while the earlier cast is still running."
+    }
+   ]
+  },
+  {
+   "number": 65,
+   "title": "[task] S3: Learning-stone hint fires when the shard becomes a rune",
+   "state": "CLOSED",
+   "createdAt": "2026-10-22T05:26:20Z",
+   "closedAt": "2026-10-22T08:10:28Z",
+   "labels": [
+    {
+     "name": "lane:fixes"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "- **Depends on**: none\n- **Player-visible**: the learning-stone hint no longer shows on taking the rune.\n- **Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T06:46:21Z",
+     "body": "Lane: ready to integrate, branch sprint/65. WHAT CHANGED: learning_stone_read event gains a 'learned' field (true when a spell was taught, false when the shard became an Essence-Rune); Hrefna's learningStone hint fires only when learned is true. PLAYER-VISIBLE: Hrefna's learning-stone hint no longer"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T08:10:28Z",
+     "body": "Integrator: landed 417c09e9. Players will see: Hrefna's learning-stone hint no longer shows or gets used up when the hero takes the Essence-Rune; it waits for the first stone read that teaches a spell."
+    }
+   ]
+  },
+  {
+   "number": 66,
+   "title": "[task] S4: A raid ending the same action as a blow shows the wrong ending text",
+   "state": "CLOSED",
+   "createdAt": "2026-10-22T05:26:21Z",
+   "closedAt": "2026-10-22T08:28:56Z",
+   "labels": [
+    {
+     "name": "lane:fixes"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "- **Depends on**: none\n- **Player-visible**: a hero struck down as the night ends reads the struck-down ending.\n- **Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T06:56:02Z",
+     "body": "Lane: ready to integrate, branch sprint/66. WHAT CHANGED: prologue endRaid now sets the struck-down flag itself when a blow was held at the HP floor, so a raid ending on the same action as a blow shows the struck-down ending. PLAYER-VISIBLE: a hero struck down in the same moment the coven flees now "
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T08:28:56Z",
+     "body": "Integrator: landed 9e2562fe. Players will see: a hero struck down in the same moment the coven flees now reads the struck-down ending instead of the coven-fled one."
+    }
+   ]
+  },
+  {
+   "number": 67,
+   "title": "[task] S5: Shop service panel: Enter or Space on the focused Choose button re-runs the offer",
+   "state": "CLOSED",
+   "createdAt": "2026-10-22T05:26:23Z",
+   "closedAt": "2026-10-22T08:55:14Z",
+   "labels": [
+    {
+     "name": "lane:fixes"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "- **Depends on**: none\n- **Player-visible**: holding Enter in a service panel no longer repeats the purchase.\n- **Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T07:38:40Z",
+     "body": "Lane: ready to integrate, branch sprint/67. WHAT CHANGED: in a service panel, Enter/Space on a focused button now presses it once through the dialog's own guarded path (arming delay, auto-repeat refused) instead of the browser re-clicking. PLAYER-VISIBLE: in a temple or sage panel, holding Enter or "
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T08:55:13Z",
+     "body": "Integrator: landed a772cc3e. Players will see: in a temple or sage panel, holding Enter or Space on a button no longer repeats the purchase or offering; one press presses it once (numpad Enter now also presses the focused button once)."
+    }
+   ]
+  },
+  {
+   "number": 68,
+   "title": "[task] S6: A buffered arrow step fires under Look mode or the Close-which-door prompt",
+   "state": "CLOSED",
+   "createdAt": "2026-10-22T05:26:24Z",
+   "closedAt": "2026-10-22T09:25:53Z",
+   "labels": [
+    {
+     "name": "lane:fixes"
+    },
+    {
+     "name": "to-integrate"
+    }
+   ],
+   "body": "- **Depends on**: none\n- **Player-visible**: no step is taken under Look mode or the close-door prompt.\n- **Protected files**: no protected file.",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T07:52:32Z",
+     "body": "Lane: ready to integrate, branch sprint/68. WHAT CHANGED: the chord buffer's move callback drops a buffered arrow step while Look mode is open or the Close-which-door prompt is waiting. PLAYER-VISIBLE: an arrow pressed just before opening Look mode or the 'Close which door?' prompt no longer moves t"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T09:25:52Z",
+     "body": "Integrator: landed 9a68ce67. Players will see: an arrow pressed just before opening Look mode or the 'Close which door?' prompt no longer moves the hero."
+    }
+   ]
+  },
+  {
+   "number": 69,
+   "title": "[task] R4: magic-coverage soak from town and floor 20, every known spell cast",
+   "state": "CLOSED",
+   "createdAt": "2026-10-22T11:12:42Z",
+   "closedAt": "2026-10-22T17:11:07Z",
+   "labels": [
+    {
+     "name": "lane:research"
+    },
+    {
+     "name": "proposal"
+    }
+   ],
+   "body": "**Waits for**: #57 (U7) and #64 (S2) to close as well. Filed at the owner's request on 22 Oct (\"File R4 now. Once the soak is done, retry the two tasks\"), on the plan that this soak starts only after those two land: both were held because their gates timed out under the R5 soak's load, and they are retried when R5 ends.\n\n**Work** (lens `player`, `--workers 2`): a soak from town, then one with `--start-floor 20`, as `.claude/skills/sprint-research/SKILL.md` says. `--until` no later than 90 minutes before the window closes (16:30Z, 12:30 local).",
+   "comments": [
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T12:29:57Z",
+     "body": "Research: started R4 player pid 14760 sha 85b88163 flags --lens player --workers 2 --until 10:29"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T15:12:54Z",
+     "body": "Research: read player (R4 soak 1 of 2, from town, sha 85b88163, 12 runs, all ended by death, stopped by `until`; 88 seeds unfinished)\n- No crash, softlock, oracle failure or `magic:` finding. Casts 5040, failed 0. All findings are severity S4 `ux`; no bug issue filed.\n- Known and never cast: `phase_"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T15:13:35Z",
+     "body": "Research: started R4 player-floor20 pid 50788 sha 85b88163 flags --lens player --workers 2 --start-floor 20 --until 12:30"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T17:10:53Z",
+     "body": "Research: read player-floor20 (R4 soak 2 of 2, `--start-floor 20`, sha 85b88163, 29 runs, all ended by death, stopped by `until`; 71 seeds unfinished)\n- No crash, softlock, oracle failure or `magic:` finding. Casts 6063, failed 0. All 212 findings are severity S4 `ux`; no bug issue filed.\n- Known an"
+    },
+    {
+     "author": {
+      "login": "greenbeanbot"
+     },
+     "createdAt": "2026-10-22T17:11:03Z",
+     "body": "Proposal, not a rule\n\nR4 magic-coverage, two soaks on sha 85b88163 (from town: 12 runs; floor 20: 29 runs). 11,100 casts, 0 failed; 0 crashes, softlocks, oracle or `magic:` findings. No bug issue filed.\n\nSpells the bot knew and never cast\n- `phase_door`: known in 12/12 and 29/29 runs, 0 casts. The b"
+    }
+   ]
+  }
+ ]
+}

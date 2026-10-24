@@ -65,6 +65,40 @@ describe('--lane', () => {
   });
 });
 
+describe('the sprint queue (scripts/sprint/queue.mjs)', () => {
+  const Q = 'node C:/Antigravity/YODC/scripts/sprint/queue.mjs';
+  it('runs on its own, with quoted arguments', () => {
+    for (const mode of ['--lane', '--integrator']) {
+      for (const command of [
+        'node scripts/sprint/queue.mjs next aids --taken 12,14',
+        `${Q} has-work "YODC lane: aids"`,
+        `${Q} move 12 to-integrate --note 'WHAT CHANGED: a; b | c && d\\nPLAYER-VISIBLE: nothing player-visible'`,
+        `${Q} status --write --also 'stuck: YODC lane: ux (no event since 04:11Z)'`,
+      ]) expect(bash(mode, command)).toBe(0);
+    }
+  });
+  it('refuses it chained, piped, redirected or in the background', () => {
+    for (const mode of ['--lane', '--integrator']) {
+      for (const command of [
+        `${Q} next aids > next.txt`,
+        `${Q} next aids 2>&1`,
+        `${Q} move 12 held < note.txt`,
+        `${Q} next aids && echo done`,
+        `${Q} next aids; ls`,
+        `${Q} next aids | head -1`,
+        `cd C:/Antigravity/YODC && node scripts/sprint/queue.mjs next aids`,
+        `${Q} next aids &`,
+        `${Q} move 12 held --note "$(git log -1)"`,
+        `${Q} move 12 held --note "\`whoami\`"`,
+        `${Q} next aids\nls`,
+      ]) expect(bash(mode, command), command).toBe(2);
+    }
+  });
+  it('still lets other commands read the script', () => {
+    expect(bash('--lane', 'cat scripts/sprint/queue.mjs | head -20')).toBe(0);
+  });
+});
+
 describe('--integrator', () => {
   it('pushes only HEAD to main', () => {
     expect(bash('--integrator', 'git -C C:/Antigravity/YODC-integrate push origin HEAD:main')).toBe(0);
@@ -144,7 +178,7 @@ describe('--file-lock', () => {
   it('refuses the main checkout and the locked paths', () => {
     expect(edit(path.join(main, 'src/ui/hud.ts'))).toBe(2);
     for (const locked of ['.claude/agents/implementer.md', 'docs/sprint.md', 'package.json', 'CLAUDE.md',
-      'src/engine/storage/migrator.ts', '.githooks/pre-push']) {
+      'src/engine/storage/migrator.ts', '.githooks/pre-push', 'scripts/sprint/queue-rules.mjs']) {
       expect(edit(path.join(lane, locked))).toBe(2);
     }
   });

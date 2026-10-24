@@ -17,8 +17,14 @@ You never edit files or fix code: a task that does not land cleanly goes back to
 `cd I && npm ...`, with `I`'s full path written out each time; never store it in a shell variable: the guard
 can't read variables and refuses them as the main checkout. Start every comment you write with "Integrator:".
 
-Stop when `date -u +%Y%m%dT%H%M` is outside the window on the `Window (UTC)` line of `docs/sprint.md`, when no open issue has
-`to-integrate`, after 15 pushes this session, or after a usage-limit error.
+**The queue.** `Q` below is `node C:/Antigravity/YODC/scripts/sprint/queue.mjs`: write it out in full, on a
+line of its own (the guard refuses it chained, piped or redirected). `Q has-work "YODC integrate"` prints one
+line of JSON: `start`, `reason`, and `issues`, the open `to-integrate` issues, lowest first. When it prints
+`error`, do what its `do` line says; when it fails any other way, stop and report its output on issue #19.
+
+Stop when `date -u +%Y%m%dT%H%M` is outside the window on the `Window (UTC)` line of `docs/sprint.md`, when
+`Q has-work "YODC integrate"` prints `"start": false`, after 15 pushes this session, or after a usage-limit
+error.
 
 ## 0. Before anything
 - If `I` does not exist: `git worktree add --detach I origin/main`, then `npm ci` in `I`.
@@ -31,9 +37,9 @@ Stop when `date -u +%Y%m%dT%H%M` is outside the window on the `Window (UTC)` lin
   session or the owner fixes main first.
 
 ## 1. Land a batch
-`gh issue list --state open --label to-integrate --json number,title,labels,comments`. The batch is the three
-lowest numbers; after a red gate (1.3) or a red deploy (step 2), it is one issue at a time until every issue of
-that batch has landed or gone back. For each issue, `B` is `sprint/<n>`.
+`Q has-work "YODC integrate"`: the batch is the first three of its `issues`; after a red gate (1.3) or a red
+deploy (step 2), it is one issue at a time until every issue of that batch has landed or gone back. For each
+issue, `B` is `sprint/<n>`.
 1. `git -C I fetch origin`, then `git -C I switch --detach --discard-changes origin/main`.
    `pre` is `git -C I rev-parse HEAD`: the batch's start.
 2. For each issue, in order (one that goes back leaves the rest to go on):
@@ -76,13 +82,13 @@ time (its branches are unchanged, so each picks cleanly onto main); the one whos
 back that way.
 
 ## 3. Send it back
-Comment first: "Integrator: <why, one or two lines>". Then, if an earlier comment on this issue already starts
-"Integrator:" and sent it back, this is the second time: `gh issue edit <n> --add-label blocked
---remove-label to-integrate` (the owner looks at it). Otherwise `gh issue edit <n> --add-label held
+Comment first: "Integrator: <why, one or two lines>". Then, if an earlier comment on this issue
+(`gh issue view <n> --json comments`) already starts "Integrator:" and sent it back, this is the second time:
+`gh issue edit <n> --add-label blocked --remove-label to-integrate` (the owner looks at it). Otherwise `gh issue edit <n> --add-label held
 --remove-label to-integrate`; the lane's next session fixes it on `B`.
 
 ## 4. Done
-For each issue of the batch: `gh issue close <n> --comment "Integrator: landed <sha>. Players will see: <the lane's PLAYER-VISIBLE lines>."`
+For each issue of the batch: `gh issue close <n> --comment "Integrator: landed <sha>. Players will see: <the PLAYER-VISIBLE lines of the lane's ready-to-integrate comment>."`
 Then one line per issue on issue #19 "Sprint log": `<sha> <ID> <title>: <player-visible line or "nothing player-visible">`.
 Go back to step 1.
 

@@ -3,7 +3,7 @@
 //   --lane        Bash: no push, no merge (lane, plan, research, supervisor and implementer)
 //   --integrator  Bash: pushes only `git push origin HEAD:main`
 // Both refuse dependency changes and git writes to the main checkout (only fetch, worktree and
-// `merge --ff-only` touch it).
+// `merge --ff-only` touch it), and run the sprint queue (scripts/sprint/queue.mjs) only on its own.
 //   --read-only   Bash: inspection commands only (the reviewer)
 //   --file-lock   Edit|Write: the sprint never edits its own machinery or the owner's files
 // Every Bash mode also refuses what no unattended session may do: skip hooks, force or delete
@@ -23,6 +23,7 @@ function deny(reason) {
 const LOCKED = [
   /^\.claude\//, /^\.githooks\//, /^\.github\//, /^docs\/sprint\.md$/, /^CLAUDE\.md$/, /^ARCHITECTURE\.md$/,
   /^package(-lock)?\.json$/, /^src\/engine\/storage\/migrator\.ts$/, /^scripts\/__tests__\/sprintGuard\.test\.ts$/,
+  /^scripts\/sprint\//,
 ];
 
 if (MODE === '--file-lock') {
@@ -88,6 +89,16 @@ function isMainCheckout(dir) {
 // would move the owner's working copy; only fetch, worktree and `merge --ff-only` go there.
 const GIT_WRITES = new Set(['switch', 'checkout', 'commit', 'rebase', 'reset', 'restore', 'stash', 'cherry-pick',
   'revert', 'merge', 'pull', 'add', 'rm', 'mv', 'am', 'apply']);
+
+// The queue writes labels and comments, and a settings rule may allow it by prefix: a call chained,
+// piped, redirected or backgrounded could carry another command through, so it runs alone.
+const isQueue = (w) => w[0] === 'node' && /(^|[\\/])scripts[\\/]sprint[\\/]queue\.mjs$/.test(w[1] ?? '');
+if ((MODE === '--lane' || MODE === '--integrator') && parts.some((p) => isQueue(words(p)))) {
+  const unquoted = command.replace(/"[^"]*"|'[^']*'/g, '""');
+  if (parts.length !== 1 || /[<>&]/.test(unquoted)) {
+    deny('run `node <checkout>/scripts/sprint/queue.mjs …` on its own: no chaining, pipe, redirect or `&`');
+  }
+}
 
 if (MODE === '--lane' || MODE === '--integrator') {
   let cwd = String(input.cwd ?? process.cwd());

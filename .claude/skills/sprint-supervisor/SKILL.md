@@ -17,29 +17,30 @@ You only start and report on sessions, with the `RemoteTrigger` tool (load it wi
 archive: scheduled sessions have no `archive_session`. The sprint archiver (`docs/sprint.md`, Machinery)
 archives finished and stuck sessions. Finish in a few minutes.
 
+**The queue.** `Q` below is `node C:/Antigravity/YODC/scripts/sprint/queue.mjs`: write it out in full, on a
+line of its own (the guard refuses it chained, piped or redirected). It holds the sprint's queue rules (which
+issue is ready, whose comment counts, when held work is retried, what a session would find to do) and prints
+one line of JSON. When it prints `error`, do what its `do` line says; when it fails any other way, stop and
+report its output on issue #19. The queue rules live only there: never work them out by hand.
+
 `$ARGUMENTS` is `dry-run`: do every check and print what you would start, disable and comment, but create,
-update and comment nothing. A dry run before the window carries on as if the window were open.
+update and comment nothing (`Q status` without `--write`). A dry run before the window carries on as if the
+window were open.
 
 ## 1. Window
 Run `date -u +%Y%m%dT%H%M` and read the window from the `Window (UTC)` line of `docs/sprint.md`.
 - Before it: print "before the window" and stop.
 - After it: `RemoteTrigger` `update` the supervisor trigger whose id is in `docs/sprint.md` (Machinery) with
-  `{"enabled": false}`, comment "Sprint over" on issue #19 "Sprint log" with one line per lane from step 4,
+  `{"enabled": false}`, comment "Sprint over" on issue #19 "Sprint log" with the lane lines of `Q status`,
   and stop. Don't look for it with `list`: that returns only the account's newest 20 triggers, and asking for
   the next page returns the first page again.
 
 ## 2. Sync
 In the main checkout: `git fetch origin --prune`. If `git status --porcelain --untracked-files=no` is empty and
-the branch is `main`, run `git merge --ff-only origin/main`; otherwise leave it and note it in step 5.
+the branch is `main`, run `git merge --ff-only origin/main`; otherwise leave it and note it in step 4.
 Run `git worktree prune`.
 
 ## 3. Sessions
-**Memory floor.** First read free memory:
-`powershell.exe -NoProfile -Command "[int]((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory/1024)"`.
-Under 4096 MB: start nothing this run, though you still read the sessions below and name stuck ones. Comment
-"@astevegreen Supervisor: <n> MB free; started nothing" on issue #19, so GitHub notifies the owner, then go on
-to step 4. Don't archive anything or end any process.
-
 Session titles: `YODC lane: <lane>` for `aids`, `ux`, `fixes`, `tooling`, `research`; `YODC plan: <lane>` for
 `aids`, `ux`, `fixes`, `tooling`; and `YODC integrate`. Ten titles.
 
@@ -48,10 +49,10 @@ Run `RemoteTrigger` `list` once. For each title, take the newest trigger with th
 - **Running** (`status` is not `archived`, `worker_status` is not `idle`, and `last_event_at` is within 60
   minutes): leave it.
 - **Stuck** (running, but no event in 60 minutes): start nothing for that title this run. The archiver
-  archives it before your next run, and then it counts as finished. Name it in step 5. If the same run is
-  still there and still stuck on your next run, the archiver is not working: put that first in step 5.
+  archives it before your next run, and then it counts as finished. Name it in step 4. If the same run is
+  still there and still stuck on your next run, the archiver is not working: put that first in step 4.
 - **Missing, or finished** (`worker_status` `idle`, `status` `archived` whatever its `worker_status`, or no
-  trigger yet): start one if it has work (below).
+  trigger yet): start one when `Q has-work "<title>"` prints `"start": true`; its `reason` says why either way.
   A trigger with no run 15 minutes after its `run_once_at` never started: report it, `update` it to
   `{"enabled": false}`, and start a new one. Before starting, `update` every enabled trigger with that name
   that has no run to `{"enabled": false}`, so a late start never puts two sessions on one title.
@@ -61,26 +62,10 @@ error names (it may give a local time and zone: convert it to UTC) and start not
 once it has passed, start as usual. If the log names no reset time, start nothing while its last event is
 under an hour old.
 
-Comments: sprint sessions write as `greenbeanbot`, the owner as `astevegreen`; read them with
-`--json comments` and go by `author.login`. An **owner reply** is an `astevegreen` comment newer than the
-newest `greenbeanbot` comment on that issue. **Ready** is open, `sprint-ready`, not `blocked`, and every issue
-in its body's "Depends on" line closed.
-
-Work exists for:
-- a lane session (not `research`): the lane has a ready issue; or one labelled `in-progress`; or `blocked`
-  with an owner reply; or `held` whose newest comment is an owner reply, or starts "Integrator:" and is newer
-  than the newest comment starting "Lane:", or starts "Implementer: machine" while free memory is over 4096 MB
-  (the same rules `sprint-lane` follows);
-- `YODC lane: research`: the bug hunt is due (`sprint-research` step 5), or no soak is running and there is an
-  open `lane:research` issue whose wait in `docs/sprint.md` is over, or a research backlog ID with no issue yet.
-  A soak is running when the newest "Research: started" comment not yet followed by a "Research: read" naming
-  its folder has a pid that is alive, named `cmd`, and started at or after that comment (the same check as
-  `sprint-research` step 2);
-- a plan session: the lane has fewer than 3 open `sprint-ready` issues and its backlog has an ID that is not
-  done. An ID is done when an issue title starts `[task] <ID>:` or `[task] <ID>` plus a letter and a colon.
-  Get every title once with `gh issue list --state all --search "[task] in:title" --limit 500 --json title`
-  and match the start yourself (GitHub search matches whole words, so `M1` misses `M1a`);
-- `YODC integrate`: any open issue labelled `to-integrate`.
+**Memory floor.** A `has-work` reason starting `memory:` means free memory is under the floor: start nothing
+this run, though you still read every session and name stuck ones. Comment "@astevegreen Supervisor: <that
+reason>; started nothing" on issue #19 once, so GitHub notifies the owner. Don't archive anything or end any
+process.
 
 To start one, `RemoteTrigger` `create` with this body:
 `{"name": "<title>", "run_once_at": "<now + 1 minute, UTC, ISO 8601 with Z>", "enabled": true,
@@ -102,26 +87,15 @@ all.
 
 Archiving is the sprint archiver's job; don't try it here.
 
-## 4. Status
-For each lane, the open `sprint-ready`, `in-progress`, `to-integrate`, `held` and `blocked` counts, and the
-issues closed since the window opened (`gh issue list --state closed --label lane:<lane> --search "closed:>=<window start as YYYY-MM-DDTHH:MM:00Z>"`).
-
-## 5. Report
-**Status block.** Every run, rewrite the body of issue #19 "Sprint log" with `gh issue edit 19 --body-file -`
-(the text on standard input). Read the old body first (`gh issue view 19 --json body`): its "Needs you" list
-is what the ping below compares against. The body holds:
-- the time;
-- one line per lane: the step 4 counts and the issues closed since the window opened;
-- the last push to `main` and its deploy (`gh run list --workflow deploy.yml --branch main --limit 1`);
-- free memory (step 3);
-- "Needs you", one linked line per item: a `blocked` question with no owner reply, a `held` issue the lanes
-  won't retry (its newest comment is not an owner reply, an "Integrator:" comment or an "Implementer: machine"
-  one), a stuck session, a session that failed to start.
+## 4. Report
+**Status block.** Every run, `Q status --write`, with one `--also '<line>'` for each stuck session and each
+session that failed to start (its title, what is wrong, its url). It rewrites the body of issue #19 "Sprint
+log" (the lane counts, the last deploy, free memory and "Needs you") and prints `body`, `needsYou`, and
+`new`: the "Needs you" items the old body didn't have.
 
 **Comment** on issue #19, under 15 lines, when either holds:
-- "Needs you" has an item the old body didn't: start "@astevegreen", so GitHub notifies the owner, and list
-  only the new items first;
+- `new` is not empty: start "@astevegreen", so GitHub notifies the owner, and list those items first;
 - it is the first run of the window or a sixth UTC hour (00, 06, 12, 18), a session is stuck or never started,
-  a usage limit stopped one, the archiver is not working, or step 2 needed attention: the time, one line per
-  lane (counts, sessions started), and anything the owner must act on, with links.
+  a usage limit stopped one, the archiver is not working, or step 2 needed attention: the time, the status
+  block's lane lines with the sessions you started, and anything the owner must act on, with links.
 One comment per run at most; when both hold, the ping comes first.

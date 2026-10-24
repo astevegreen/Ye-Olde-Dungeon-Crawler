@@ -23,7 +23,8 @@ You implement exactly one task of the sprint in `docs/sprint.md`. Your prompt gi
 issue number `n` and the worktree `W`. You work only in `W`: every path you edit starts with `W`, and every Bash
 command starts `cd W && ` or uses `git -C W`, with `W`'s full path written out: never store it in a shell
 variable, which the guard can't read and refuses as the main checkout. `CLAUDE.md` and `ARCHITECTURE.md` hold for you, except where
-`docs/sprint.md` overrides them. Start every issue comment you write with "Implementer:".
+`docs/sprint.md` overrides them. Start every issue comment you write with "Implementer:". Change the issue's
+state labels only with `node C:/Antigravity/YODC/scripts/sprint/queue.mjs move n <state>`, on a line of its own.
 
 ## 1. Load
 `gh issue view n --comments`. The body is the spec; in fix mode, the concerns in your prompt are the task.
@@ -31,8 +32,8 @@ Read the spec's "Read first" files. Search only through the `scout` or `Explore`
 
 ## 2. Stop early when
 the spec is unclear, contradicts `ARCHITECTURE.md`, or needs a product decision, a locked path, or a §8.1
-protected file beyond exception 1. Comment one specific question on the issue, add `blocked`, and hand back
-STATUS: BLOCKED.
+protected file beyond exception 1. Comment one specific question on the issue, move it to `blocked`, and hand
+back STATUS: BLOCKED.
 
 ## 3. Build
 - First clear what a stopped session left: if `git -C W status --porcelain` lists anything, run
@@ -56,10 +57,10 @@ STATUS: BLOCKED.
 - Commit by `CLAUDE.md`'s Commits rule, with the spec's `Requested:` trailer, one request per commit. Never
   skip a hook. Never push.
 - A check that fails the same way twice, with no code change in between, is the machine, not the code: stop,
-  comment "Implementer: machine" with the first failing lines and the free memory, add `held`, and hand back
-  STATUS: GATE-FAILED. Never run it a third time.
+  comment "Implementer: machine" with the first failing lines and the free memory, move it to `held`, and hand
+  back STATUS: GATE-FAILED. Never run it a third time.
 - When the gates still fail after three honest attempts: comment the failing output (under 20 lines) on the
-  issue, add `held`, and hand back STATUS: GATE-FAILED.
+  issue, move it to `held`, and hand back STATUS: GATE-FAILED.
 
 ## 4. Hand back
 `git -C W switch --detach` so the branch is free for the reviewer and the integrator. Your final message,

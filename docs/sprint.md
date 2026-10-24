@@ -40,7 +40,7 @@ Each commit's trailer quotes the permission it rests on:
 - **§8.1 protected files**: only exception 1 (a confirmed bug, shown by a test that fails without the fix),
   and never `migrator.ts`. Exceptions 2–5 are not available to the sprint.
 - **Locked paths** (`.claude/hooks/sprint-guard.mjs --file-lock`): `.claude/`, `.githooks/`, `.github/`,
-  this file, `CLAUDE.md`, `ARCHITECTURE.md`, `package.json`, `package-lock.json`, `migrator.ts`. No new
+  `scripts/sprint/`, this file, `CLAUDE.md`, `ARCHITECTURE.md`, `package.json`, `package-lock.json`, `migrator.ts`. No new
   dependencies.
 - Every `ARCHITECTURE.md` invariant, every hook, and the gates. Hooks are never skipped.
 - Only the integrator pushes, and only `git push origin HEAD:main`.
@@ -72,7 +72,9 @@ The integrator works in `C:/Antigravity/YODC-integrate`. The main checkout is on
    and logs what players will see. A conflict sends back only the issue that caused it; a red gate or a red
    deploy sends the batch through again one issue at a time, and the one that fails alone goes back as `held`.
 
-Labels: `lane:*`, `sprint-ready`, `in-progress`, `to-integrate`, `held`, `blocked`, `proposal`.
+Labels: `lane:*`, `sprint-ready`, `in-progress`, `to-integrate`, `held`, `blocked`, `proposal`. Which issue is
+ready, whose comment counts, when held work is retried, whether a session has work and the status block are
+decided by the queue (`scripts/sprint/queue.mjs`, Machinery), never by hand.
 Progress, questions and every push go to the pinned issue #19 "Sprint log". Its body is the status block,
 which the supervisor rewrites every hour; comments hold the history.
 
@@ -98,7 +100,9 @@ names of other characters and any new mechanic beyond this sketch are the owner'
 
 ## Backlog
 
-Work in this order inside a lane. An item too big for about 300 changed lines becomes `<ID>a`, `<ID>b`, each
+Work in this order inside a lane. Each item is one line `- **<ID>** <what>`, under a `### <lane>` heading;
+the queue reads the IDs and their order from here, as pushed to `origin/main`, so a change lands for every
+session at once. An item too big for about 300 changed lines becomes `<ID>a`, `<ID>b`, each
 provable on its own. Sources: the magic survey and backlog survey of 20 Oct, the open handoff note
 `2026-10-18-2252-engine-bug-verify.md` (repros in `.prompts/engine-bug-hunt/`), and the soak folders.
 
@@ -161,12 +165,15 @@ provable on its own. Sources: the magic survey and backlog survey of 20 Oct, the
 
 ### research (decides nothing; first line of each report: "Proposal, not a rule")
 
-Each open item's line ends with what it waits for, its soaks (lens `player`, `--workers 2` unless it says
-otherwise) and what its report covers. `sprint-research` reads them here and keeps no copy.
+Each open item's line ends with `Waits for:` (backlog IDs or issue numbers, or `nothing`; an ID waits until
+every issue of it is closed), `Soaks:` (lens `player`, `--workers 2` unless it says otherwise; `none` for the
+bug hunt) and what its report covers. A line with no `Waits for:` waits for nothing. The queue reads them here,
+with any `Waits for:` line in the item's issue; nothing keeps a copy.
 
 - **R1** A player soak on today's `main` (floors 5, 20, 26, 34) after cd263494 and a65a8f76; findings that are
   bugs become `fixes` issues (permission 6).
-- **R2** After M3–M6 land: a soak comparing stones read and spells cast before and after onboarding.
+- **R2** After M3–M6 land: a soak comparing stones read and spells cast before and after onboarding. Waits for:
+  M3–M6.
 - **R3** Measure the hearth-cold stages (turns per floor) and the energy clamp question; options only.
 - **R4** After T5 lands: a magic-coverage soak from town and from floor 20, every known spell cast; findings
   that are bugs become `fixes` issues (permission 6). Waits for: every issue titled `[task] T5` closed.
@@ -199,6 +206,12 @@ on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` 
   finished sessions after an hour, and stuck ones (no event in 60 minutes, or 30 minutes waiting for an answer).
   It is on before the window opens, and the dry run proves it: one finished session archived, its process gone.
 - Agents: `implementer` and `reviewer` (`.claude/agents/`); guard `.claude/hooks/sprint-guard.mjs`.
+- The queue, `scripts/sprint/queue.mjs`, holds the sprint's bookkeeping rules once, tested on October's issues:
+  `has-work "<session title>"` for the supervisor, `next <lane>` and `move <n> <state>` for the lanes, and
+  `status` for the status block. It reads the issues with `gh` and this file as pushed to `origin/main`, and
+  prints one line of JSON. A session it gives an `error` does what its `do` line says; when it fails, the session
+  stops and reports, and never falls back to rules written in a skill. Changing a rule means changing the
+  script and its tests (`scripts/sprint/__tests__/`), outside the window.
 - One sprint per computer (owner, 22 Oct): no other project's sprint or soak runs on this computer during the
   window. A sprint on another computer still shares the account's usage limit, so one usage-limit stop can halt
   both at once (21 Oct, 02:10 UTC); the supervisor restarts the lanes after it.
@@ -227,7 +240,7 @@ on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` 
 
 - Pause: disable the supervisor trigger (its id is under Machinery). Running sessions finish their current task.
 - Afterwards, one commit deletes this file, `.claude/skills/sprint-*`, `.claude/agents/{implementer,reviewer}.md`,
-  `.claude/hooks/sprint-guard.mjs`, `scripts/__tests__/sprintGuard.test.ts` and the sprint lines in `CLAUDE.md`
+  `.claude/hooks/sprint-guard.mjs`, `scripts/__tests__/sprintGuard.test.ts`, `scripts/sprint/` and the sprint lines in `CLAUDE.md`
   (`git diff pre-sprint-2026-10-20 -- CLAUDE.md .claude/` lists every machinery change). The lane worktrees go
   with `git worktree remove`; the `lane:*`, `sprint-ready`, `to-integrate`, `held` and `proposal` labels are
   deleted by the owner (`gh label delete` is the owner's).

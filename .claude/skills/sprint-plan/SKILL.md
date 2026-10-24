@@ -16,15 +16,20 @@ You turn the next backlog items of lane `$ARGUMENTS` in `docs/sprint.md` into is
 build. The owner approved the backlog (permission 1), so you do not wait for the owner. You never edit files,
 write code or invent game rules. `L` below is the label `lane:$ARGUMENTS`.
 
+**The queue.** `Q` below is `node C:/Antigravity/YODC/scripts/sprint/queue.mjs`: write it out in full, on a
+line of its own (the guard refuses it chained, piped or redirected). `Q has-work "YODC plan: $ARGUMENTS"`
+prints one line of JSON: `start`, `reason`, `ready` (the lane's open `sprint-ready` issues) and `todo` (the
+lane's backlog IDs with no issue yet, in backlog order; `M1a` counts for `M1`). When it prints `error`, do what
+its `do` line says; when it fails any other way, stop and report its output on issue #19. Never match titles
+against the backlog by hand.
+
 Stop when `date -u +%Y%m%dT%H%M` is past the end of the window on the `Window (UTC)` line of `docs/sprint.md`,
-or the lane has 3 open `sprint-ready` issues (6 before the window: the planning day), or its backlog has no
-item left to take.
+or `start` is false. Before the window (the planning day), go on past 3 `ready` until it is 6, still stopping
+when `todo` is empty.
 
 ## 1. Pick
-Read `docs/sprint.md` and the lane's backlog, top to bottom. An item is done when an issue title starts
-`[task] <ID>:` or `[task] <ID>` plus a letter and a colon. Get every title once with
-`gh issue list --state all --search "[task] in:title" --limit 500 --json title` and match the start yourself.
-Take the first item not done, skipping one with an unanswered question on "Sprint questions" (step 2). Read
+Run `Q has-work "YODC plan: $ARGUMENTS"` and read the lane's backlog in `docs/sprint.md`. Take the first `todo`
+item, skipping one with an unanswered question on "Sprint questions" (step 2); none left to take: stop. Read
 only what its spec needs: `ARCHITECTURE.md` (already loaded), the sub-doc
 its routing table names, the files the item names, and what the `scout` or `Explore` agent points you to.
 Lane `aids`: the "Magic onboarding" section is the design, and `.claude/skills/add-content/SKILL.md` is how
@@ -57,8 +62,9 @@ and this body:
   back once and remove any two that contradict each other.
 - **Gates**: `npm run gate-stamp -- run lint test tooling`, plus `npm run gates` when presentation changes,
   plus `npm run sim` and `npm run validate:schema` when content or the engine changes.
-- **Out of scope**, **Size** (changed lines), and the line `Depends on: #<n>, #<m>` (issue numbers only, or
-  `Depends on: none`), as plain text on one line, so the supervisor and lanes can read it.
+- **Out of scope**, **Size** (changed lines), and the line `Depends on: #<n>, #<m>.` (issue numbers only, or
+  `Depends on: none.`), as plain text on one line. The queue reads the issue numbers before its first full
+  stop, so any note about other issues goes after it.
 - **Player-visible**: one line per change players will see, or "nothing player-visible".
 - **Trailer**: the exact `Requested:` line from `docs/sprint.md` for this lane.
 Size each for one fresh session: about 300 changed lines at most. Split bigger items into `<ID>a`, `<ID>b`,

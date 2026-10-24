@@ -59,8 +59,10 @@ code: say "unverified" in the Goal, so the implementer's failing test decides.
 ## 3. Write
 Start every comment you write with "Plan:".
 Create each issue with `gh issue create --title "[task] <ID>: <what it does>" --label L --label sprint-ready
---body-file <file>`, the body written first with the Write tool to `.prompts/tmp/` (the guard reads every line
-of a command, so a body line such as `git push …` passed inline is refused as a push). The body:
+--body-file <file>`, the body written first with the Write tool to `.prompts/tmp/plan-$ARGUMENTS/<ID>.md` (the
+guard reads every line of a command, so a body line such as `git push …` passed inline is refused as a push).
+Every file you write goes in that folder: plan sessions for the other lanes run at the same time in this same
+checkout. The body:
 - **Goal**: what changes for the player or the workflow, in plain words.
 - **Read first**: exact `path:line`s.
 - **Acceptance criteria**: testable statements; each becomes a test that fails without the change. Read them

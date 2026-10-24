@@ -50,7 +50,7 @@ and `reason`:
    message fails, or the reply shows it has lost the task (it asks which issue, or starts again from the
    spec), run a fresh implementer with "Mode: fix. Issue: <n>. Worktree: W. Concerns: <list>"; after a
    `resume` there is no builder to message, so start that fresh one at once. Then the reviewer again.
-2. Final PASS: `Q move <n> to-integrate --note '<the implementer's WHAT CHANGED and PLAYER-VISIBLE lines>'`.
+2. Final PASS: `Q move <n> to-integrate --note '<WHAT CHANGED and PLAYER-VISIBLE lines from the hand-back>'`.
    Concerns left: `Q move <n> held --note '<the concerns>'`.
    Write the note in single quotes, a line break as `\n`, and ’ for an apostrophe.
 3. BLOCKED: `Q move <n> blocked`. GATE-FAILED: `Q move <n> held`. The implementer has already commented why;

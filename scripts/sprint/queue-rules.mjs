@@ -402,7 +402,7 @@ export function planMove(world, number, to, note = null) {
   if (from === to) return { issue: number, from, to, comment: null, add: [], remove: [] };
   if (from !== 'in-progress') throw refuse(`#${number} is ${from}; only work in progress moves to ${to}`, RETRY);
   if (to === 'to-integrate') {
-    if (!text) throw refuse('ready to integrate needs a note', "Run it again with --note '<the implementer's WHAT CHANGED and PLAYER-VISIBLE lines>'.");
+    if (!text) throw refuse('ready to integrate needs a note', "Run it again with --note '<WHAT CHANGED and PLAYER-VISIBLE lines from the hand-back>'.");
     const ahead = world.branchAhead(number);
     if (ahead === 0) {
       throw refuse(`sprint/${number} has no commits ahead of origin/main`, `Nothing to integrate: move it to held with a --note saying why.`);

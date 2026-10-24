@@ -15,7 +15,9 @@
       "Bash(git push origin main)",
       "Bash(git -C C:/Antigravity/YODC-integrate push origin HEAD:main)",
       "Bash(npm run sonar:*)",
-      "Bash(gh run cancel:*)"
+      "Bash(gh run cancel:*)",
+      "Bash(node C:/Antigravity/YODC/scripts/sprint/queue.mjs *)",
+      "PowerShell(node C:/Antigravity/YODC/scripts/sprint/queue.mjs *)"
     ],
     "ask": [
       "Bash(git push *--force*)",

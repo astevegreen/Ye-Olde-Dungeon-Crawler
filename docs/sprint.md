@@ -201,10 +201,32 @@ on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` 
   changed only by its own runs or by the owner.
 - It starts `YODC lane: <lane>`, `YODC plan: <lane>` and `YODC integrate` sessions and restarts any that
   stopped, for example after a usage limit.
-- The sprint archiver: an hourly scheduled task at minute 50 that posts into a long-lived session the owner
-  started (`claude rc` or the desktop app), because scheduled sessions have no `archive_session`. It archives
-  finished sessions after an hour, and stuck ones (no event in 60 minutes, or 30 minutes waiting for an answer).
-  It is on before the window opens, and the dry run proves it: one finished session archived, its process gone.
+- The sprint archiver archives finished sessions after an hour, and stuck ones (no event in 60 minutes, or 30
+  minutes waiting for an answer). Scheduled sessions have no `archive_session`, so it runs in a session the
+  owner starts (`claude rc` or the desktop app), and a fresh one each sprint day: in October one session kept
+  for the whole window re-read every earlier run and cost 12.9 M tokens. Each sprint day the owner:
+  1. starts a new session on Haiku 5.5, or Sonnet at low effort (archiving is a list, a filter and a call, and
+     `unarchive_session` undoes a mistake);
+  2. in it, sets up a scheduled task bound to that session, at minute 50 of every hour of that UTC day
+     (`50 * <day> <month> *`), with the prompt below;
+  3. deletes the previous day's task and archives its session.
+
+  It is on before the window opens, and the dry run proves it: one finished session archived, its process
+  gone. The prompt, to paste when setting the task up:
+  ```text
+  Sprint archiver run. Run once even if several of these arrive together, and reply in one line.
+  1. If `date -u +%Y%m%dT%H%M` is past the end of the Window (UTC) line in C:/Antigravity/YODC/docs/sprint.md,
+     reply "Window closed" and stop.
+  2. List this computer's Remote Control sessions (list_sessions leaves scheduled ones out). In PowerShell:
+     Get-CimInstance Win32_Process -Filter "Name='claude.exe'" | ForEach-Object { [regex]::Match($_.CommandLine, 'cse_\w+').Value } | Where-Object { $_ } | Sort-Object -Unique
+     For each cse_<id>, get_session session_<id>.
+  3. Archive with archive_session each session where all of these hold: environment_id is
+     env_0157HwSnMQCykikhVk9tpWUC; its origin is a scheduled trigger; it is not this session; and either its
+     status_bucket is completed, review_ready or failed with updated_at over an hour old, or it is stuck:
+     session_status RUNNING with updated_at over 60 minutes old, or status_bucket blocked with updated_at over
+     30 minutes old. Archive nothing else.
+  4. Reply "Archived <n>: <titles, stuck ones marked>" or "Nothing to archive".
+  ```
 - Agents: `implementer` and `reviewer` (`.claude/agents/`); guard `.claude/hooks/sprint-guard.mjs`.
 - The queue, `scripts/sprint/queue.mjs`, holds the sprint's bookkeeping rules once, tested on October's issues:
   `has-work "<session title>"` for the supervisor, `next <lane>` and `move <n> <state>` for the lanes, and

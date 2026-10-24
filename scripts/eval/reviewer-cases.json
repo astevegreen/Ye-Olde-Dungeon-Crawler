@@ -1,0 +1,55 @@
+{
+  "about": "Known answers for the reviewer agent, from the 21-22 Oct sprint. A bad case is a task the per-task review passed and the R6 bug hunt later traced a bug to (#63, comment of 22 Oct 05:22Z, names each commit); it is caught when a concern names the behaviour in `broke`. A good case is a task never labelled held, with no later fix to its files; it is clean on PASS or minor concerns only. `spec: issue` gives the reviewer the issue with its comments; `spec: body` gives the issue body alone, for an issue whose later comments describe the bug.",
+  "cases": [
+    {
+      "id": "B4",
+      "kind": "bad",
+      "sha": "c3a1e17e",
+      "issue": 39,
+      "bug": 64,
+      "spec": "issue",
+      "broke": "Recasting Hliðskjálf's loot sense on a new floor within its duration keeps the old floor recorded, so nothing is sensed on the new floor (reveal.ts)."
+    },
+    {
+      "id": "M5a",
+      "kind": "bad",
+      "sha": "d8b1cb44",
+      "issue": 35,
+      "bug": 65,
+      "spec": "issue",
+      "broke": "The learning-stone hint fires on learning_stone_read even when the shard became a rune or the spell went to the spellbook, so it shows the wrong text and is used up (hints.ts)."
+    },
+    {
+      "id": "B8",
+      "kind": "bad",
+      "sha": "3459b968",
+      "issue": 45,
+      "bug": 66,
+      "spec": "issue",
+      "broke": "The coven-fled check runs before the struck-down check, so when the countdown and a blow held at the HP floor land on one action the wrong raid-ending text shows (prologue.ts)."
+    },
+    {
+      "id": "U6b",
+      "kind": "bad",
+      "sha": "dce1059d",
+      "issue": 51,
+      "bug": 67,
+      "spec": "issue",
+      "broke": "Shop service panels keep focus on the rebuilt Choose button and don't preventDefault Enter or Space, so holding Enter re-runs the offer, skipping its repeat or arming guard (shopDialog.ts)."
+    },
+    {
+      "id": "B3",
+      "kind": "bad",
+      "sha": "2fa8a9c9",
+      "issue": 24,
+      "bug": 68,
+      "spec": "issue",
+      "broke": "A buffered arrow step still fires under Look mode or the Close-which-door prompt: the guard covers modals and the map overlay but not those input modes (input-handler.ts)."
+    },
+    { "id": "B1", "kind": "good", "sha": "a765a2d6", "issue": 22, "spec": "issue" },
+    { "id": "B2", "kind": "good", "sha": "3068c892", "issue": 23, "spec": "issue" },
+    { "id": "B6", "kind": "good", "sha": "a805194c", "issue": 41, "spec": "issue" },
+    { "id": "U1a", "kind": "good", "sha": "1b899ad1", "issue": 29, "spec": "issue" },
+    { "id": "U4", "kind": "good", "sha": "04e26472", "issue": 42, "spec": "issue" }
+  ]
+}

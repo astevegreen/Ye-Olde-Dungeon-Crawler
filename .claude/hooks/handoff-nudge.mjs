@@ -1,6 +1,8 @@
 // SessionStart (startup, clear): tell the owner when an unclaimed handoff note is waiting, from the
 // local copy of origin/handoffs (no fetch: a session start never waits on the network or a login).
-// Shown to the owner only, never to Claude.
+// Shown to the owner only, never to Claude. While the clock is inside the `Window (UTC)` line of
+// docs/sprint.md, also tell Claude that file overrides CLAUDE.md: a banner in CLAUDE.md said so in
+// every session, sprint or not, long after the window closed.
 // Stop hook, two checks, both held while background work is running (below). A reply that sends the owner to /clear or /handoff resume goes back to
 // Claude unless an unclaimed note is published (below). And once the conversation passes LIMIT tokens, send Claude back to write the handoff
 // before it finishes the turn. CLAUDE.md's "the session has run long" never fired on judgement
@@ -10,7 +12,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { openNotes } from '../skills/handoff/notes.mjs';
 
 const LIMIT = 200_000;
@@ -22,19 +24,27 @@ try {
   process.exit(0);
 }
 if (input?.hook_event_name === 'SessionStart') {
+  const cwd = input.cwd || process.cwd();
+  const out = {};
   let notes = [];
   try {
-    notes = openNotes(input.cwd || process.cwd());
+    notes = openNotes(cwd);
   } catch {
-    process.exit(0);
+    notes = [];
   }
   if (notes.length > 0) {
-    const systemMessage =
+    out.systemMessage =
       notes.length === 1
         ? `Open handoff note: ${notes[0].name}. Type /handoff resume to continue it.`
         : `${notes.length} open handoff notes, newest ${notes[0].name}. Type /handoff resume to pick one.`;
-    process.stdout.write(JSON.stringify({ systemMessage }));
   }
+  if (sprintWindowOpen(cwd)) {
+    out.hookSpecificOutput = {
+      hookEventName: 'SessionStart',
+      additionalContext: 'Sprint window open: `docs/sprint.md` overrides CLAUDE.md where they conflict.',
+    };
+  }
+  if (Object.keys(out).length > 0) process.stdout.write(JSON.stringify(out));
   process.exit(0);
 }
 if (input?.stop_hook_active || !input?.transcript_path || !input?.session_id) process.exit(0);
@@ -239,6 +249,29 @@ function publishedOpenNote(list) {
   } catch {
     return false;
   }
+}
+
+// The repository's docs/sprint.md holds a line such as
+//   **Window (UTC):** `20261021T0040` to `20261022T1800` (…, Eastern).
+// The window is open when the UTC time, in that form, lies between the two, both included. No file,
+// no such line, or a line it can't read: closed.
+function sprintWindowOpen(dir) {
+  let root = dir;
+  while (!existsSync(join(root, '.git'))) {
+    const up = dirname(root);
+    if (up === root) return false;
+    root = up;
+  }
+  let text;
+  try {
+    text = readFileSync(join(root, 'docs', 'sprint.md'), 'utf8');
+  } catch {
+    return false;
+  }
+  const m = text.match(/Window \(UTC\):\**\s*`(\d{8}T\d{4})`\s*to\s*`(\d{8}T\d{4})`/);
+  if (!m) return false;
+  const now = new Date().toISOString().slice(0, 16).replace(/[-:]/g, '');
+  return m[1] <= now && now <= m[2];
 }
 
 function lastOwnerMessage(list) {

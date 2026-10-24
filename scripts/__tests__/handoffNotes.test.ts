@@ -296,6 +296,37 @@ describe.concurrent('handoff-nudge.mjs', { timeout: 60_000 }, () => {
     expect((await start()).stdout).toBe('');
   });
 
+  it('at session start, tells Claude the sprint file overrides CLAUDE.md only inside its window', async () => {
+    const { work } = await repos();
+    const SPRINT = 'Sprint window open: `docs/sprint.md` overrides CLAUDE.md where they conflict.';
+    const start = async (cwd = work): Promise<string | undefined> => {
+      const r = await run(process.execPath, [NUDGE], cwd, JSON.stringify({ hook_event_name: 'SessionStart', source: 'startup', cwd }));
+      expect(r.code, r.stderr).toBe(0);
+      return r.stdout ? JSON.parse(r.stdout).hookSpecificOutput?.additionalContext : undefined;
+    };
+    const HOUR = 3_600_000;
+    const at = (offset: number) => new Date(Date.now() + offset).toISOString().slice(0, 16).replace(/[-:]/g, '');
+    const sprint = (text: string) => {
+      fs.mkdirSync(path.join(work, 'docs'), { recursive: true });
+      fs.writeFileSync(path.join(work, 'docs', 'sprint.md'), `# Sprint\n\n${text}\n`);
+    };
+    const window = (from: number, to: number) => `**Window (UTC):** \`${at(from)}\` to \`${at(to)}\` (Eastern times).`;
+
+    expect(await start()).toBeUndefined(); // no docs/sprint.md
+    sprint('No window line here.');
+    expect(await start()).toBeUndefined();
+
+    sprint(window(-HOUR, HOUR));
+    expect(await start()).toBe(SPRINT);
+    fs.mkdirSync(path.join(work, 'src'), { recursive: true });
+    expect(await start(path.join(work, 'src'))).toBe(SPRINT);
+
+    sprint(window(-2 * HOUR, -HOUR));
+    expect(await start()).toBeUndefined();
+    sprint(window(HOUR, 2 * HOUR));
+    expect(await start()).toBeUndefined();
+  });
+
   it('sends a reply that points the owner at /clear back until an open note is published', async () => {
     const { work } = await repos();
     const blocked = await stop(work, [owner('wrap up'), reply(CLEAR)]);

@@ -2,8 +2,6 @@
 
 # CLAUDE.md — Project Operating Instructions
 
-> **Sprint, 21–22 Oct 2026:** inside the window in `docs/sprint.md`, that file overrides this one where they conflict. Outside it, ignore it.
-
 ## Sessions
 - One task per session. When a task is committed and leaves open questions, or the session has run long, write the handoff (`/handoff`) without asking; when the next request is unrelated, offer it. Suggest `/clear` only after the note is published; the owner then `/clear`s and resumes.
 - When compacting, keep word for word: the owner's request as it will be quoted in `Requested:`, the task, the files changed, and each check run with its result.

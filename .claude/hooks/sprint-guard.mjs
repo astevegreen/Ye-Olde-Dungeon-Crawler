@@ -39,17 +39,18 @@ if (MODE === '--file-lock') {
   process.exit(0);
 }
 
-const command = String(input.tool_input?.command ?? '');
+// A backslash before a newline joins the two lines into one command, as bash does: `git \⏎push` pushes.
+const command = String(input.tool_input?.command ?? '').replace(/\\\r?\n/g, ' ');
 // Simple commands: split on control operators, keeping the words of each. Inside quotes, |, ;, & and )
 // are text (a search pattern such as "a\|b"), except in double quotes holding $ or a backtick, which can
-// run a command there.
+// run a command there. So is one escaped with a backslash outside quotes (`sed -n 1p\;9p`, find's `\;`).
 const MASK = { '|': '\u0001', ';': '\u0002', '&': '\u0003', ')': '\u0004' };
 const UNMASK = Object.fromEntries(Object.entries(MASK).map(([k, v]) => [v, k]));
 function maskQuoted(s) {
   let out = '';
   for (let i = 0; i < s.length; i++) {
     const c = s[i];
-    if (c === '\\') { out += s.slice(i, i + 2); i++; continue; }
+    if (c === '\\') { out += `\\${MASK[s[i + 1]] ?? s[i + 1] ?? ''}`; i++; continue; }
     if (c !== '"' && c !== "'") { out += c; continue; }
     let j = i + 1;
     while (j < s.length && s[j] !== c) j += c === '"' && s[j] === '\\' ? 2 : 1;

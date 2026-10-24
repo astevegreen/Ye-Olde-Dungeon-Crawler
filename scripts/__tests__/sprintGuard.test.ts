@@ -135,6 +135,26 @@ describe('--read-only', () => {
     expect(bash('--lane', 'echo \\"x; git push; y\\"')).toBe(2);
     expect(bash('--lane', 'grep "a|b" src | git push')).toBe(2);
   });
+  it('reads a backslash-escaped ; or | outside quotes as text, as bash does', () => {
+    // The 22 Oct eval: this refusal hid the bug at prologue.ts:458 from the reviewer.
+    expect(bash('--read-only', 'sed -n 190,210p\\;350,490p src/content/cotw/prologue.ts')).toBe(0);
+    expect(bash('--read-only', 'grep -n wantsHeal\\|repayVoidDebt src')).toBe(0);
+    // cat is handed the words `;`, `git` and `commit` to read: nothing runs git.
+    expect(bash('--read-only', 'cat x \\; git commit -m y')).toBe(0);
+  });
+  it('still splits at an unescaped operator next to an escaped one', () => {
+    expect(bash('--read-only', 'sed -n 1p\\; x; git commit -m y')).toBe(2);
+    expect(bash('--read-only', 'sed -n 1p\\;2p x && git commit -m y')).toBe(2);
+    expect(bash('--read-only', 'sed -n 1p\\;2p x | git commit -m y')).toBe(2);
+    // `\\` is an escaped backslash, so the `;` after it ends the command.
+    expect(bash('--lane', 'grep a x \\\\; git push')).toBe(2);
+    expect(bash('--lane', 'echo \\$(git push)')).toBe(2);
+    expect(bash('--lane', 'echo "$(git push)"')).toBe(2);
+  });
+  it('reads a backslash-newline as one command line', () => {
+    expect(bash('--lane', 'git \\\npush origin HEAD:main')).toBe(2);
+    expect(bash('--read-only', 'git log \\\n  --oneline -3')).toBe(0);
+  });
   it('fetches origin and reads with --no-pager', () => {
     expect(bash('--read-only', 'git fetch -q origin')).toBe(0);
     expect(bash('--read-only', 'git --no-pager log -3')).toBe(0);

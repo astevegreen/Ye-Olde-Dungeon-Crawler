@@ -3,8 +3,10 @@
  * comment counts as the owner's, when held work is retried, what an issue waits for, whether a session
  * has work, and the sprint log's status block. The skills ask `scripts/sprint/queue.mjs`, which gathers
  * the world with gh and git and calls `run` here; the rules themselves read only what they are given.
- * Types: queue-rules.d.mts.
+ * The cue's state (the window, the trigger ledger, the supervisor's lock) is this computer's, read and
+ * written through `io.local`. Types: queue-rules.d.mts.
  */
+import { resumeAfter } from './usage-limit.mjs';
 
 /** Sprint sessions comment as the bot; only the owner's own account answers for the owner. */
 export const OWNER = 'astevegreen';
@@ -37,8 +39,6 @@ const refuse = (message, todo) => new QueueError(message, todo, 2);
 
 // --- docs/sprint.md ---------------------------------------------------------------------------------
 
-const stamp = (s) => new Date(`${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T${s.slice(9, 11)}:${s.slice(11, 13)}:00Z`);
-
 /** Ranges such as `M3–M6` name each ID between. */
 function idRefs(text) {
   const ids = new Set();
@@ -58,12 +58,10 @@ function firstSentence(text) {
 }
 
 /**
- * The window, lanes, sprint log issue, pre-sprint tag, environment, supervisor trigger and backlog that
- * docs/sprint.md declares. An environment or trigger still written as its placeholder (`env_…`) reads as null.
+ * The lanes, sprint log issue, pre-sprint tag and backlog that docs/sprint.md declares. The window is not
+ * in it: /sprint-start opens one on this computer (`windowFacts`), and `run` sets `window` from there.
  */
 export function parseSprintDoc(text) {
-  const window = /\*\*Window \(UTC\):\*\*\s*`(\d{8}T\d{4})`\s*to\s*`(\d{8}T\d{4})`/.exec(text);
-  if (!window) throw new QueueError('docs/sprint.md has no "**Window (UTC):** `<start>` to `<end>`" line');
   const lanes = [...text.matchAll(/^\|\s*`([a-z]+)`\s*\|\s*`lane:\1`\s*\|\s*`([^`]+)`/gm)].map((m) => ({ name: m[1], worktree: m[2] }));
   if (lanes.length === 0) throw new QueueError('docs/sprint.md has no Lanes table rows (| `<lane>` | `lane:<lane>` | `<worktree>` |)');
   const log = /#(\d+) "Sprint log"/.exec(text);
@@ -103,36 +101,169 @@ export function parseSprintDoc(text) {
     }
   }
   return {
-    window: { start: stamp(window[1]), end: stamp(window[2]) },
+    window: null,
     lanes,
     logIssue: Number(log[1]),
     preSprintTag: /`(pre-sprint-[\w-]+)`/.exec(text)?.[1] ?? null,
-    environment: /\*\*Environment:\*\*\s*`(env_[A-Za-z0-9]+)`/.exec(text)?.[1] ?? null,
-    supervisorTrigger: /\*\*Supervisor trigger:\*\*\s*`(trig_[A-Za-z0-9]+)`/.exec(text)?.[1] ?? null,
     backlog,
   };
 }
 
+// --- the cue: what this computer keeps ----------------------------------------------------------------
+//
+// /sprint-start opens the window when it runs, so starting a sprint needs no push. It, the supervisor and
+// /sprint-stop keep the sprint's state in the git folder every worktree shares (`git rev-parse
+// --git-common-dir`), never committed; every session of the sprint runs on this computer and reads it there:
+//   sprint-window.json     {start, end, environment, supervisor, archiver}: the window and the ids it acts on
+//   sprint-triggers.json   [{title, id, at}]: every trigger the supervisor created, so it finds a session by
+//                          id: RemoteTrigger's list shows only the account's newest 20, and three sprints share it
+//   sprint-supervisor.lock {at}: one supervisor run at a time, whether the hour or a stopping session fired it
+
+export const WINDOW_FILE = 'sprint-window.json';
+export const TRIGGERS_FILE = 'sprint-triggers.json';
+export const LOCK_FILE = 'sprint-supervisor.lock';
+/** /sprint-start's window when it names no hours, and the longest it opens. */
+export const DEFAULT_HOURS = 40;
+const MAX_HOURS = 96;
+/** A supervisor run takes minutes: a lock older than this was left by a run that died. */
+const LOCK_STALE = 20 * 60_000;
+/** A session started this run takes about this much memory before free memory shows it. */
+export const SESSION_MB = 1536;
+const TRIGGER_ID = /^trig_\w+$/;
+const ENV_ID = /^env_\w+$/;
+
+const iso = (d) => d.toISOString().replace(/:\d{2}\.\d{3}Z$/, 'Z');
+const minute = (d) => new Date(Math.floor(d.getTime() / 60_000) * 60_000);
+
+/** "Sat 24 Oct 17:00", the owner's clock. */
+function eastern(d) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/New_York', hourCycle: 'h23', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  }).formatToParts(d);
+  const get = (type) => parts.find((p) => p.type === type).value;
+  return `${get('weekday')} ${get('day')} ${get('month')} ${get('hour')}:${get('minute')}`;
+}
+
+/** The window file's dates, or null when no sprint was ever started here. */
+function readWindow(local) {
+  const w = local.read(WINDOW_FILE);
+  if (!w) return null;
+  const start = new Date(w.start);
+  const end = new Date(w.end);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    throw new QueueError(`${WINDOW_FILE} holds no window (start "${w.start}", end "${w.end}")`, 'Start nothing. Report it; /sprint-start writes a new one.');
+  }
+  return { ...w, start, end };
+}
+
+const phaseOf = (w, now) => (!w ? 'none' : now < w.start ? 'before' : now > w.end ? 'after' : 'open');
+
 /**
- * What the supervisor and the archiver read first: where the clock stands against the window, and the
- * environment, trigger, log and titles they act on. Refuses while the environment is unset: an id copied
- * from an earlier sprint went stale (October's had vanished by 24 Oct), so nothing starts on a guess.
+ * What every sprint session reads first: where the clock stands (`none`: no sprint started here yet, the
+ * planning day; then `before`, `open`, `after`), the window, the environment sessions start in, the
+ * supervisor's and archiver's trigger ids, the sprint log and the session titles. An open window with no
+ * environment is refused: nothing starts on a guess (October's id had gone by 24 Oct).
  */
-export function docFacts(doc, now) {
-  if (!doc.environment) {
-    throw new QueueError(
-      'docs/sprint.md names no environment (Machinery: **Environment:** `env_<id>`)',
-      'Start and archive nothing. Report this on the sprint log; the owner fills the Environment line at setup (Preflight).',
-    );
+function windowFacts(doc, w, now) {
+  const phase = phaseOf(w, now);
+  if ((phase === 'open' || phase === 'before') && !w.environment) {
+    throw new QueueError(`${WINDOW_FILE} names no environment`, 'Start and archive nothing. Report it on the sprint log: /sprint-stop, then /sprint-start, writes one.');
   }
   return {
-    phase: now < doc.window.start ? 'before' : now > doc.window.end ? 'after' : 'open',
-    window: { start: fmt(doc.window.start), end: fmt(doc.window.end) },
-    environment: doc.environment,
-    supervisorTrigger: doc.supervisorTrigger,
+    phase,
+    ...(w && { window: { start: iso(w.start), end: iso(w.end), eastern: `${eastern(w.start)} to ${eastern(w.end)}` } }),
+    environment: w?.environment ?? null,
+    supervisor: w?.supervisor ?? null,
+    archiver: w?.archiver ?? null,
     logIssue: doc.logIssue,
     titles: sessionTitles(doc),
   };
+}
+
+/**
+ * `window start|ids|stop|archived`: open the window from now for `hours`, record the scheduled tasks'
+ * ids, close it now, and clear the archiver once it has switched itself off. A new window waits while the
+ * last one's archiver is on record, since that sprint's sessions may still run. Returns what to print and
+ * the files to write (none in a dry run).
+ */
+function windowCommand(doc, w, now, sub, { hours, environment, supervisor, archiver, dryRun = false } = {}) {
+  const phase = phaseOf(w, now);
+  const facts = (next) => windowFacts(doc, next, now);
+  if (sub === 'start') {
+    const h = hours === undefined ? DEFAULT_HOURS : Number(hours);
+    if (!Number.isInteger(h) || h < 1 || h > MAX_HOURS) throw refuse(`the window is a whole number of hours from 1 to ${MAX_HOURS}, not "${hours}"`, 'Refuse the start with this error.');
+    if (!ENV_ID.test(environment ?? '')) throw refuse(`--environment "${environment ?? ''}" is not an environment id`, 'Pass the env_ id list_environments gives for this computer and folder.');
+    if (phase === 'open' || phase === 'before') throw refuse(`a window is already open, until ${iso(w.end)}`, 'Refuse the start with this error; /sprint-stop ends the window.');
+    if (w?.archiver) {
+      throw refuse(
+        `the last window's archiver ${w.archiver} is still on record, so its sessions may still be running`,
+        'RemoteTrigger get it. Disabled: run `window archived`, then start again. Enabled: refuse with this error; it switches itself off once none of its sessions runs.',
+      );
+    }
+    const start = minute(now);
+    const next = { start: start.toISOString(), end: new Date(start.getTime() + h * 3_600_000).toISOString(), environment, supervisor: null, archiver: null };
+    const parsed = { ...next, start, end: new Date(next.end) };
+    return { out: { ...facts(parsed), dryRun }, writes: dryRun ? [] : [[WINDOW_FILE, next], [TRIGGERS_FILE, []]] };
+  }
+  if (sub === 'ids') {
+    if (phase !== 'open') throw refuse('no window is open', 'Run `window start` first.');
+    const next = { ...w };
+    for (const [name, id] of [['supervisor', supervisor], ['archiver', archiver]]) {
+      if (id === undefined) continue;
+      if (!TRIGGER_ID.test(id)) throw refuse(`--${name} "${id}" is not a trigger id`, 'Pass the trig_ id the create returned.');
+      next[name] = id;
+    }
+    return { out: facts(next), writes: [[WINDOW_FILE, { ...next, start: w.start.toISOString(), end: w.end.toISOString() }]] };
+  }
+  if (sub === 'stop') {
+    if (phase !== 'open') throw refuse('no window is open', 'Nothing to stop; report it.');
+    const next = { ...w, end: minute(now) };
+    return { out: facts(next), writes: [[WINDOW_FILE, { ...next, start: w.start.toISOString(), end: next.end.toISOString() }]] };
+  }
+  if (sub === 'archived') {
+    if (phase === 'open') throw refuse('the window is still open', 'Leave the archiver on until it ends.');
+    if (!w?.archiver) return { out: facts(w), writes: [] };
+    const next = { ...w, archiver: null };
+    return { out: facts(next), writes: [[WINDOW_FILE, { ...next, start: w.start.toISOString(), end: w.end.toISOString() }]] };
+  }
+  throw refuse(`unknown window command "${sub}"`, 'Use `window`, `window start [hours] --environment <env>`, `window ids`, `window stop` or `window archived`.');
+}
+
+/**
+ * The trigger the supervisor created last for each session title since the window opened (null: none yet);
+ * with `all`, every one since the window opened, newest first, for the archiver.
+ */
+function sessions(doc, w, ledger, { all = false } = {}) {
+  const since = w?.start.getTime() ?? Infinity;
+  const recent = ledger.filter((t) => new Date(t.at).getTime() >= since).sort((a, b) => new Date(b.at) - new Date(a.at));
+  if (all) return recent;
+  return Object.fromEntries(sessionTitles(doc).map((title) => [title, recent.find((t) => t.title === title)?.id ?? null]));
+}
+
+/**
+ * `started "<title>" <trig_id>`: the ledger entry the supervisor adds after each create. After the window
+ * it still starts the integrator, so what the lanes finish lands; that start is recorded too.
+ */
+function recordStart(doc, w, ledger, now, title, id) {
+  if (!sessionTitles(doc).includes(title)) throw refuse(`"${title}" is not a sprint session title`, `Use one of: ${sessionTitles(doc).map((t) => `"${t}"`).join(', ')}.`);
+  if (!TRIGGER_ID.test(id ?? '')) throw refuse(`"${id ?? ''}" is not a trigger id`, 'Pass the trig_ id the create returned.');
+  const phase = phaseOf(w, now);
+  if (phase !== 'open' && !(phase === 'after' && title === 'YODC integrate')) throw refuse('no window is open', 'Start no sessions; report it.');
+  const entry = { title, id, at: now.toISOString() };
+  return { out: { recorded: entry }, writes: [[TRIGGERS_FILE, [...ledger, entry]]] };
+}
+
+/**
+ * `lock`: a supervisor run takes it first and `unlock` gives it back, so an hourly run and one a stopping
+ * session fired never start two sessions for one title. A lock past `LOCK_STALE` was left by a run that died.
+ */
+function lockCommand(held, now) {
+  if (!held) return { ok: true };
+  const at = new Date(held.at);
+  if (now.getTime() - at.getTime() < LOCK_STALE) {
+    throw refuse(`another supervisor run holds the lock, since ${Number.isNaN(at.getTime()) ? held.at : iso(at)}`, 'Stop now and start, update and comment nothing: that run covers this one.');
+  }
+  return { ok: true, stale: iso(at) };
 }
 
 // --- issues -------------------------------------------------------------------------------------------
@@ -317,7 +448,8 @@ export function researchQueue(world) {
     }
     waiting.push(`${what} is still running`);
   }
-  const lastStart = new Date(world.doc.window.end.getTime() - LAST_SOAK_START);
+  // No window open: no soak starts (the supervisor starts no research session then either).
+  const lastStart = new Date((world.doc.window?.end.getTime() ?? 0) - LAST_SOAK_START);
   if (!running && world.now > lastStart) waiting.push(`no soak starts after ${fmt(lastStart)}: under an hour would fit before the window closes`);
   else if (!running) {
     for (const item of world.doc.backlog[RESEARCH] ?? []) {
@@ -368,12 +500,19 @@ export function sessionTitles(doc) {
   return [...doc.lanes.map((l) => `YODC lane: ${l.name}`), ...build.map((l) => `YODC plan: ${l}`), 'YODC integrate'];
 }
 
-/** Whether a fresh session with this title would find work. Extra fields: `todo` and `ready` for a plan, `issues` to integrate. */
-export function hasWork(world, title) {
+/**
+ * Whether a fresh session with this title would find work. Extra fields: `todo` and `ready` for a plan,
+ * `issues` to integrate. `starting`: sessions this supervisor run already started, whose memory free
+ * memory doesn't show yet; each raises the floor by `SESSION_MB`.
+ */
+export function hasWork(world, title, starting = 0) {
   if (!sessionTitles(world.doc).includes(title)) {
     throw refuse(`unknown session title "${title}"`, `Use one of: ${sessionTitles(world.doc).map((t) => `"${t}"`).join(', ')}.`);
   }
-  const floor = world.freeMb < MEMORY_FLOOR_MB ? `memory: ${world.freeMb} MB free, under the ${MEMORY_FLOOR_MB} MB floor` : null;
+  const need = MEMORY_FLOOR_MB + SESSION_MB * starting;
+  const floor = world.freeMb < need
+    ? `memory: ${world.freeMb} MB free, under the ${need} MB floor${starting ? ` (${MEMORY_FLOOR_MB} + ${SESSION_MB} for each of ${starting} starting)` : ''}`
+    : null;
   let answer;
   if (title === 'YODC integrate') {
     const issues = world.issues.filter((i) => i.open && i.labels.includes('to-integrate')).map((i) => i.number).sort((a, b) => a - b);
@@ -459,7 +598,7 @@ export function statusBlock(world, { also = [], oldBody = '' } = {}) {
     const mine = world.issues.filter((i) => i.labels.includes(`lane:${lane}`));
     const counts = STATES.map((s) => `${mine.filter((i) => i.open && i.labels.includes(s)).length} ${s}`).join(', ');
     const closed = mine
-      .filter((i) => !i.open && i.closedAt && i.closedAt >= world.doc.window.start)
+      .filter((i) => !i.open && i.closedAt && i.closedAt >= (world.doc.window?.start ?? world.now))
       .sort((a, b) => a.closedAt - b.closedAt)
       .map(name);
     lines.push(`- ${lane}: ${counts}; closed: ${closed.length ? closed.join(', ') : 'none'}`);
@@ -489,16 +628,21 @@ export function statusBlock(world, { also = [], oldBody = '' } = {}) {
 
 // --- the command line ----------------------------------------------------------------------------------
 
-const USAGE = 'Usage: queue.mjs doc | has-work "<session title>" | next <lane> [--taken <n,n>] | move <n> <state> [--note \'<text>\'] | status [--write] [--also \'<line>\']...';
+const USAGE = [
+  'Usage: queue.mjs window [start [hours] --environment <env> [--dry-run] | ids [--supervisor <trig>] [--archiver <trig>] | stop | archived]',
+  'started "<session title>" <trig> | sessions [--all] | lock | unlock | resume --log <file> --last-event <ISO> | identity',
+  'has-work "<session title>" [--starting <n>] | next <lane> [--taken <n,n>] | move <n> <state> [--note \'<text>\'] | status [--write] [--also \'<line>\']...',
+].join(' | ');
 const ISSUE_FIELDS = 'number,title,body,labels,state,comments,closedAt,createdAt';
+const BOOLEAN_FLAGS = new Set(['--write', '--dry-run', '--all']);
 
-/** Flags after the positional words: `--name value`, repeatable. */
+/** Flags after the positional words: `--name value`, repeatable; `--write`, `--dry-run` and `--all` take none. */
 function flags(args) {
   const words = [];
   const out = {};
   for (let k = 0; k < args.length; k++) {
     const a = args[k];
-    if (a === '--write') out.write = true;
+    if (BOOLEAN_FLAGS.has(a)) out[a.slice(2)] = true;
     else if (a.startsWith('--')) {
       if (k + 1 >= args.length) throw refuse(`${a} needs a value`, USAGE);
       (out[a.slice(2)] ??= []).push(args[++k]);
@@ -507,18 +651,78 @@ function flags(args) {
   return { words, flags: out };
 }
 
+/** The ledger of started triggers, empty before the supervisor's first start. */
+function readLedger(local) {
+  const ledger = local.read(TRIGGERS_FILE) ?? [];
+  if (!Array.isArray(ledger)) throw new QueueError(`${TRIGGERS_FILE} is not a list of triggers`, 'Start nothing. Report it; the next /sprint-start writes a new one.');
+  return ledger;
+}
+
+/** The cue's commands, which read this computer's state and never gh; undefined for any other command. */
+function cueCommand(command, words, f, doc, w, io) {
+  const now = io.now();
+  const done = (out) => ({ code: 0, line: JSON.stringify(out) });
+  const apply = ({ out, writes }) => {
+    for (const [name, value] of writes) io.local.write(name, value);
+    return done(out);
+  };
+  const last = (name) => f[name]?.at(-1);
+  if (command === 'window') {
+    if (words.length === 0) return done(windowFacts(doc, w, now));
+    return apply(windowCommand(doc, w, now, words[0], {
+      hours: words[1], environment: last('environment'), supervisor: last('supervisor'), archiver: last('archiver'), dryRun: Boolean(f['dry-run']),
+    }));
+  }
+  if (command === 'started') return apply(recordStart(doc, w, readLedger(io.local), now, words[0], words[1]));
+  if (command === 'sessions') return done(sessions(doc, w, readLedger(io.local), { all: Boolean(f.all) }));
+  if (command === 'lock') {
+    if (io.local.claim(LOCK_FILE, { at: now.toISOString() })) return done({ ok: true });
+    const out = lockCommand(io.local.read(LOCK_FILE), now);
+    io.local.write(LOCK_FILE, { at: now.toISOString() });
+    return done(out);
+  }
+  if (command === 'unlock') {
+    io.local.remove(LOCK_FILE);
+    return done({ ok: true });
+  }
+  if (command === 'resume') {
+    if (!last('log')) throw refuse('resume needs --log <file>: the end of the run log, saved with the Write tool', USAGE);
+    try {
+      return done(resumeAfter(io.readFile(last('log')), { lastEventAt: last('last-event'), now }));
+    } catch (e) {
+      throw refuse(String(e?.message ?? e), 'Pass the run\'s last_event_at as --last-event and the saved log as --log.');
+    }
+  }
+  return undefined;
+}
+
 /**
- * Runs one command against `io` (gh, git, the sprint doc, free memory, processes, the clock) and returns
- * the one line of JSON to print, with the exit code: 0 done, 2 refused (act on `do`), 1 failed (stop).
+ * Runs one command against `io` (gh, git, the sprint doc, this computer's sprint state, free memory,
+ * processes, the clock) and returns the one line of JSON to print, with the exit code: 0 done, 2 refused
+ * (act on `do`), 1 failed (stop).
  */
 export function run(argv, io) {
   try {
     const [command, ...rest] = argv;
     const { words, flags: f } = flags(rest);
-    const shapes = { doc: words.length === 0, 'has-work': words.length === 1, next: words.length === 1, move: words.length === 2 && /^\d+$/.test(words[0] ?? ''), status: words.length === 0 };
+    const shapes = {
+      window: words.length <= 2, started: words.length === 2, sessions: words.length === 0, lock: words.length === 0,
+      unlock: words.length === 0, resume: words.length === 0, identity: words.length === 0,
+      'has-work': words.length === 1, next: words.length === 1, move: words.length === 2 && /^\d+$/.test(words[0] ?? ''), status: words.length === 0,
+    };
     if (!shapes[command]) throw refuse(`unknown command: ${argv.join(' ') || '(none)'}`, USAGE);
     const doc = parseSprintDoc(io.sprintDoc());
-    if (command === 'doc') return { code: 0, line: JSON.stringify(docFacts(doc, io.now())) };
+    const w = readWindow(io.local);
+    doc.window = w ? { start: w.start, end: w.end } : null;
+    const cue = cueCommand(command, words, f, doc, w, io);
+    if (cue) return cue;
+    if (command === 'identity') {
+      // Sessions comment as the bot, and only the owner's comments answer a question: a session signed in
+      // as the owner would answer its own. Sprint sessions may not run `gh api` or `gh auth` themselves.
+      const login = io.gh(['api', 'user', '--jq', '.login']).trim();
+      if (login !== BOT) throw refuse(`gh is signed in as ${login || 'no one'}, not ${BOT}`, `Refuse the start with this error. Never run \`gh auth switch\`: the owner signs gh in as ${BOT}.`);
+      return { code: 0, line: JSON.stringify({ login, ok: true }) };
+    }
     const world = {
       doc,
       issues: normalizeIssues(JSON.parse(io.gh(['issue', 'list', '--state', 'all', '--limit', '1000', '--json', ISSUE_FIELDS]))),
@@ -530,7 +734,9 @@ export function run(argv, io) {
     };
     let out;
     if (command === 'has-work') {
-      out = hasWork(world, words[0]);
+      const starting = Number(f.starting?.at(-1) ?? 0);
+      if (!Number.isInteger(starting) || starting < 0) throw refuse('--starting takes the number of sessions this run already started', USAGE);
+      out = hasWork(world, words[0], starting);
     } else if (command === 'next') {
       const taken = (f.taken ?? []).flatMap((t) => t.split(',')).filter(Boolean).map(Number);
       if (taken.some((n) => !Number.isInteger(n))) throw refuse('--taken takes issue numbers, comma-separated', USAGE);

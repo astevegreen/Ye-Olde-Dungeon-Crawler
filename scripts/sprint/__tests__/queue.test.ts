@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
+  DEFAULT_HOURS,
+  MEMORY_FLOOR_MB,
+  SESSION_MB,
+  TRIGGERS_FILE,
+  WINDOW_FILE,
   bodyRefs,
   hasWork,
   heldRetry,
@@ -30,7 +35,9 @@ import {
 const FIXTURES = path.join(__dirname, 'fixtures');
 const OCTOBER: RawIssue[] = JSON.parse(fs.readFileSync(path.join(FIXTURES, 'october-issues.json'), 'utf-8')).issues;
 const SPRINT_MD = fs.readFileSync(path.join(FIXTURES, 'october-sprint.md'), 'utf-8');
-const doc = parseSprintDoc(SPRINT_MD);
+/** October's window, as /sprint-start would have written it on the sprint computer. */
+const OCTOBER_WINDOW = { start: '2026-10-21T00:40:00.000Z', end: '2026-10-22T18:00:00.000Z', environment: 'env_01SNfen', supervisor: null, archiver: null };
+const doc = { ...parseSprintDoc(SPRINT_MD), window: { start: new Date(OCTOBER_WINDOW.start), end: new Date(OCTOBER_WINDOW.end) } };
 
 function at(iso: string, labels: Record<number, string[]> = {}, extra: RawIssue[] = [], world: Partial<World> = {}): World {
   const t = new Date(iso);
@@ -65,21 +72,13 @@ const hunt: RawIssue = {
 };
 
 describe('docs/sprint.md, read once', () => {
-  it('finds the window, lanes, sprint log, tag and every backlog list', () => {
-    expect(doc.window.start.toISOString()).toBe('2026-10-21T00:40:00.000Z');
+  it('finds the lanes, sprint log, tag and every backlog list, and no window: /sprint-start opens that', () => {
+    expect(parseSprintDoc(SPRINT_MD).window).toBeNull();
     expect(doc.lanes.map((l) => l.name)).toEqual(['aids', 'ux', 'fixes', 'tooling', 'research']);
     expect(doc.logIssue).toBe(19);
     expect(doc.preSprintTag).toBe('pre-sprint-2026-10-20');
     expect(doc.backlog.tooling!.map((i) => i.id)).toEqual(['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']);
     expect(doc.backlog.research!.map((i) => i.id)).toEqual(['R1', 'R2', 'R3', 'R4', 'R5', 'R6']);
-  });
-  it('reads the environment and supervisor trigger, and a placeholder as unset', () => {
-    // October's doc wrote the environment inline (now stale) and the trigger as `trig_…`.
-    expect(doc).toMatchObject({ environment: null, supervisorTrigger: null });
-    const filled = parseSprintDoc(`${SPRINT_MD}\n**Environment:** \`env_01SNfen\`\n**Supervisor trigger:** \`trig_01Abc\`\n`);
-    expect(filled).toMatchObject({ environment: 'env_01SNfen', supervisorTrigger: 'trig_01Abc' });
-    const placeholder = parseSprintDoc(`${SPRINT_MD}\n**Environment:** \`env_…\`\n**Supervisor trigger:** \`trig_…\`\n`);
-    expect(placeholder).toMatchObject({ environment: null, supervisorTrigger: null });
   });
   it('reads each research item\'s "Waits for" and whether it has soaks', () => {
     const r = Object.fromEntries(doc.backlog.research!.map((i) => [i.id, i]));
@@ -93,10 +92,11 @@ describe('docs/sprint.md, read once', () => {
     const current = parseSprintDoc(fs.readFileSync(path.join(__dirname, '../../../docs/sprint.md'), 'utf-8'));
     expect(current.lanes.length).toBeGreaterThan(0);
     expect(sessionTitles(current)).toContain('YODC integrate');
-    expect(current.backlog.research?.find((i) => i.id === 'R2')?.waits).toEqual(['M3', 'M4', 'M5', 'M6'].map((id) => ({ id })));
+    // Every lane the table names has a backlog list, and every item has an ID the queue can match.
+    for (const lane of current.lanes) expect(current.backlog[lane.name]?.length, lane.name).toBeGreaterThan(0);
   });
   it('fails, saying what is missing, rather than guess', () => {
-    expect(() => parseSprintDoc(SPRINT_MD.replace('**Window (UTC):**', 'Window:'))).toThrow(/Window \(UTC\)/);
+    expect(() => parseSprintDoc(SPRINT_MD.replace(/^## Backlog\s*$/m, '## Work'))).toThrow(/Backlog/);
   });
 });
 
@@ -272,10 +272,23 @@ describe('move', () => {
   });
 });
 
+/** This computer's sprint state, in memory: October's window unless a test says otherwise. */
+function memory(files: Record<string, unknown> = { [WINDOW_FILE]: OCTOBER_WINDOW }) {
+  const store = new Map(Object.entries(files).map(([k, v]) => [k, JSON.stringify(v)]));
+  const local: QueueIO['local'] = {
+    read: (name) => (store.has(name) ? JSON.parse(store.get(name)!) : null),
+    write: (name, value) => void store.set(name, JSON.stringify(value)),
+    claim: (name, value) => (store.has(name) ? false : (store.set(name, JSON.stringify(value)), true)),
+    remove: (name) => void store.delete(name),
+  };
+  return { local, file: (name: string) => (store.has(name) ? JSON.parse(store.get(name)!) : undefined) };
+}
 describe('the command line', () => {
   function io(issues: RawIssue[], over: Partial<QueueIO> = {}) {
     const calls: { args: string[]; input?: string }[] = [];
     const fake: QueueIO = {
+      local: memory().local,
+      readFile: () => '',
       sprintDoc: () => SPRINT_MD,
       gh: (args, input) => {
         calls.push({ args, input });
@@ -319,26 +332,13 @@ describe('the command line', () => {
     expect(writes()).toEqual([{ args: ['issue', 'edit', '19', '--body-file', '-'], input: out.body }]);
     expect(out.body).toContain('- fixes: 0 sprint-ready, 1 in-progress, 0 to-integrate, 0 held, 1 blocked; closed: none');
   });
-  it('doc prints the window phase, environment, log and titles without asking gh', () => {
-    const filled = `${SPRINT_MD}\n**Environment:** \`env_01SNfen\`\n`;
-    const noGh = { sprintDoc: () => filled, gh: () => { throw new Error('doc must not call gh'); } };
-    const out = run(['doc'], io(ready, noGh).fake);
-    expect(out.code).toBe(0);
-    expect(JSON.parse(out.line)).toEqual({
-      phase: 'open',
-      window: { start: '2026-10-21 00:40Z', end: '2026-10-22 18:00Z' },
-      environment: 'env_01SNfen',
-      supervisorTrigger: null,
-      logIssue: 19,
-      titles: expect.arrayContaining(['YODC lane: research', 'YODC plan: fixes', 'YODC integrate']),
+  it('has-work raises the memory floor for each session this run already started', () => {
+    // 9000 MB free: one start leaves 4096 + 1536 = 5632 under it, four need 10240.
+    expect(JSON.parse(run(['has-work', 'YODC lane: fixes', '--starting', '1'], io(ready).fake).line).start).toBe(true);
+    expect(JSON.parse(run(['has-work', 'YODC lane: fixes', '--starting', '4'], io(ready).fake).line)).toEqual({
+      start: false,
+      reason: `memory: 9000 MB free, under the 10240 MB floor (${MEMORY_FLOOR_MB} + ${SESSION_MB} for each of 4 starting)`,
     });
-    const after = run(['doc'], io(ready, { ...noGh, now: () => new Date('2026-10-22T18:01:00Z') }).fake);
-    expect(JSON.parse(after.line).phase).toBe('after');
-  });
-  it('doc refuses while the environment is unset, so nothing starts on a stale id', () => {
-    const out = run(['doc'], io(ready).fake);
-    expect(out.code).toBe(1);
-    expect(JSON.parse(out.line)).toEqual({ error: expect.stringContaining('no environment'), do: expect.stringMatching(/^Start and archive nothing/) });
   });
   it('a failing gh is an error that says stop', () => {
     const out = run(['next', 'fixes'], io(ready, { gh: () => { throw new Error('HTTP 502'); } }).fake);
@@ -351,5 +351,112 @@ describe('the command line', () => {
     expect(out.code).toBe(2);
     expect(JSON.parse(out.line).do).toMatch(/^Usage/);
     expect(writes()).toEqual([]);
+  });
+});
+
+describe('the cue (window, ledger, lock)', () => {
+  const NOW = new Date('2026-10-24T22:31:40Z');
+  const noGh = (local: QueueIO['local'], now = NOW): QueueIO => ({
+    local,
+    readFile: () => '',
+    sprintDoc: () => SPRINT_MD,
+    gh: () => { throw new Error('the cue must not call gh'); },
+    branchAhead: () => 0,
+    processInfo: () => null,
+    freeMb: () => 9000,
+    now: () => now,
+  });
+  const q = (args: string[], io: QueueIO) => {
+    const out = run(args, io);
+    return { code: out.code, out: JSON.parse(out.line) };
+  };
+
+  it('reads phase none before any sprint was started here, with the titles a plan session needs', () => {
+    const { local } = memory({});
+    expect(q(['window'], noGh(local))).toEqual({
+      code: 0,
+      out: { phase: 'none', environment: null, supervisor: null, archiver: null, logIssue: 19, titles: expect.arrayContaining(['YODC plan: fixes']) },
+    });
+  });
+  it('window start opens the window from this minute, for the default hours, and clears the last ledger', () => {
+    const { local, file } = memory({ [TRIGGERS_FILE]: [{ title: 'YODC integrate', id: 'trig_old', at: '2026-10-21T01:00:00Z' }] });
+    const { code, out } = q(['window', 'start', '--environment', 'env_01SNfen'], noGh(local));
+    expect(code).toBe(0);
+    expect(out).toMatchObject({ phase: 'open', window: { start: '2026-10-24T22:31Z', end: `2026-10-${24 + Math.floor((22 + DEFAULT_HOURS) / 24)}T${String((22 + DEFAULT_HOURS) % 24).padStart(2, '0')}:31Z` }, environment: 'env_01SNfen', dryRun: false });
+    expect(out.window.eastern).toBe('Sat 24 Oct 18:31 to Mon 26 Oct 10:31');
+    expect(file(WINDOW_FILE)).toEqual({ start: '2026-10-24T22:31:00.000Z', end: '2026-10-26T14:31:00.000Z', environment: 'env_01SNfen', supervisor: null, archiver: null });
+    expect(file(TRIGGERS_FILE)).toEqual([]);
+  });
+  it('a dry run checks the same and writes nothing', () => {
+    const { local, file } = memory({});
+    expect(q(['window', 'start', '6', '--environment', 'env_01SNfen', '--dry-run'], noGh(local)).out).toMatchObject({ phase: 'open', dryRun: true, window: { end: '2026-10-25T04:31Z' } });
+    expect(file(WINDOW_FILE)).toBeUndefined();
+  });
+  it('refuses a start while a window is open, while the last archiver is on record, or with bad hours or environment', () => {
+    const open = { ...OCTOBER_WINDOW, start: '2026-10-24T20:00:00.000Z', end: '2026-10-25T20:00:00.000Z' };
+    expect(q(['window', 'start', '--environment', 'env_x'], noGh(memory({ [WINDOW_FILE]: open }).local))).toMatchObject({ code: 2, out: { error: 'a window is already open, until 2026-10-25T20:00Z' } });
+    const archiverOn = { ...OCTOBER_WINDOW, archiver: 'trig_arch' };
+    expect(q(['window', 'start', '--environment', 'env_x'], noGh(memory({ [WINDOW_FILE]: archiverOn }).local))).toMatchObject({ code: 2, out: { do: expect.stringMatching(/^RemoteTrigger get it/) } });
+    for (const args of [['window', 'start', '0', '--environment', 'env_x'], ['window', 'start', '2.5', '--environment', 'env_x'], ['window', 'start', '40']]) {
+      expect(q(args, noGh(memory({}).local)).code, args.join(' ')).toBe(2);
+    }
+  });
+  it('records the scheduled tasks\' ids, ends the window now, and clears the archiver once it is off', () => {
+    const { local, file } = memory({});
+    q(['window', 'start', '40', '--environment', 'env_01SNfen'], noGh(local));
+    expect(q(['window', 'ids', '--supervisor', 'trig_sup', '--archiver', 'trig_arch'], noGh(local)).out).toMatchObject({ supervisor: 'trig_sup', archiver: 'trig_arch' });
+    expect(q(['window', 'archived'], noGh(local)).code).toBe(2);
+    const later = new Date('2026-10-25T03:00:20Z');
+    expect(q(['window', 'stop'], noGh(local, later)).out).toMatchObject({ phase: 'after', window: { end: '2026-10-25T03:00Z' } });
+    expect(q(['window'], noGh(local, new Date('2026-10-25T03:01:00Z'))).out.phase).toBe('after');
+    expect(q(['window', 'archived'], noGh(local, new Date('2026-10-25T04:00:00Z'))).out).toMatchObject({ phase: 'after', archiver: null });
+    expect(file(WINDOW_FILE)).toMatchObject({ supervisor: 'trig_sup', archiver: null, end: '2026-10-25T03:00:00.000Z' });
+  });
+  it('an open window with no environment starts and archives nothing', () => {
+    const { local } = memory({ [WINDOW_FILE]: { ...OCTOBER_WINDOW, start: '2026-10-24T20:00:00.000Z', end: '2026-10-25T20:00:00.000Z', environment: null } });
+    expect(q(['window'], noGh(local))).toMatchObject({ code: 1, out: { do: expect.stringMatching(/^Start and archive nothing/) } });
+  });
+  it('the ledger finds each title\'s newest trigger since the window opened, with no RemoteTrigger list', () => {
+    const { local } = memory({});
+    q(['window', 'start', '--environment', 'env_01SNfen'], noGh(local));
+    q(['started', 'YODC lane: fixes', 'trig_a'], noGh(local, new Date('2026-10-24T23:00:00Z')));
+    q(['started', 'YODC lane: fixes', 'trig_b'], noGh(local, new Date('2026-10-25T01:00:00Z')));
+    q(['started', 'YODC integrate', 'trig_c'], noGh(local, new Date('2026-10-25T01:05:00Z')));
+    const { out } = q(['sessions'], noGh(local));
+    expect(out).toMatchObject({ 'YODC lane: fixes': 'trig_b', 'YODC integrate': 'trig_c', 'YODC lane: ux': null });
+    expect(q(['sessions', '--all'], noGh(local)).out.map((t: { id: string }) => t.id)).toEqual(['trig_c', 'trig_b', 'trig_a']);
+    expect(q(['started', 'YODC lane: art', 'trig_d'], noGh(local)).code).toBe(2);
+    expect(q(['started', 'YODC lane: ux', 'not-a-trigger'], noGh(local)).code).toBe(2);
+  });
+  it('after the window only the integrator that drains it is recorded', () => {
+    const { local } = memory({});
+    q(['window', 'start', '2', '--environment', 'env_01SNfen'], noGh(local));
+    const after = new Date('2026-10-25T01:00:00Z');
+    expect(q(['started', 'YODC lane: fixes', 'trig_late'], noGh(local, after))).toMatchObject({ code: 2, out: { error: 'no window is open' } });
+    expect(q(['started', 'YODC integrate', 'trig_drain'], noGh(local, after)).code).toBe(0);
+    expect(q(['sessions'], noGh(local, after)).out).toMatchObject({ 'YODC integrate': 'trig_drain', 'YODC lane: fixes': null });
+  });
+  it('one supervisor run at a time: a second waits, a lock left by a dead run expires', () => {
+    const { local } = memory({});
+    expect(q(['lock'], noGh(local)).out).toEqual({ ok: true });
+    expect(q(['lock'], noGh(local, new Date(NOW.getTime() + 5 * 60_000)))).toMatchObject({ code: 2, out: { do: expect.stringMatching(/^Stop now/) } });
+    expect(q(['lock'], noGh(local, new Date(NOW.getTime() + 25 * 60_000))).out).toEqual({ ok: true, stale: '2026-10-24T22:31Z' });
+    expect(q(['unlock'], noGh(local)).out).toEqual({ ok: true });
+    expect(q(['lock'], noGh(local)).out).toEqual({ ok: true });
+  });
+  it('identity passes only when gh is signed in as the bot, whose comments never count as the owner\'s', () => {
+    const as = (login: string) => ({ ...noGh(memory({}).local), gh: () => `${login}\n` });
+    expect(q(['identity'], as('greenbeanbot'))).toEqual({ code: 0, out: { login: 'greenbeanbot', ok: true } });
+    expect(q(['identity'], as('astevegreen'))).toMatchObject({ code: 2, out: { error: 'gh is signed in as astevegreen, not greenbeanbot' } });
+  });
+  it('resume reads a saved run log and says when a usage-limit stop may restart', () => {
+    const local = memory({}).local;
+    const log = "API Error: You've hit your session limit · resets 6:20pm (America/New_York) (error type rate_limit, HTTP 429)";
+    const io = { ...noGh(local, new Date('2026-10-24T22:10:00Z')), readFile: () => log };
+    expect(q(['resume', '--log', 'x.txt', '--last-event', '2026-10-24T20:12:00Z'], io).out).toEqual({
+      start: false, after: '2026-10-24T22:20Z', restartAt: '2026-10-24T22:22Z', reason: 'usage limit; resets 2026-10-24T22:20Z',
+    });
+    expect(q(['resume', '--log', 'x.txt'], io).code).toBe(2);
+    expect(q(['resume'], io).code).toBe(2);
   });
 });

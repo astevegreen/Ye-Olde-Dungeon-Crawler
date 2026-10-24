@@ -3,6 +3,11 @@
 export const OWNER: string;
 export const BOT: string;
 export const MEMORY_FLOOR_MB: number;
+export const WINDOW_FILE: string;
+export const TRIGGERS_FILE: string;
+export const LOCK_FILE: string;
+export const DEFAULT_HOURS: number;
+export const SESSION_MB: number;
 export const STATES: readonly string[];
 
 export class QueueError extends Error {
@@ -21,28 +26,15 @@ export interface BacklogItem {
 }
 
 export interface SprintDoc {
-  window: { start: Date; end: Date };
+  /** Set by `run` from this computer's window file; null when no sprint was started here. */
+  window: { start: Date; end: Date } | null;
   lanes: { name: string; worktree: string }[];
   logIssue: number;
   preSprintTag: string | null;
-  environment: string | null;
-  supervisorTrigger: string | null;
   backlog: Record<string, BacklogItem[]>;
 }
 
 export function parseSprintDoc(text: string): SprintDoc;
-
-export function docFacts(
-  doc: SprintDoc,
-  now: Date,
-): {
-  phase: 'before' | 'open' | 'after';
-  window: { start: string; end: string };
-  environment: string;
-  supervisorTrigger: string | null;
-  logIssue: number;
-  titles: string[];
-};
 
 /** One issue as `gh issue list --json number,title,body,labels,state,comments,closedAt,createdAt` gives it. */
 export interface RawIssue {
@@ -112,6 +104,7 @@ export function sessionTitles(doc: SprintDoc): string[];
 export function hasWork(
   world: World,
   title: string,
+  starting?: number,
 ): { start: boolean; reason: string; ready?: number; todo?: string[]; issues?: number[] };
 
 export interface MovePlan {
@@ -136,5 +129,14 @@ export interface QueueIO {
   processInfo(pid: number): { name: string; start: Date } | null;
   freeMb(): number;
   now(): Date;
+  /** This computer's sprint state, in the git common dir: JSON by file name. */
+  local: {
+    read(name: string): unknown;
+    write(name: string, value: unknown): void;
+    /** Creates the file only if it doesn't exist; false when it does. */
+    claim(name: string, value: unknown): boolean;
+    remove(name: string): void;
+  };
+  readFile(file: string): string;
 }
 export function run(argv: string[], io: QueueIO): { code: number; line: string };

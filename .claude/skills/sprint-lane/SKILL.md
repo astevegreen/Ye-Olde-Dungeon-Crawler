@@ -2,7 +2,7 @@
 name: sprint-lane
 description: Coordinator for one lane of the YODC sprint. Run only as /sprint-lane <lane>, from a session the sprint supervisor started.
 disable-model-invocation: true
-argument-hint: "<aids|ux|fixes|tooling>"
+argument-hint: "<story|lore|ux|fixes|tooling>"
 model: sonnet
 hooks:
   PreToolUse:
@@ -24,10 +24,12 @@ ready, whose comment counts as the owner's, when held work is retried, what a st
 one line of JSON. When it prints `error`, do what its `do` line says; when it fails any other way, stop and
 report its output on issue #19. The queue rules live only there: never work them out by hand.
 
-Run the `implementer` and the `reviewer` with model `opus` every time. Before every task, stop if:
-- `date -u +%Y%m%dT%H%M` is outside the window on the `Window (UTC)` line of `docs/sprint.md`
+Run the `implementer` and the `reviewer` with model `opus` and `run_in_background: false` every time. A
+session waiting on a background agent looks finished to the supervisor, which would start a second one in `W`.
+Before every task, stop if:
+- `Q window` prints a `phase` other than `open`
 - any subagent reported a usage-limit error
-- you have run 6 tasks this session (the supervisor starts a fresh session next hour)
+- you have run 6 tasks this session (the supervisor starts a fresh session when you stop)
 
 ## 0. Worktree
 If `W` does not exist: `git worktree add --detach W origin/main`, then `npm ci` in `W`. If it exists, run
@@ -60,3 +62,6 @@ Then step 1 again.
 ## 3. Report
 When you stop, comment once on issue #19 "Sprint log", under 15 lines: the lane, the time, one line per task
 (#issue: to-integrate, held or blocked), each question the owner must answer, and why you stopped.
+Then, if you finished at least one task this session and did not stop on a usage limit or an error,
+`RemoteTrigger` `run` the `supervisor` id `Q window` prints (load RemoteTrigger with ToolSearch): it starts the
+integrator for your work, and a fresh session for this lane when work is left, now rather than at the next hour.

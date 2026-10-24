@@ -1,8 +1,8 @@
 // SessionStart (startup, clear): tell the owner when an unclaimed handoff note is waiting, from the
 // local copy of origin/handoffs (no fetch: a session start never waits on the network or a login).
-// Shown to the owner only, never to Claude. While the clock is inside the `Window (UTC)` line of
-// docs/sprint.md, also tell Claude that file overrides CLAUDE.md: a banner in CLAUDE.md said so in
-// every session, sprint or not, long after the window closed.
+// Shown to the owner only, never to Claude. While a sprint window /sprint-start opened is open, also
+// tell Claude docs/sprint.md overrides CLAUDE.md: a banner in CLAUDE.md said so in every session,
+// sprint or not, long after the window closed.
 // Stop hook, two checks, both held while background work is running (below). A reply that sends the owner to /clear or /handoff resume goes back to
 // Claude unless an unclaimed note is published (below). And once the conversation passes LIMIT tokens, send Claude back to write the handoff
 // before it finishes the turn. CLAUDE.md's "the session has run long" never fired on judgement
@@ -12,7 +12,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { openNotes } from '../skills/handoff/notes.mjs';
 
 const LIMIT = 200_000;
@@ -251,27 +251,19 @@ function publishedOpenNote(list) {
   }
 }
 
-// The repository's docs/sprint.md holds a line such as
-//   **Window (UTC):** `20261021T0040` to `20261022T1800` (…, Eastern).
-// The window is open when the UTC time, in that form, lies between the two, both included. No file,
-// no such line, or a line it can't read: closed.
+// /sprint-start keeps the window in the git folder every worktree shares, as sprint-window.json
+// ({start, end, …}, ISO times; scripts/sprint/queue-rules.mjs). The window is open when now lies between
+// the two, both included. Not a repository, no file, or one it can't read: closed.
 function sprintWindowOpen(dir) {
-  let root = dir;
-  while (!existsSync(join(root, '.git'))) {
-    const up = dirname(root);
-    if (up === root) return false;
-    root = up;
-  }
-  let text;
+  let w;
   try {
-    text = readFileSync(join(root, 'docs', 'sprint.md'), 'utf8');
+    const common = execFileSync('git', ['rev-parse', '--git-common-dir'], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    w = JSON.parse(readFileSync(join(resolve(dir, common), 'sprint-window.json'), 'utf8'));
   } catch {
     return false;
   }
-  const m = text.match(/Window \(UTC\):\**\s*`(\d{8}T\d{4})`\s*to\s*`(\d{8}T\d{4})`/);
-  if (!m) return false;
-  const now = new Date().toISOString().slice(0, 16).replace(/[-:]/g, '');
-  return m[1] <= now && now <= m[2];
+  const now = Date.now();
+  return Date.parse(w?.start) <= now && now <= Date.parse(w?.end);
 }
 
 function lastOwnerMessage(list) {

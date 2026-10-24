@@ -22,9 +22,12 @@ line of its own (the guard refuses it chained, piped or redirected). `Q has-work
 line of JSON: `start`, `reason`, and `issues`, the open `to-integrate` issues, lowest first. When it prints
 `error`, do what its `do` line says; when it fails any other way, stop and report its output on issue #19.
 
-Stop when `date -u +%Y%m%dT%H%M` is outside the window on the `Window (UTC)` line of `docs/sprint.md`, when
-`Q has-work "YODC integrate"` prints `"start": false`, after 15 pushes this session, or after a usage-limit
-error.
+Stop in any of these cases:
+- `Q window` prints `phase` `none` or `before`. After the window (`after`) you still land what the lanes
+  finished; the supervisor starts no new integrator once none is needed.
+- `Q has-work "YODC integrate"` prints `"start": false`.
+- After 15 pushes this session.
+- After a usage-limit error.
 
 ## 0. Before anything
 - If `I` does not exist: `git worktree add --detach I origin/main`, then `npm ci` in `I`.
@@ -43,7 +46,10 @@ issue, `B` is `sprint/<n>`.
 1. `git -C I fetch origin`, then `git -C I switch --detach --discard-changes origin/main`.
    `pre` is `git -C I rev-parse HEAD`: the batch's start.
 2. For each issue, in order (one that goes back leaves the rest to go on):
-   1. `git -C I merge-base origin/main B` is `base`. `git -C I rev-list --count <base>..B` must be above 0;
+   1. `git -C I cherry origin/main B` lists B's commits, `-` before each one main already holds. No line starts
+      with `+`: an earlier session landed it and stopped before closing it. Close it as in step 4, with
+      "already on main" for the sha, and go to the next issue; never send landed work back.
+      `git -C I merge-base origin/main B` is `base`. `git -C I rev-list --count <base>..B` must be above 0;
       if it is 0, send it back (step 3) with "branch B has no commits ahead of main".
    2. Check what it brings: `git -C I diff --name-only <base>..B` must not match a locked path from
       `docs/sprint.md` ("What still stops a task"), and every commit in `git -C I log --format=%B <base>..B`
@@ -93,4 +99,6 @@ Then one line per issue on issue #19 "Sprint log": `<sha> <ID> <title>: <player-
 Go back to step 1.
 
 When you stop, comment once on issue #19 "Sprint log": pushes made, tasks sent back and why, and why you
-stopped. Under 10 lines.
+stopped. Under 10 lines. Then, if this session landed or sent back at least one task and did not stop on a
+usage limit or an error, `RemoteTrigger` `run` the `supervisor` id `Q window` prints (load RemoteTrigger with
+ToolSearch), so the lanes pick up what you sent back now rather than at the next hour.

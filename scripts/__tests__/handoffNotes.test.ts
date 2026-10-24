@@ -305,25 +305,23 @@ describe.concurrent('handoff-nudge.mjs', { timeout: 60_000 }, () => {
       return r.stdout ? JSON.parse(r.stdout).hookSpecificOutput?.additionalContext : undefined;
     };
     const HOUR = 3_600_000;
-    const at = (offset: number) => new Date(Date.now() + offset).toISOString().slice(0, 16).replace(/[-:]/g, '');
-    const sprint = (text: string) => {
-      fs.mkdirSync(path.join(work, 'docs'), { recursive: true });
-      fs.writeFileSync(path.join(work, 'docs', 'sprint.md'), `# Sprint\n\n${text}\n`);
-    };
-    const window = (from: number, to: number) => `**Window (UTC):** \`${at(from)}\` to \`${at(to)}\` (Eastern times).`;
+    const at = (offset: number) => new Date(Date.now() + offset).toISOString();
+    // /sprint-start writes the window to the git folder every worktree shares.
+    const file = path.join(work, '.git', 'sprint-window.json');
+    const window = (from: number, to: number) => fs.writeFileSync(file, JSON.stringify({ start: at(from), end: at(to), environment: 'env_x' }));
 
-    expect(await start()).toBeUndefined(); // no docs/sprint.md
-    sprint('No window line here.');
+    expect(await start()).toBeUndefined(); // no sprint started here
+    fs.writeFileSync(file, 'not json');
     expect(await start()).toBeUndefined();
 
-    sprint(window(-HOUR, HOUR));
+    window(-HOUR, HOUR);
     expect(await start()).toBe(SPRINT);
     fs.mkdirSync(path.join(work, 'src'), { recursive: true });
     expect(await start(path.join(work, 'src'))).toBe(SPRINT);
 
-    sprint(window(-2 * HOUR, -HOUR));
+    window(-2 * HOUR, -HOUR);
     expect(await start()).toBeUndefined();
-    sprint(window(HOUR, 2 * HOUR));
+    window(HOUR, 2 * HOUR);
     expect(await start()).toBeUndefined();
   });
 

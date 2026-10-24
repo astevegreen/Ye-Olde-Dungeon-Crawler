@@ -15,7 +15,9 @@ You run lane `research` of the sprint in `docs/sprint.md`; read it and `.claude/
 You never edit tracked files, commit or decide a rule. `R` is `C:/Antigravity/YODC-research`. A soak runs for
 hours, longer than this session: you start it detached, record it, and a later session reads it. Only one soak
 runs at a time (the same computer runs the lanes). Start every comment you write with
-"Research:". Sprint sessions comment as `greenbeanbot`; go by `author.login`.
+"Research:". Sprint sessions comment as `greenbeanbot`; go by `author.login`. A comment over one line goes
+through a file: write it with the Write tool to `.prompts/tmp/`, then `gh issue comment <n> --body-file <file>`
+(the guard reads every line of a command, so a report line such as `git push …` passed inline is refused).
 
 **The queue.** `Q` below is `node C:/Antigravity/YODC/scripts/sprint/queue.mjs`: write it out in full, on a
 line of its own (the guard refuses it chained, piped or redirected). It reads the `### research` list in
@@ -29,7 +31,7 @@ The queue reads these comments word for word:
 - "Research: read <folder> …", the folder as its first word, once that soak is read;
 - "Research: hunt candidates sha <sha>" when a hunt has its candidates.
 
-Stop when `date -u +%Y%m%dT%H%M` is outside the window on the `Window (UTC)` line of `docs/sprint.md`.
+Stop when `Q window` prints a `phase` other than `open`.
 
 ## 1. Next job
 `Q next research`. `null`: stop. Otherwise it prints `mode`, `item`, `issue` and `reason`:
@@ -51,7 +53,7 @@ instead (the end of step 3).
    folder exists, it is an earlier item's: `mv` it to `R/.prompts/soak/<that item's ID>-<folder>` first (the
    ID is on the started comment that names it).
 4. `--until` is local wall-clock time, 2 hours ahead unless the item's line says otherwise: `date -d '+2 hours' +%H:%M`.
-   It never falls later than 90 minutes before the window closes, so a session can read the soak. Start the
+   It never falls later than 90 minutes before the window's `end` (`Q window`), so a session can read the soak. Start the
    soak detached with the PowerShell tool, so it outlives this session:
    `Start-Process -WindowStyle Hidden -WorkingDirectory R -FilePath npm.cmd -ArgumentList 'run','soak','--','<flags>' -PassThru`
    with the flags the item's line names and that `--until`. Note the process id, and set its priority at once:
@@ -66,8 +68,9 @@ instead (the end of step 3).
   `[task] S<next free number>: <bug>` with labels `lane:fixes` and `sprint-ready` (permission 6). Its body
   follows the template in `.claude/skills/sprint-plan/SKILL.md`: the Goal holds the finding's signature, the
   seeds and the `repro` command; the acceptance criterion is a test that fails before the fix; the Trailer is
-  `Requested: "I approve your backlog proposal" (sprint S<n>, soak finding)`;
-- anything about balance or feel goes in the report as an option, never a task;
+  the soak-finding `Requested:` line in `docs/sprint.md`, with `S<n>` for its ID;
+- anything about balance or feel goes in the report as an option, never a task. Timings (turns, seconds,
+  time-outs) were measured under load: the lanes build and test on the same computer, so say so beside them;
 - the report covers what the item's line in `docs/sprint.md` names;
 - comment the read line with the soak's findings, under 15 lines;
 - `mv` the folder to `R/.prompts/soak/<ID>-<folder>`, so the next soak starts clean and a later item can
@@ -92,9 +95,8 @@ the queue says when one is due and gives its `since` sha.
 3. Confirm each candidate with a failing test: a Vitest case in a new file `H/<dir>/__tests__/r6-<n>.test.ts`,
    run with `cd H && npx vitest run <file>`. Red for the predicted reason confirms it; green, or red for another
    reason, leaves it unconfirmed. Each confirmed bug not already an open issue becomes an issue as in step 3,
-   its Goal holding the test's code, its Trailer
-   `Requested: "I approve the second backlog, all seven items." (sprint S<n>, R6 finding)` (permission 7).
-   Then delete the `r6-*.test.ts` files.
+   its Goal holding the test's code, its Trailer the hunt-finding `Requested:` line in `docs/sprint.md`, with
+   `S<n>` for its ID. Then delete the `r6-*.test.ts` files.
 4. Comment the report, first line "Proposal, not a rule", under 40 lines: confirmed bugs with their issues,
    unconfirmed candidates in a line each, anything about balance or feel as an option. Add `proposal` and close
    the issue.

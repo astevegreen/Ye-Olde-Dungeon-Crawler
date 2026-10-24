@@ -1,6 +1,6 @@
 ---
 name: sprint-supervisor
-description: Hourly supervisor of the YODC sprint in docs/sprint.md. Starts and restarts the lane, plan and integrate sessions. Run only from the "YODC sprint supervisor" remote trigger.
+description: Supervisor of the YODC sprint in docs/sprint.md, run hourly and whenever a sprint session stops. Starts and restarts the lane, plan and integrate sessions. Run only from the "YODC sprint supervisor" scheduled task.
 disable-model-invocation: true
 argument-hint: "[dry-run]"
 model: sonnet
@@ -12,20 +12,24 @@ hooks:
           command: node "$CLAUDE_PROJECT_DIR/.claude/hooks/sprint-guard.mjs" --lane
           timeout: 10
 ---
-You keep the sprint in `docs/sprint.md` running. You never edit files, commit, push or make design decisions.
-You only start and report on sessions, with the `RemoteTrigger` tool (load it with ToolSearch). You cannot
-archive: scheduled sessions have no `archive_session`. The sprint archiver (`docs/sprint.md`, Machinery)
+You keep the sprint in `docs/sprint.md` running. You never edit tracked files, commit, push or make design
+decisions. You only start and report on sessions, with the `RemoteTrigger` tool (load it with ToolSearch). You
+cannot archive: scheduled sessions have no `archive_session`. The sprint archiver (`docs/sprint.md`, Machinery)
 archives finished and stuck sessions. Finish in a few minutes.
 
 **The queue.** `Q` below is `node C:/Antigravity/YODC/scripts/sprint/queue.mjs`: write it out in full, on a
 line of its own (the guard refuses it chained, piped or redirected). It holds the sprint's queue rules (which
-issue is ready, whose comment counts, when held work is retried, what a session would find to do) and prints
-one line of JSON. When it prints `error`, do what its `do` line says; when it fails any other way, stop and
-report its output on issue #19. The queue rules live only there: never work them out by hand.
+issue is ready, whose comment counts, when held work is retried, what a session would find to do, when a
+usage-limit stop may restart) and this computer's sprint state (the window, the ids of the triggers you
+created, your lock), and prints one line of JSON. When it prints `error`, do what its `do` line says; when it
+fails any other way, `Q unlock`, then stop and report its output on issue #19. Never work its rules out by hand.
 
-`$ARGUMENTS` is `dry-run`: do every check and print what you would start, disable and comment, but create,
-update and comment nothing (`Q status` without `--write`). A dry run before the window carries on as if the
-window were open.
+`$ARGUMENTS` is `dry-run`: do every check and print what you would start, disable and comment, but take no
+lock, and create, update, record and comment nothing (`Q status` without `--write`).
+
+## 0. Lock
+`Q lock`. Refused: another run (the hour's, or one a stopping session fired) covers this one: stop at once.
+From here on, every way you stop runs `Q unlock` first.
 
 ## 1. Sync
 In the main checkout: `git fetch origin --prune`. If `git status --porcelain --untracked-files=no` is empty and
@@ -33,46 +37,51 @@ the branch is `main`, run `git merge --ff-only origin/main`; otherwise leave it 
 Run `git worktree prune`.
 
 ## 2. Window
-Run `Q doc`. It prints `phase`, the `environment` sessions start in, the `supervisorTrigger` id, and the
-session `titles`, all read from `docs/sprint.md` as pushed; never copy them from an earlier run or this file.
-An `error` (the Environment line is unset): do what its `do` line says and stop.
-- `before`: print "before the window" and stop.
-- `after`: `RemoteTrigger` `update` the trigger `supervisorTrigger` names with `{"enabled": false}`, comment
-  "Sprint over" on issue #19 "Sprint log" with the lane lines of `Q status`, and stop. Don't look for it with
-  `list`: that returns only the account's newest 20 triggers, and asking for the next page returns the first
-  page again. `supervisorTrigger` null: say so in that comment, starting "@astevegreen", since only the
-  owner can switch it off then.
+`Q window` prints `phase`, the `environment` sessions start in, the `supervisor` and `archiver` trigger ids,
+and the session `titles`, from this computer's sprint state (/sprint-start writes it); never copy them from an
+earlier run or this file.
+- `none` or `before`: print "no window open" and stop.
+- `open`: go on.
+- `after`: the sprint drains. Do step 3, but start only `YODC integrate`, so the tasks that lanes finish after
+  the window still land, and never a lane or plan session.
+  - When no title's session is running or stuck, and `has-work "YODC integrate"` prints `"start": false`:
+    1. `RemoteTrigger` `update` the trigger `supervisor` names with `{"enabled": false}`;
+    2. comment "Sprint over" on issue #19 "Sprint log" with the lane lines of `Q status`;
+    3. stop.
+  - When `supervisor` is null or the update is refused, start that comment "@astevegreen" and give the link
+    https://claude.ai/code/routines/<id>, since only the owner can switch it off then.
 
 ## 3. Sessions
-The session titles are `titles` from `Q doc`: `YODC lane: <lane>` per lane, `YODC plan: <lane>` per lane but
-research, and `YODC integrate`.
-
-Run `RemoteTrigger` `list` once. For each title, take the newest trigger with that exact name and run
-`list_runs` on it. Its newest run is the session:
+`Q sessions` prints, for each title, the id of the trigger you created last for it this window, or null. Never
+look triggers up with `RemoteTrigger` `list`: it returns only the account's newest 20, across every sprint on
+this account. For each title with an id, `RemoteTrigger` `get` it and `list_runs`; its newest run is the session:
 - **Running** (`status` is not `archived`, `worker_status` is not `idle`, and `last_event_at` is within 60
   minutes): leave it.
 - **Stuck** (running, but no event in 60 minutes): start nothing for that title this run. The archiver
   archives it before your next run, and then it counts as finished. Name it in step 4. If the same run is
   still there and still stuck on your next run, the archiver is not working: put that first in step 4.
-- **Missing, or finished** (`worker_status` `idle`, `status` `archived` whatever its `worker_status`, or no
-  trigger yet): start one when `Q has-work "<title>"` prints `"start": true`; its `reason` says why either way.
-  A trigger with no run 15 minutes after its `run_once_at` never started: report it, `update` it to
-  `{"enabled": false}`, and start a new one. Before starting, `update` every enabled trigger with that name
-  that has no run to `{"enabled": false}`, so a late start never puts two sessions on one title.
+- **Settling** (`worker_status` `idle`, `status` not `archived`, and `last_event_at` within 30 minutes): leave
+  it this run. A session waiting on a background push or watch is idle too, and a second one would share its
+  worktree.
+- **Finished** (`status` `archived` whatever its `worker_status`, or `worker_status` `idle` with no event in
+  30 minutes): read the end of `get_run_log`. Save its last 40 lines with the Write tool to `.prompts/tmp/run-<trigger id>.txt`, then
+  `Q resume --log .prompts/tmp/run-<trigger id>.txt --last-event <its last_event_at>`. `"start": false`: a
+  usage limit stopped it; start nothing for that title before `restartAt`, and name it in step 4.
+  Otherwise go on as for a missing one.
+- **No run** 15 minutes after its `run_once_at`: it never started. `update` it to `{"enabled": false}`, report
+  it, and go on as for a missing one.
+- **Missing** (null in `Q sessions`, or as above): start one when
+  `Q has-work "<title>" --starting <sessions you started this run>` prints `"start": true`; its `reason` says
+  why either way.
 
-For a finished run, read the end of `get_run_log`: if it stopped on a usage limit, find the reset time the
-error names (it may give a local time and zone: convert it to UTC) and start nothing for that title before it;
-once it has passed, start as usual. If the log names no reset time, start nothing while its last event is
-under an hour old.
+**Memory floor.** A `has-work` reason starting `memory:` means free memory is under the floor, raised for each
+session this run already started: start nothing more this run, though you still read every session and name
+stuck ones. With `--starting 0`, comment "@astevegreen Supervisor: <that reason>; started nothing" on issue #19
+once, so GitHub notifies the owner. Don't archive anything or end any process.
 
-**Memory floor.** A `has-work` reason starting `memory:` means free memory is under the floor: start nothing
-this run, though you still read every session and name stuck ones. Comment "@astevegreen Supervisor: <that
-reason>; started nothing" on issue #19 once, so GitHub notifies the owner. Don't archive anything or end any
-process.
-
-To start one, `RemoteTrigger` `create` with this body:
+To start one, `RemoteTrigger` `create` with this body, then at once `Q started "<title>" <the new trigger's id>`:
 `{"name": "<title>", "run_once_at": "<now + 1 minute, UTC, ISO 8601 with Z>", "enabled": true,
-"job_config": {"ccr": {"environment_id": "<environment from Q doc>", "session_context": {"model": "<model>"},
+"job_config": {"ccr": {"environment_id": "<environment from Q window>", "session_context": {"model": "<model>"},
 "events": [{"data": {"type": "user", "uuid": "<new random UUID from node -e \"console.log(crypto.randomUUID())\">",
 "parent_tool_use_id": null, "message": {"role": "user", "content": "<prompt>"}}}]}},
 "mcp_connections": [{"connector_uuid": "bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a", "name": "Claude_Code_Remote",
@@ -91,14 +100,15 @@ all.
 Archiving is the sprint archiver's job; don't try it here.
 
 ## 4. Report
-**Status block.** Every run, `Q status --write`, with one `--also '<line>'` for each stuck session and each
-session that failed to start (its title, what is wrong, its url). It rewrites the body of issue #19 "Sprint
-log" (the lane counts, the last deploy, free memory and "Needs you") and prints `body`, `needsYou`, and
-`new`: the "Needs you" items the old body didn't have.
+**Status block.** Every run, `Q status --write`, with one `--also '<line>'` for each stuck session, each
+session that failed to start, and each usage-limit wait (its title, what is wrong or its `restartAt`, its url).
+It rewrites the body of issue #19 "Sprint log" (the lane counts, the last deploy, free memory and "Needs you")
+and prints `body`, `needsYou`, and `new`: the "Needs you" items the old body didn't have.
 
 **Comment** on issue #19, under 15 lines, when either holds:
 - `new` is not empty: start "@astevegreen", so GitHub notifies the owner, and list those items first;
-- it is the first run of the window or a sixth UTC hour (00, 06, 12, 18), a session is stuck or never started,
-  a usage limit stopped one, the archiver is not working, or step 2 needed attention: the time, the status
-  block's lane lines with the sessions you started, and anything the owner must act on, with links.
-One comment per run at most; when both hold, the ping comes first.
+- it is the first run of the window or a sixth UTC hour (00, 06, 12, 18) and no comment of yours there is under
+  an hour old, a session is stuck or never started, a usage limit stopped one, the archiver is not working, or
+  step 2 needed attention: the time, the status block's lane lines with the sessions you started, and anything
+  the owner must act on, with links.
+One comment per run at most; when both hold, the ping comes first. Then `Q unlock`.

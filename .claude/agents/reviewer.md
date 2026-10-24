@@ -39,8 +39,8 @@ An optional "Base: <sha>" replaces `<base>`.
    - nothing outside the task's scope changed
    - sprint form only:
      - `docs/sprint.md` holds: no product decision invented (balance, scope, save format, a new mechanic, a
-       name or placement the design leaves open), no locked path touched, lane `aids` follows the approved
-       magic onboarding design
+       name or placement the design leaves open), no locked path touched, lanes `story` and `lore` follow
+       the approved Act II design
      - every commit carries the spec's `Requested:` trailer; one request per commit
      - PLAYER-VISIBLE describes what players will actually see
 3. Read surrounding code only where the diff is unclear, and read it at `<head>`: `git show <head>:<path>`

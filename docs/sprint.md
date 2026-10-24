@@ -193,12 +193,19 @@ on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` 
 
 ## Machinery
 
-- One supervisor trigger, "YODC sprint supervisor", id `trig_…` (filled in at setup), runs
-  `.claude/skills/sprint-supervisor` in this folder (environment `env_0157HwSnMQCykikhVk9tpWUC`) at minute 2 of
-  every hour from the evening before. Outside the window its first step stops it; after the window it switches
-  itself off by this id. It is created from a session the owner started (desktop app or `claude rc`) with the
-  remote `create_trigger` tool, so any agent can edit it later: a trigger made through the HTTP API can be
-  changed only by its own runs or by the owner.
+**Environment:** `env_…` (filled in at setup)
+**Supervisor trigger:** `trig_…` (filled in at setup)
+
+- Both ids live only on the two lines above; `node scripts/sprint/queue.mjs doc` prints them, and the supervisor
+  and the archiver read them there, never from a copy. While the Environment line is a placeholder, `doc`
+  refuses and nothing starts or is archived. The environment is the YODC bridge environment that
+  `list_environments` lists for the sprint computer: a new one appears whenever `claude rc` is restarted
+  (October's `env_0157…` had gone by 24 Oct), so it is filled in at setup and checked again at Preflight.
+- One supervisor trigger, "YODC sprint supervisor", runs `.claude/skills/sprint-supervisor` in this folder, in
+  that environment, at minute 2 of every hour from the evening before. Outside the window its first steps stop
+  it; after the window it switches itself off by its id. It is created from a session the owner started
+  (desktop app or `claude rc`) with the remote `create_trigger` tool, so any agent can edit it later: a trigger
+  made through the HTTP API can be changed only by its own runs or by the owner.
 - It starts `YODC lane: <lane>`, `YODC plan: <lane>` and `YODC integrate` sessions and restarts any that
   stopped, for example after a usage limit.
 - The sprint archiver archives finished sessions after an hour, and stuck ones (no event in 60 minutes, or 30
@@ -215,13 +222,13 @@ on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` 
   gone. The prompt, to paste when setting the task up:
   ```text
   Sprint archiver run. Run once even if several of these arrive together, and reply in one line.
-  1. If `date -u +%Y%m%dT%H%M` is past the end of the Window (UTC) line in C:/Antigravity/YODC/docs/sprint.md,
-     reply "Window closed" and stop.
+  1. Run `node C:/Antigravity/YODC/scripts/sprint/queue.mjs doc`. If it prints `error`, reply with it and stop.
+     If `phase` is `after`, reply "Window closed" and stop.
   2. List this computer's Remote Control sessions (list_sessions leaves scheduled ones out). In PowerShell:
      Get-CimInstance Win32_Process -Filter "Name='claude.exe'" | ForEach-Object { [regex]::Match($_.CommandLine, 'cse_\w+').Value } | Where-Object { $_ } | Sort-Object -Unique
      For each cse_<id>, get_session session_<id>.
-  3. Archive with archive_session each session where all of these hold: environment_id is
-     env_0157HwSnMQCykikhVk9tpWUC; its origin is a scheduled trigger; it is not this session; and either its
+  3. Archive with archive_session each session where all of these hold: environment_id is the `environment`
+     step 1 printed; its origin is a scheduled trigger; it is not this session; and either its
      status_bucket is completed, review_ready or failed with updated_at over an hour old, or it is stuck:
      session_status RUNNING with updated_at over 60 minutes old, or status_bucket blocked with updated_at over
      30 minutes old. Archive nothing else.

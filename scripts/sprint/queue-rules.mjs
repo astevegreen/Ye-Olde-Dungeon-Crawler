@@ -57,7 +57,10 @@ function firstSentence(text) {
   return end >= 0 ? text.slice(0, end) : text;
 }
 
-/** The window, lanes, sprint log issue, pre-sprint tag and backlog that docs/sprint.md declares. */
+/**
+ * The window, lanes, sprint log issue, pre-sprint tag, environment, supervisor trigger and backlog that
+ * docs/sprint.md declares. An environment or trigger still written as its placeholder (`env_…`) reads as null.
+ */
 export function parseSprintDoc(text) {
   const window = /\*\*Window \(UTC\):\*\*\s*`(\d{8}T\d{4})`\s*to\s*`(\d{8}T\d{4})`/.exec(text);
   if (!window) throw new QueueError('docs/sprint.md has no "**Window (UTC):** `<start>` to `<end>`" line');
@@ -104,7 +107,31 @@ export function parseSprintDoc(text) {
     lanes,
     logIssue: Number(log[1]),
     preSprintTag: /`(pre-sprint-[\w-]+)`/.exec(text)?.[1] ?? null,
+    environment: /\*\*Environment:\*\*\s*`(env_[A-Za-z0-9]+)`/.exec(text)?.[1] ?? null,
+    supervisorTrigger: /\*\*Supervisor trigger:\*\*\s*`(trig_[A-Za-z0-9]+)`/.exec(text)?.[1] ?? null,
     backlog,
+  };
+}
+
+/**
+ * What the supervisor and the archiver read first: where the clock stands against the window, and the
+ * environment, trigger, log and titles they act on. Refuses while the environment is unset: an id copied
+ * from an earlier sprint went stale (October's had vanished by 24 Oct), so nothing starts on a guess.
+ */
+export function docFacts(doc, now) {
+  if (!doc.environment) {
+    throw new QueueError(
+      'docs/sprint.md names no environment (Machinery: **Environment:** `env_<id>`)',
+      'Start and archive nothing. Report this on the sprint log; the owner fills the Environment line at setup (Preflight).',
+    );
+  }
+  return {
+    phase: now < doc.window.start ? 'before' : now > doc.window.end ? 'after' : 'open',
+    window: { start: fmt(doc.window.start), end: fmt(doc.window.end) },
+    environment: doc.environment,
+    supervisorTrigger: doc.supervisorTrigger,
+    logIssue: doc.logIssue,
+    titles: sessionTitles(doc),
   };
 }
 
@@ -462,7 +489,7 @@ export function statusBlock(world, { also = [], oldBody = '' } = {}) {
 
 // --- the command line ----------------------------------------------------------------------------------
 
-const USAGE = 'Usage: queue.mjs has-work "<session title>" | next <lane> [--taken <n,n>] | move <n> <state> [--note \'<text>\'] | status [--write] [--also \'<line>\']...';
+const USAGE = 'Usage: queue.mjs doc | has-work "<session title>" | next <lane> [--taken <n,n>] | move <n> <state> [--note \'<text>\'] | status [--write] [--also \'<line>\']...';
 const ISSUE_FIELDS = 'number,title,body,labels,state,comments,closedAt,createdAt';
 
 /** Flags after the positional words: `--name value`, repeatable. */
@@ -488,9 +515,10 @@ export function run(argv, io) {
   try {
     const [command, ...rest] = argv;
     const { words, flags: f } = flags(rest);
-    const shapes = { 'has-work': words.length === 1, next: words.length === 1, move: words.length === 2 && /^\d+$/.test(words[0] ?? ''), status: words.length === 0 };
+    const shapes = { doc: words.length === 0, 'has-work': words.length === 1, next: words.length === 1, move: words.length === 2 && /^\d+$/.test(words[0] ?? ''), status: words.length === 0 };
     if (!shapes[command]) throw refuse(`unknown command: ${argv.join(' ') || '(none)'}`, USAGE);
     const doc = parseSprintDoc(io.sprintDoc());
+    if (command === 'doc') return { code: 0, line: JSON.stringify(docFacts(doc, io.now())) };
     const world = {
       doc,
       issues: normalizeIssues(JSON.parse(io.gh(['issue', 'list', '--state', 'all', '--limit', '1000', '--json', ISSUE_FIELDS]))),

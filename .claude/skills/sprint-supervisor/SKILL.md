@@ -27,22 +27,25 @@ report its output on issue #19. The queue rules live only there: never work them
 update and comment nothing (`Q status` without `--write`). A dry run before the window carries on as if the
 window were open.
 
-## 1. Window
-Run `date -u +%Y%m%dT%H%M` and read the window from the `Window (UTC)` line of `docs/sprint.md`.
-- Before it: print "before the window" and stop.
-- After it: `RemoteTrigger` `update` the supervisor trigger whose id is in `docs/sprint.md` (Machinery) with
-  `{"enabled": false}`, comment "Sprint over" on issue #19 "Sprint log" with the lane lines of `Q status`,
-  and stop. Don't look for it with `list`: that returns only the account's newest 20 triggers, and asking for
-  the next page returns the first page again.
-
-## 2. Sync
+## 1. Sync
 In the main checkout: `git fetch origin --prune`. If `git status --porcelain --untracked-files=no` is empty and
 the branch is `main`, run `git merge --ff-only origin/main`; otherwise leave it and note it in step 4.
 Run `git worktree prune`.
 
+## 2. Window
+Run `Q doc`. It prints `phase`, the `environment` sessions start in, the `supervisorTrigger` id, and the
+session `titles`, all read from `docs/sprint.md` as pushed; never copy them from an earlier run or this file.
+An `error` (the Environment line is unset): do what its `do` line says and stop.
+- `before`: print "before the window" and stop.
+- `after`: `RemoteTrigger` `update` the trigger `supervisorTrigger` names with `{"enabled": false}`, comment
+  "Sprint over" on issue #19 "Sprint log" with the lane lines of `Q status`, and stop. Don't look for it with
+  `list`: that returns only the account's newest 20 triggers, and asking for the next page returns the first
+  page again. `supervisorTrigger` null: say so in that comment, starting "@astevegreen", since only the
+  owner can switch it off then.
+
 ## 3. Sessions
-Session titles: `YODC lane: <lane>` for `aids`, `ux`, `fixes`, `tooling`, `research`; `YODC plan: <lane>` for
-`aids`, `ux`, `fixes`, `tooling`; and `YODC integrate`. Ten titles.
+The session titles are `titles` from `Q doc`: `YODC lane: <lane>` per lane, `YODC plan: <lane>` per lane but
+research, and `YODC integrate`.
 
 Run `RemoteTrigger` `list` once. For each title, take the newest trigger with that exact name and run
 `list_runs` on it. Its newest run is the session:
@@ -69,7 +72,7 @@ process.
 
 To start one, `RemoteTrigger` `create` with this body:
 `{"name": "<title>", "run_once_at": "<now + 1 minute, UTC, ISO 8601 with Z>", "enabled": true,
-"job_config": {"ccr": {"environment_id": "env_0157HwSnMQCykikhVk9tpWUC", "session_context": {"model": "<model>"},
+"job_config": {"ccr": {"environment_id": "<environment from Q doc>", "session_context": {"model": "<model>"},
 "events": [{"data": {"type": "user", "uuid": "<new random UUID from node -e \"console.log(crypto.randomUUID())\">",
 "parent_tool_use_id": null, "message": {"role": "user", "content": "<prompt>"}}}]}},
 "mcp_connections": [{"connector_uuid": "bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a", "name": "Claude_Code_Remote",

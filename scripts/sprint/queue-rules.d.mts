@@ -25,10 +25,24 @@ export interface SprintDoc {
   lanes: { name: string; worktree: string }[];
   logIssue: number;
   preSprintTag: string | null;
+  environment: string | null;
+  supervisorTrigger: string | null;
   backlog: Record<string, BacklogItem[]>;
 }
 
 export function parseSprintDoc(text: string): SprintDoc;
+
+export function docFacts(
+  doc: SprintDoc,
+  now: Date,
+): {
+  phase: 'before' | 'open' | 'after';
+  window: { start: string; end: string };
+  environment: string;
+  supervisorTrigger: string | null;
+  logIssue: number;
+  titles: string[];
+};
 
 /** One issue as `gh issue list --json number,title,body,labels,state,comments,closedAt,createdAt` gives it. */
 export interface RawIssue {

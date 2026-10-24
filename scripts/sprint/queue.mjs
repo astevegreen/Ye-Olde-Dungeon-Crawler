@@ -3,6 +3,8 @@
  * The sprint queue (docs/sprint.md, Machinery): the skills ask it instead of applying the queue rules by
  * hand. Prints one line of JSON and exits 0 (done), 2 (refused: act on `do`) or 1 (failed: stop).
  *
+ *   doc                               {phase, window, environment, supervisorTrigger, logIssue, titles};
+ *                                     refuses while the Environment line is unset
  *   has-work "<session title>"        {start, reason}; a plan adds {ready, todo}, integrate {issues}
  *   next <lane> [--taken <n,n>]       {mode, issue, concerns, reason} or null; research has its own modes
  *   move <n> <state> [--note '<text>'] the labels and the standard "Lane:" comment

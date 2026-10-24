@@ -73,6 +73,14 @@ describe('docs/sprint.md, read once', () => {
     expect(doc.backlog.tooling!.map((i) => i.id)).toEqual(['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']);
     expect(doc.backlog.research!.map((i) => i.id)).toEqual(['R1', 'R2', 'R3', 'R4', 'R5', 'R6']);
   });
+  it('reads the environment and supervisor trigger, and a placeholder as unset', () => {
+    // October's doc wrote the environment inline (now stale) and the trigger as `trig_…`.
+    expect(doc).toMatchObject({ environment: null, supervisorTrigger: null });
+    const filled = parseSprintDoc(`${SPRINT_MD}\n**Environment:** \`env_01SNfen\`\n**Supervisor trigger:** \`trig_01Abc\`\n`);
+    expect(filled).toMatchObject({ environment: 'env_01SNfen', supervisorTrigger: 'trig_01Abc' });
+    const placeholder = parseSprintDoc(`${SPRINT_MD}\n**Environment:** \`env_…\`\n**Supervisor trigger:** \`trig_…\`\n`);
+    expect(placeholder).toMatchObject({ environment: null, supervisorTrigger: null });
+  });
   it('reads each research item\'s "Waits for" and whether it has soaks', () => {
     const r = Object.fromEntries(doc.backlog.research!.map((i) => [i.id, i]));
     expect(r.R4!.waits).toEqual([{ id: 'T5' }]);
@@ -310,6 +318,27 @@ describe('the command line', () => {
     expect(out.new).toEqual(['#9 [blocked] B3: waiting for your answer', 'stuck: YODC lane: ux']);
     expect(writes()).toEqual([{ args: ['issue', 'edit', '19', '--body-file', '-'], input: out.body }]);
     expect(out.body).toContain('- fixes: 0 sprint-ready, 1 in-progress, 0 to-integrate, 0 held, 1 blocked; closed: none');
+  });
+  it('doc prints the window phase, environment, log and titles without asking gh', () => {
+    const filled = `${SPRINT_MD}\n**Environment:** \`env_01SNfen\`\n`;
+    const noGh = { sprintDoc: () => filled, gh: () => { throw new Error('doc must not call gh'); } };
+    const out = run(['doc'], io(ready, noGh).fake);
+    expect(out.code).toBe(0);
+    expect(JSON.parse(out.line)).toEqual({
+      phase: 'open',
+      window: { start: '2026-10-21 00:40Z', end: '2026-10-22 18:00Z' },
+      environment: 'env_01SNfen',
+      supervisorTrigger: null,
+      logIssue: 19,
+      titles: expect.arrayContaining(['YODC lane: research', 'YODC plan: fixes', 'YODC integrate']),
+    });
+    const after = run(['doc'], io(ready, { ...noGh, now: () => new Date('2026-10-22T18:01:00Z') }).fake);
+    expect(JSON.parse(after.line).phase).toBe('after');
+  });
+  it('doc refuses while the environment is unset, so nothing starts on a stale id', () => {
+    const out = run(['doc'], io(ready).fake);
+    expect(out.code).toBe(1);
+    expect(JSON.parse(out.line)).toEqual({ error: expect.stringContaining('no environment'), do: expect.stringMatching(/^Start and archive nothing/) });
   });
   it('a failing gh is an error that says stop', () => {
     const out = run(['next', 'fixes'], io(ready, { gh: () => { throw new Error('HTTP 502'); } }).fake);

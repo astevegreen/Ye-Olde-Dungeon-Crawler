@@ -99,6 +99,82 @@ describe('the sprint queue (scripts/sprint/queue.mjs)', () => {
   });
 });
 
+describe('commands run through a wrapper', () => {
+  it.each([
+    'find . -name x -exec git push \\;',
+    "find . -exec git push origin HEAD:other ';'",
+    'find . -execdir git push {} +',
+    'find . -ok git push \\;',
+    'find . -exec git {} \\;',
+    'git ls-files | xargs git push',
+    'echo origin | xargs -n 1 git push',
+    'echo push | xargs git',
+    'echo push | xargs -I X git X',
+    'sh -c "git push"',
+    "bash -c 'git push origin HEAD:main'",
+    'bash -lc "echo hi"',
+    'echo "git push" | bash',
+    'bash <<< "git push"',
+    'pwsh -c "git push"',
+    'pwsh -NoProfile -Command "git push"',
+    'powershell -Command "git push"',
+    'powershell.exe "git push"',
+    'pwsh -EncodedCommand ZwBpAHQAIABwAHUAcwBoAA==',
+    'cmd /c git push',
+    'cmd.exe /c "git push"',
+    'eval "git push"',
+    'Invoke-Expression "git push"',
+    'Start-Process git -ArgumentList push',
+    'env git push',
+    'env -i FOO=1 git push',
+    'command git push',
+    'nice -n 5 git push',
+    'timeout 60 git push',
+    'timeout -s KILL 60 git push',
+    'nohup git push',
+    'nohup env nice git push',
+    'GIT_TRACE=1 git push',
+    '/usr/bin/git push',
+    'git.exe push',
+    'then git push',
+    '(git push)',
+    "git -c alias.x='!git push' x",
+    'git -c alias.p=push p',
+    'git config alias.p push',
+    'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.p GIT_CONFIG_VALUE_0=push git p',
+    'git -C /w rebase -x "git push" origin/main',
+    'git submodule foreach "git push"',
+  ])('refuses %s', (command) => {
+    for (const mode of ['--lane', '--integrator']) expect(bash(mode, command), `${mode} ${command}`).toBe(2);
+  });
+  it('lets the integrator push through a wrapper only as itself', () => {
+    expect(bash('--integrator', 'timeout 600 git -C C:/Antigravity/YODC-integrate push origin HEAD:main')).toBe(0);
+    expect(bash('--integrator', 'env git push origin HEAD:other')).toBe(2);
+  });
+  it('lets the look-alikes through', () => {
+    for (const mode of ['--lane', '--integrator']) {
+      for (const command of [
+        'find src -name "*.ts" -newer package.json',
+        'find . -name push -type f',
+        'find src -name "*.ts" -exec grep -l push {} +',
+        'git ls-files | xargs grep -n push',
+        'git ls-files src | xargs -0 wc -l',
+        'echo src/a.ts | xargs git log --oneline -1 --',
+        'env FORCE_COLOR=0 npm test',
+        'timeout 600 npm run gate-stamp -- run lint test tooling',
+        'nice -n 10 npm run sim',
+        'command -v git',
+        'bash scripts/x.sh',
+        'pwsh -NoProfile -File scripts/x.ps1',
+        "Start-Process -WindowStyle Hidden -WorkingDirectory C:/Antigravity/YODC-research -FilePath npm.cmd -ArgumentList 'run','soak','--','--until','14:00' -PassThru",
+        'git -C /w commit -m "the alias. we push later"',
+        'git -C /w stash push -m wip',
+        'gh issue comment 12 --body "sh -c is refused"',
+      ]) expect(bash(mode, command), `${mode} ${command}`).toBe(0);
+    }
+  });
+});
+
 describe('--integrator', () => {
   it('pushes only HEAD to main', () => {
     expect(bash('--integrator', 'git -C C:/Antigravity/YODC-integrate push origin HEAD:main')).toBe(0);
@@ -193,6 +269,10 @@ describe('--file-lock', () => {
       expect(bash(mode, 'git commit -m x', lane)).toBe(0);
       expect(bash(mode, `git -C ${lane} stash push -m left`, main)).toBe(0);
       expect(bash(mode, `git -C ${main} stash push -m x`, lane)).toBe(2);
+      // Through a wrapper, and past a `-c` setting before the subcommand.
+      expect(bash(mode, `env git -C ${main} commit -m x`, lane)).toBe(2);
+      expect(bash(mode, `git -c user.name=x -C ${main} commit -m x`, lane)).toBe(2);
+      expect(bash(mode, `find ${main} -maxdepth 0 -exec git -C {} commit -m x \\;`, lane)).toBe(2);
     }
   });
   it('refuses the main checkout and the locked paths', () => {

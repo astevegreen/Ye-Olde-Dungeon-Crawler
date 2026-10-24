@@ -4,6 +4,8 @@
 //   --integrator  Bash: pushes only `git push origin HEAD:main`
 // Both refuse dependency changes and git writes to the main checkout (only fetch, worktree and
 // `merge --ff-only` touch it), and run the sprint queue (scripts/sprint/queue.mjs) only on its own.
+// Both read the command a wrapper runs (env, nice, timeout, xargs, find -exec, ...) and refuse a command
+// string they can't read (sh -c, pwsh -Command, cmd, eval) and git aliases.
 //   --read-only   Bash: inspection commands only (the reviewer)
 //   --file-lock   Edit|Write: the sprint never edits its own machinery or the owner's files
 // Every Bash mode also refuses what no unattended session may do: skip hooks, force or delete
@@ -91,6 +93,108 @@ function isMainCheckout(dir) {
 const GIT_WRITES = new Set(['switch', 'checkout', 'commit', 'rebase', 'reset', 'restore', 'stash', 'cherry-pick',
   'revert', 'merge', 'pull', 'add', 'rm', 'mv', 'am', 'apply']);
 
+// A command's name as the shell runs it: `/usr/bin/git`, `git.exe` and `Git` are all git.
+const cmdName = (x) => path.posix.basename(String(x ?? '').replace(/\\/g, '/')).toLowerCase().replace(/\.(exe|cmd|bat)$/, '');
+// Words before the command itself: shell keywords and grouping (`then git push`, `(git push`, `{ git push`).
+const LEAD = new Set(['!', '{', '(', 'if', 'then', 'else', 'elif', 'do', 'while', 'until']);
+const ASSIGN = /^[A-Za-z_]\w*=/;
+// Wrappers that run the rest of their words as a command, and their options that take a value.
+const PREFIX = {
+  env: ['-u', '--unset', '-C', '--chdir'], command: [], nice: ['-n', '--adjustment'],
+  timeout: ['-s', '--signal', '-k', '--kill-after'], nohup: [], exec: ['-a'], time: [], stdbuf: ['-i', '-o', '-e'],
+  setsid: [], xargs: ['-I', '-L', '-n', '-P', '-d', '-E', '-s', '-a', '--arg-file', '--delimiter', '--max-args',
+    '--max-procs', '--max-chars', '--process-slot-var'],
+};
+const SHELLS = new Set(['sh', 'bash', 'zsh', 'dash', 'ksh', 'fish']);
+const STRING_RUNNERS = new Set(['cmd', 'eval', 'invoke-expression', 'iex', 'invoke-command', 'icm']);
+const GIT_VALUED = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace', '--config-env']);
+const gitSub = (w) => {
+  for (let i = 1; i < w.length; i++) {
+    if (GIT_VALUED.has(w[i])) i++;
+    else if (!w[i].startsWith('-')) return w[i];
+  }
+  return undefined;
+};
+
+// The commands one simple command runs: itself, and what a wrapper (env, nice, xargs, find -exec, ...)
+// runs from its words. Lane and integrator rules apply to each. A wrapper that runs a string (sh -c, cmd,
+// eval) can't be read word by word, so it is refused. `fromArgs`: find or xargs adds words to it.
+function commandsIn(raw, fromArgs = false, repl = null, depth = 0) {
+  if (depth > 4) deny('too many nested wrappers to read');
+  const w = [...raw];
+  while (w.length && LEAD.has(w[0])) w.shift();
+  if (w[0]) w[0] = w[0].replace(/^[({]+/, '');
+  while (w.length && ASSIGN.test(w[0])) w.shift();
+  if (!w.length || !w[0]) return [];
+  const name = cmdName(w[0]);
+  const self = { w: [name, ...w.slice(1)], fromArgs, repl };
+  const inner = (rest, args = fromArgs, r = repl) => commandsIn(rest, args, r, depth + 1);
+
+  if (name in PREFIX) {
+    const valued = new Set(PREFIX[name]);
+    let i = 1;
+    let xrepl = null;
+    for (; i < w.length; i++) {
+      const t = w[i];
+      if (t === '--') { i++; break; }
+      if (name === 'env' && (t === '-' || ASSIGN.test(t))) continue;
+      if (name === 'env' && /^(-S|--split-string)/.test(t)) deny('`env -S` runs a string the guard can\'t read');
+      if (!t.startsWith('-') || t === '-') break;
+      if (name === 'xargs' && /^(-I|-i|--replace)/.test(t)) xrepl = t === '-I' ? w[i + 1] : t.replace(/^(-I|-i|--replace=?)/, '') || '{}';
+      if (valued.has(t)) i++;
+    }
+    if (name === 'timeout') i++; // the duration
+    const rest = w.slice(i);
+    if (name === 'xargs') return [self, ...(rest.length ? inner(rest, true, xrepl) : [])];
+    return [self, ...inner(rest)];
+  }
+  if (name === 'find') {
+    const out = [self];
+    for (let i = 1; i < w.length; i++) {
+      if (!/^-(exec|execdir|ok|okdir)$/.test(w[i])) continue;
+      let j = i + 1;
+      while (j < w.length && !/^(\\?;|\+)$/.test(w[j])) j++;
+      out.push(...inner(w.slice(i + 1, j), true, '{}'));
+      i = j;
+    }
+    return out;
+  }
+  if (SHELLS.has(name)) {
+    let script = false;
+    for (let i = 1; i < w.length; i++) {
+      const t = w[i];
+      if (/^\d*<+$/.test(t)) { i++; continue; }
+      if (/^\d*</.test(t)) continue;
+      if (t === '--') { script = i + 1 < w.length; break; }
+      if (/^-[A-Za-z]*[cs][A-Za-z]*$/.test(t) || t === '--command') deny(`\`${name} -c\` runs a string the guard can't read; run the command itself`);
+      if (/^[-+][oO]$|^--(rcfile|init-file)$/.test(t)) { i++; continue; }
+      if (/^[-+]/.test(t)) continue;
+      script = true;
+      break;
+    }
+    if (!script) deny(`\`${name}\` with no script reads its commands from input, which the guard can't read`);
+    return [self];
+  }
+  if (name === 'pwsh' || name === 'powershell') {
+    // Parameters may be shortened (-c, -com, -e, -f) and start with -, -- or /.
+    const params = [];
+    for (let i = 1; i < w.length; i++) if (/^(--?|\/)[A-Za-z]+$/.test(w[i])) params.push([w[i].replace(/^(--?|\/)/, '').toLowerCase(), i]);
+    const file = params.find(([p]) => 'file'.startsWith(p));
+    if (params.some(([p]) => p.startsWith('c') || p === 'ec' || 'encodedcommand'.startsWith(p)) || !file || w[file[1] + 1] === '-') {
+      deny(`\`${name}\` runs only with -File here: a -Command string can't be read by the guard`);
+    }
+    return [self];
+  }
+  if (STRING_RUNNERS.has(name)) deny(`\`${name}\` runs a string the guard can't read; run the command itself`);
+  if (['start-process', 'start', 'saps'].includes(name)) {
+    const runs = w.slice(1).flatMap((t) => t.split(',')).map((t) => cmdName(t.replace(/^['"]|['"]$/g, '')));
+    if (runs.some((r) => r === 'git' || SHELLS.has(r) || STRING_RUNNERS.has(r) || r === 'pwsh' || r === 'powershell')) {
+      deny(`\`${name}\` may not start git or a shell; run the command itself`);
+    }
+  }
+  return [self];
+}
+
 // The queue writes labels and comments, and a settings rule may allow it by prefix: a call chained,
 // piped, redirected or backgrounded could carry another command through, so it runs alone.
 const isQueue = (w) => w[0] === 'node' && /(^|[\\/])scripts[\\/]sprint[\\/]queue\.mjs$/.test(w[1] ?? '');
@@ -103,18 +207,33 @@ if ((MODE === '--lane' || MODE === '--integrator') && parts.some((p) => isQueue(
 
 if (MODE === '--lane' || MODE === '--integrator') {
   let cwd = String(input.cwd ?? process.cwd());
+  // Git config set from the environment can define an alias that runs any command.
+  if (/\bGIT_CONFIG_(PARAMETERS|COUNT|KEY_\d+)\b/.test(command)) deny('no git config from the environment');
   for (const p of parts) {
-    const w = words(p);
-    if (w[0] === 'cd' && w[1]) cwd = path.resolve(cwd, native(w[1]));
-    if (MODE === '--lane' && isPush(w)) deny('only the integrator pushes');
-    if (w[0] === 'gh' && w[1] === 'pr' && w[2] === 'merge') deny('only the integrator lands work');
-    if (w[0] === 'npm' && /^(i|in|install|add|un|uninstall|rm|remove|r|up|update|upgrade)$/.test(w[1] ?? '')) {
-      deny('no new or changed dependencies; `npm ci` installs the locked ones');
-    }
-    if (w[0] === 'git') {
+    const top = words(p);
+    if (top[0] === 'cd' && top[1]) cwd = path.resolve(cwd, native(top[1]));
+    for (const { w, fromArgs, repl } of commandsIn(top)) {
+      if (MODE === '--lane' && isPush(w)) deny('only the integrator pushes');
+      if (w[0] === 'gh' && w[1] === 'pr' && w[2] === 'merge') deny('only the integrator lands work');
+      if (w[0] === 'npm' && /^(i|in|install|add|un|uninstall|rm|remove|r|up|update|upgrade)$/.test(w[1] ?? '')) {
+        deny('no new or changed dependencies; `npm ci` installs the locked ones');
+      }
+      if (w[0] !== 'git') continue;
+      const sub = gitSub(w);
+      // find and xargs add words: `xargs git` or `-exec git {}` takes its subcommand from them, and
+      // `-exec git -C {}` its checkout.
+      const filled = (x) => x === undefined || x.includes('{}') || (repl && x.includes(repl));
       const at = w.indexOf('-C');
+      if (fromArgs && (filled(sub) || (at >= 0 && filled(w[at + 1])))) {
+        deny('git run by find or xargs must name its subcommand and checkout');
+      }
+      // An alias (`-c alias.x='!git push'`, `git config alias.x`) runs any command under a new name.
+      if (w.some((x) => /^(--config-env=)?alias\./i.test(x))) deny('no git aliases: run the git command itself');
+      if ((sub === 'rebase' && w.some((x) => /^(-x|--exec)(=|$)/.test(x)))
+        || (sub === 'submodule' && w.includes('foreach')) || (sub === 'bisect' && w.includes('run'))) {
+        deny(`\`git ${sub}\` would run a command string the guard can't read`);
+      }
       const dir = at >= 0 && w[at + 1] ? path.resolve(cwd, native(w[at + 1])) : cwd;
-      const sub = w.find((x, i) => i > 0 && !x.startsWith('-') && w[i - 1] !== '-C');
       const ffOnly = sub === 'merge' && w.includes('--ff-only');
       if (GIT_WRITES.has(sub) && !ffOnly && isMainCheckout(dir)) {
         deny(`\`git ${sub}\` would change the main checkout; work in your worktree with \`git -C <worktree>\``);
@@ -125,12 +244,14 @@ if (MODE === '--lane' || MODE === '--integrator') {
 
 if (MODE === '--integrator') {
   for (const p of parts) {
-    const all = words(p).filter((x, i, ws) => !(ws[i - 1] === '-C' || x === '-C'));
-    // `> push.txt 2>&1` saves the output; it is not part of the push.
-    const cut = all.findIndex((x) => /^(\d?>>?|&>)/.test(x));
-    const w = cut >= 0 ? all.slice(0, cut) : all;
-    if (isPush(w) && w.slice(w.indexOf('push')).join(' ') !== 'push origin HEAD:main') {
-      deny('the integrator pushes only with `git push origin HEAD:main`');
+    for (const cmd of commandsIn(words(p))) {
+      const all = cmd.w.filter((x, i, ws) => !(ws[i - 1] === '-C' || x === '-C'));
+      // `> push.txt 2>&1` saves the output; it is not part of the push.
+      const cut = all.findIndex((x) => /^(\d?>>?|&>)/.test(x));
+      const w = cut >= 0 ? all.slice(0, cut) : all;
+      if (isPush(w) && w.slice(w.indexOf('push')).join(' ') !== 'push origin HEAD:main') {
+        deny('the integrator pushes only with `git push origin HEAD:main`');
+      }
     }
   }
 }

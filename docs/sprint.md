@@ -260,6 +260,8 @@ on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` 
 7. Claude Code is 2.1.304 or later, both the `claude` on PATH (`claude --version`) and the desktop app's bundled
    copy under `%APPDATA%\Claude\claude-code\`. A lane sends the reviewer's concerns back to the builder that
    wrote the change (`SendMessage`), and before 2.1.304 a resumed subagent could forget its latest work.
+   Auto-update is off on this computer (2.1.296 on 23 Oct), so the owner updates both by hand: `claude update`,
+   and the desktop app's own update for its copy.
 
 ## Turning it off
 

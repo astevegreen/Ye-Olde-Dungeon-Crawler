@@ -25,6 +25,7 @@
 
 ## Pushing
 - Before pushing a change players will see, or any change under `src/engine/`: run the `reviewer` agent with "Request: <the owner's words>. Range: origin/main..HEAD". Fix its blockers once and run it again; list any minor concerns left in the summary. Docs, tooling and test-only changes skip it.
+- With the reviewer's first run, start `node scripts/second-look.mjs "<the owner's words>"` in the background: another model reviews the same change through agy, picked by what the change touches. Its findings are inputs: check each against the code, fix the valid blockers along with the reviewer's, and name any you rejected, with why, in the summary. A "skipped" line never holds the push.
 - Push each finished task without asking, once all its commits are in: `git push`, run in the background (the pre-push hook runs the sim, the build and Playwright in three browsers).
 - A push deploys the Pages site, which other people play. The task's summary lists, one line each, what players will see change, or says "nothing player-visible".
 - Pre-push red: rerun once, since flakes are known. Red again: leave the commits unpushed and report the failure.

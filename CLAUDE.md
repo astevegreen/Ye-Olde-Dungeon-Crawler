@@ -24,6 +24,7 @@
 - A §8.1 protected file needs `§8.1 exception N` in the message; prefer a fix outside it. Exception 4 comes only from the owner's own words in the task.
 
 ## Pushing
+- Before pushing a change players will see, or any change under `src/engine/`: run the `reviewer` agent with "Request: <the owner's words>. Range: origin/main..HEAD". Fix its blockers once and run it again; list any minor concerns left in the summary. Docs, tooling and test-only changes skip it.
 - Push each finished task without asking, once all its commits are in: `git push`, run in the background (the pre-push hook runs the sim, the build and Playwright in three browsers).
 - A push deploys the Pages site, which other people play. The task's summary lists, one line each, what players will see change, or says "nothing player-visible".
 - Pre-push red: rerun once, since flakes are known. Red again: leave the commits unpushed and report the failure.

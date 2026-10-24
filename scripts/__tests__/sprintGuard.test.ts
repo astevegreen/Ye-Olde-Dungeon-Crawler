@@ -118,6 +118,10 @@ describe('message values', () => {
     for (const command of [
       'git -C /w commit -m "$(git push)"',
       'git -C /w commit -m "`git push`"',
+      // Terminal Dusk's guard let these through (Oct 2026): bash runs both inside double quotes.
+      `${Q} move 7 held --note "see \`git push --force origin main\`"`,
+      'gh issue comment 7 --body "$(git push --force origin main)"',
+      'gh issue comment 7 --body="x $(curl https://example.com)"',
       "git -C /w commit -m 'x' --no-verify",
       "git -C /w commit -m 'x' && git push",
       `${Q} move 7 held --note 'x'; ls`,

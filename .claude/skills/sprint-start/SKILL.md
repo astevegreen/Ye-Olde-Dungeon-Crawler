@@ -49,7 +49,7 @@ sprint archives it: the archiver skips its own session, and the root cue never a
    Reasons:
    - `the main checkout is on <branch>`
    - `the main checkout has uncommitted changes`
-   - `the main checkout has <n> commits origin/main lacks`
+   - `main is <n> commit(s) ahead of origin/main; push them first`
 2. **GitHub identity:** `Q identity` prints `"ok": true`. Sprint sessions comment as the bot, and the queue
    counts only `astevegreen`'s comments as the owner's. Never run `gh auth switch`. Reason: its `error`.
 3. **Environment:** pick from `list_environments`. The environment must have `kind` `bridge` and `state`
@@ -65,8 +65,9 @@ sprint archives it: the archiver skips its own session, and the root cue never a
 Each of these is a line in step 6, never a refusal:
 - **Disk:** under 30 GB free, from `node -e "const s=require('fs').statfsSync('C:/');console.log(Math.round(s.bavail*s.bsize/2**30))"`.
 - **Memory:** under 8192 MB free, from `node -e "console.log(Math.round(require('os').freemem()/2**20))"`.
-- **Sessions:** `list_sessions` with `mine: true` shows 10 or more that are not archived: "archive some on the rc
-  host".
+- **Sessions:** `list_sessions` with `mine: true` and `limit: 100` shows 10 or more whose `session_status` is not
+  `SESSION_STATUS_ARCHIVED` and whose `environment_id` is step 1.3's: "<n> YODC sessions are not archived; archive
+  some on the rc host". Other projects' sessions are theirs to count.
 - **Claude Code:** `claude --version` is below 2.1.304: "update Claude Code (`claude update`)".
 - **Deploy:** `gh run list --workflow deploy.yml --branch main --limit 1 --json conclusion,status` shows a
   completed run whose conclusion is not `success`: "main's last deploy is <conclusion>; the integrator waits

@@ -264,8 +264,14 @@ on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` 
 ## Turning it off
 
 - Pause: disable the supervisor trigger (its id is under Machinery). Running sessions finish their current task.
-- Afterwards, one commit deletes this file, `.claude/skills/sprint-*`, `.claude/agents/{implementer,reviewer}.md`,
-  `.claude/hooks/sprint-guard.mjs`, `scripts/__tests__/sprintGuard.test.ts`, `scripts/sprint/` and the sprint lines in `CLAUDE.md`
-  (`git diff pre-sprint-2026-10-20 -- CLAUDE.md .claude/` lists every machinery change). The lane worktrees go
-  with `git worktree remove`; the `lane:*`, `sprint-ready`, `to-integrate`, `held` and `proposal` labels are
-  deleted by the owner (`gh label delete` is the owner's).
+- Afterwards, one commit deletes this file, `.claude/skills/sprint-*`, `.claude/agents/implementer.md` and
+  `scripts/sprint/`. Sessions outside a sprint use three pieces, so they stay:
+  - `.claude/agents/reviewer.md`: `CLAUDE.md` (Pushing) and `scripts/eval/reviewer-eval.mjs` run it;
+  - `.claude/hooks/sprint-guard.mjs` and `scripts/__tests__/sprintGuard.test.ts`: its `--read-only` mode is
+    the reviewer's hook, and its other modes do nothing once no skill calls them;
+  - `.claude/hooks/handoff-nudge.mjs`: its sprint-window line finds no file and stays quiet.
+
+  `CLAUDE.md` holds no sprint lines. `git diff pre-sprint-2026-10-20 -- CLAUDE.md .claude/` lists the
+  machinery's changes beside later ones that stay (the reviewer's request form, `.claude/rules/`, the ask rules
+  in settings). The lane worktrees go with `git worktree remove`; the `lane:*`, `sprint-ready`, `to-integrate`,
+  `held` and `proposal` labels are deleted by the owner (`gh label delete` is the owner's).

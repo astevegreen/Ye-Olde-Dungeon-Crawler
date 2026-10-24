@@ -43,28 +43,38 @@ if (MODE === '--file-lock') {
 
 // A backslash before a newline joins the two lines into one command, as bash does: `git \⏎push` pushes.
 const command = String(input.tool_input?.command ?? '').replace(/\\\r?\n/g, ' ');
-// Simple commands: split on control operators, keeping the words of each. Inside quotes, |, ;, & and )
-// are text (a search pattern such as "a\|b"), except in double quotes holding $ or a backtick, which can
-// run a command there. So is one escaped with a backslash outside quotes (`sed -n 1p\;9p`, find's `\;`).
-const MASK = { '|': '\u0001', ';': '\u0002', '&': '\u0003', ')': '\u0004' };
+// Simple commands: split on control operators, keeping the words of each. A literal in quotes is text:
+// single quotes, or double quotes holding no $ or backtick (which can run a command there). Inside one,
+// |, ;, &, ), a backtick, $ and a newline are masked, so a search pattern ("a\|b") or a multi-line note
+// isn't split. So is an operator escaped with a backslash outside quotes (`sed -n 1p\;9p`, find's `\;`).
+const MASK = { '|': '\u0001', ';': '\u0002', '&': '\u0003', ')': '\u0004', '`': '\u0005', $: '\u0006', '\n': '\u0007' };
 const UNMASK = Object.fromEntries(Object.entries(MASK).map(([k, v]) => [v, k]));
+// A message flag's literal value is text the command stores and never runs (a commit message, an issue
+// body, a queue note): it is blanked before every check, so a note that mentions `git push`, curl or
+// --no-verify isn't read as one. A value holding $ or a backtick is read like any other word.
+const TEXT_FLAG = /(^|\s)(--note|--body|--comment|--title|--message|-m)(=|\s+)$/;
 function maskQuoted(s) {
   let out = '';
   for (let i = 0; i < s.length; i++) {
     const c = s[i];
-    if (c === '\\') { out += `\\${MASK[s[i + 1]] ?? s[i + 1] ?? ''}`; i++; continue; }
+    if (c === '\\') { out += `\\${/[|;&)]/.test(s[i + 1] ?? '') ? MASK[s[i + 1]] : s[i + 1] ?? ''}`; i++; continue; }
     if (c !== '"' && c !== "'") { out += c; continue; }
     let j = i + 1;
     while (j < s.length && s[j] !== c) j += c === '"' && s[j] === '\\' ? 2 : 1;
     const q = s.slice(i, j + 1);
-    out += c === '"' && /[$`]/.test(q) ? q : q.replace(/[|;&)]/g, (x) => MASK[x]);
+    const literal = c === "'" || !/[$`]/.test(q);
+    if (literal && TEXT_FLAG.test(out)) out += "''";
+    else out += literal ? q.replace(/[|;&)`$\n]/g, (x) => MASK[x]) : q;
     i = j;
   }
   return out;
 }
-const parts = maskQuoted(command)
+const masked = maskQuoted(command);
+// The command as the checks read it: message values blanked, everything else as written.
+const text = masked.replace(/[\u0001-\u0007]/g, (c) => UNMASK[c]);
+const parts = masked
   .split(/&&|\|\||[;|\n`]|\$\(|\)/)
-  .map((p) => p.replace(/[\u0001-\u0004]/g, (c) => UNMASK[c]).trim())
+  .map((p) => p.replace(/[\u0001-\u0007]/g, (c) => UNMASK[c]).trim())
   .filter(Boolean);
 const words = (s) => s.match(/"[^"]*"|'[^']*'|\S+/g)?.map((w) => w.replace(/^(["'])(.*)\1$/, '$2')) ?? [];
 
@@ -76,7 +86,7 @@ const ALWAYS = [
   [/\brm\s+-\S*r|\bremove-item\b[^\n]*-recurse|\brmdir\b|\brd\s+\/s/i, 'no recursive delete'],
   [/\b(curl|wget|invoke-webrequest|iwr|invoke-restmethod|irm)\b/i, 'no web fetches'],
 ];
-for (const [re, why] of ALWAYS) if (re.test(command)) deny(why);
+for (const [re, why] of ALWAYS) if (re.test(text)) deny(why);
 
 const isPush = (w) => w[0] === 'git' && w.includes('push') && !w.includes('stash');
 // Git Bash on Windows writes C:/x as /c/x; elsewhere /c/x is a real path.
@@ -199,7 +209,7 @@ function commandsIn(raw, fromArgs = false, repl = null, depth = 0) {
 // piped, redirected or backgrounded could carry another command through, so it runs alone.
 const isQueue = (w) => w[0] === 'node' && /(^|[\\/])scripts[\\/]sprint[\\/]queue\.mjs$/.test(w[1] ?? '');
 if ((MODE === '--lane' || MODE === '--integrator') && parts.some((p) => isQueue(words(p)))) {
-  const unquoted = command.replace(/"[^"]*"|'[^']*'/g, '""');
+  const unquoted = text.replace(/"[^"]*"|'[^']*'/g, '""');
   if (parts.length !== 1 || /[<>&]/.test(unquoted)) {
     deny('run `node <checkout>/scripts/sprint/queue.mjs …` on its own: no chaining, pipe, redirect or `&`');
   }
@@ -208,7 +218,7 @@ if ((MODE === '--lane' || MODE === '--integrator') && parts.some((p) => isQueue(
 if (MODE === '--lane' || MODE === '--integrator') {
   let cwd = String(input.cwd ?? process.cwd());
   // Git config set from the environment can define an alias that runs any command.
-  if (/\bGIT_CONFIG_(PARAMETERS|COUNT|KEY_\d+)\b/.test(command)) deny('no git config from the environment');
+  if (/\bGIT_CONFIG_(PARAMETERS|COUNT|KEY_\d+)\b/.test(text)) deny('no git config from the environment');
   for (const p of parts) {
     const top = words(p);
     if (top[0] === 'cd' && top[1]) cwd = path.resolve(cwd, native(top[1]));
@@ -229,6 +239,17 @@ if (MODE === '--lane' || MODE === '--integrator') {
       }
       // An alias (`-c alias.x='!git push'`, `git config alias.x`) runs any command under a new name.
       if (w.some((x) => /^(--config-env=)?alias\./i.test(x))) deny('no git aliases: run the git command itself');
+      // Git config is shared by the main checkout and every worktree, and --global is the computer's:
+      // the sprint reads it and never writes it.
+      if (sub === 'config') {
+        const args = w.slice(w.indexOf('config') + 1);
+        const named = args.filter((x) => !x.startsWith('-'));
+        if (args.some((x) => /^(--(global|system|add|unset|unset-all|replace-all|rename-section|remove-section|edit)|-e)$/.test(x))
+          || /^(set|unset|edit|rename-section|remove-section)$/.test(named[0] ?? '')
+          || (named.length >= 2 && !/^(get|list)$/.test(named[0]))) {
+          deny('git config is read-only in the sprint: it is shared with the main checkout, and --global is the computer\'s');
+        }
+      }
       if ((sub === 'rebase' && w.some((x) => /^(-x|--exec)(=|$)/.test(x)))
         || (sub === 'submodule' && w.includes('foreach')) || (sub === 'bisect' && w.includes('run'))) {
         deny(`\`git ${sub}\` would run a command string the guard can't read`);
@@ -258,7 +279,7 @@ if (MODE === '--integrator') {
 
 if (MODE === '--read-only') {
   // A `>` inside quotes is text (a grep pattern), not a redirect.
-  const unquoted = command.replace(/"[^"]*"|'[^']*'/g, '""');
+  const unquoted = text.replace(/"[^"]*"|'[^']*'/g, '""');
   if (/(^|[^0-9&])>{1,2}(?!\s*(&1|\/dev\/null))/.test(unquoted)) deny('the reviewer writes no files');
   const ALLOWED = [
     ['git', 'diff'], ['git', 'log'], ['git', 'show'], ['git', 'status'], ['git', 'merge-base'],

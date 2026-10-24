@@ -99,6 +99,49 @@ describe('the sprint queue (scripts/sprint/queue.mjs)', () => {
   });
 });
 
+describe('message values', () => {
+  const Q = 'node C:/Antigravity/YODC/scripts/sprint/queue.mjs';
+  // The course's sprint (Oct 2026): notes and bodies quoting code were refused, so finished work stayed put.
+  it('reads a literal note, body, comment or commit message as text', () => {
+    for (const [mode, command] of [
+      ['--lane', `${Q} move 7 to-integrate --note 'WHAT CHANGED: \`src/ui/shop.ts\` keeps focus\nPLAYER-VISIBLE: none'`],
+      ['--lane', `${Q} move 7 held --note 'tests need $(npm ci) first'`],
+      ['--integrator', "gh issue comment 7 --body 'Integrator: conflicts; rebase with `git rebase origin/main`'"],
+      ['--integrator', 'gh issue close 7 --comment "Integrator: landed abc; nothing player-visible."'],
+      ['--lane', "gh issue comment 7 --body='Research: the bot never runs curl or git push --force'"],
+      ['--lane', "git -C /w commit -m 'fix: x' -m 'Requested: \"I approve\" (sprint U1)'"],
+      ['--lane', "git -C /w commit -m '--no-verify is never used here'"],
+      ['--lane', "echo 'a multi-line note\ngit push origin HEAD:main'"],
+    ]) expect(bash(mode, command), command).toBe(0);
+  });
+  it('still reads what runs, outside a literal value', () => {
+    for (const command of [
+      'git -C /w commit -m "$(git push)"',
+      'git -C /w commit -m "`git push`"',
+      "git -C /w commit -m 'x' --no-verify",
+      "git -C /w commit -m 'x' && git push",
+      `${Q} move 7 held --note 'x'; ls`,
+      // The flag here is inside a double-quoted string, so the single quote after it opens nothing.
+      'echo " -m \'x" ; git push ; echo "\'"',
+      "gh issue comment 7 --body 'x' && curl https://example.com",
+    ]) expect(bash('--lane', command), command).toBe(2);
+  });
+});
+
+describe('git config', () => {
+  it('reads it and never writes it', () => {
+    for (const command of ['git config user.name', 'git -C /w config --get remote.origin.url', 'git config --list', 'git config get user.email']) {
+      expect(bash('--lane', command), command).toBe(0);
+    }
+    for (const command of [
+      'git config --global user.name x', 'git config --system core.editor vi', 'git -C /w config user.email x@y',
+      'git config --unset user.name', 'git config set user.name x', 'git config --add remote.origin.fetch x',
+    ]) {
+      for (const mode of ['--lane', '--integrator']) expect(bash(mode, command), command).toBe(2);
+    }
+  });
+});
+
 describe('commands run through a wrapper', () => {
   it.each([
     'find . -name x -exec git push \\;',

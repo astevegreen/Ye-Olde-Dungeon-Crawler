@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {
@@ -174,6 +174,7 @@ describe('falling back when a model has no usage left', () => {
       store.markOut(ARGON, new Date(NOW + HOUR));
       expect(store.outUntil(ARGON, NOW)).toEqual(new Date(NOW + HOUR));
       expect(Object.keys(JSON.parse(readFileSync(file, 'utf8')))).toEqual([ARGON]);
+      expect(readdirSync(dir)).toEqual(['quota.json']); // written whole and renamed, no temp file left
       writeFileSync(file, 'not json');
       expect(store.outUntil(ARGON, NOW)).toBeNull();
     } finally {

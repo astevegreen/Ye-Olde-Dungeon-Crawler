@@ -1,7 +1,7 @@
 // How the second look talks to agy: which model reviews what, what every prompt starts with, and how a reply is
 // read. The same rules are in terminal-dusk/tools/gemini/agy.mjs and blockchain-technology-course/tools/agy.mjs:
 // change all three. Types: agy.d.mts.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, renameSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -116,8 +116,11 @@ export function quotaFile(file = QUOTA_FILE) {
       return t > now ? new Date(t) : null;
     },
     markOut(model, until) {
+      // The whole file, then a rename: three repos' reviews share it, so a reader never sees half of one.
+      const tmp = `${file}.${process.pid}.tmp`;
       try {
-        writeFileSync(file, JSON.stringify({ ...read(), [model]: until.toISOString() }, null, 2));
+        writeFileSync(tmp, JSON.stringify({ ...read(), [model]: until.toISOString() }, null, 2));
+        renameSync(tmp, file);
       } catch {
         // A review never fails because it could not write down a quota.
       }

@@ -43,6 +43,9 @@ const WIRING: Record<string, { model: string; guards: Record<string, string> }> 
   '.claude/skills/sprint-research/SKILL.md': { model: 'sonnet', guards: { 'Bash|PowerShell': '--lane' } },
   '.claude/skills/sprint-integrate/SKILL.md': { model: 'sonnet', guards: { 'Bash|PowerShell': '--integrator' } },
   '.claude/skills/sprint-status/SKILL.md': { model: 'sonnet', guards: {} },
+  '.claude/skills/sprint-start/SKILL.md': { model: 'sonnet', guards: { 'Bash|PowerShell': '--lane' } },
+  '.claude/skills/sprint-stop/SKILL.md': { model: 'sonnet', guards: { 'Bash|PowerShell': '--lane' } },
+  '.claude/skills/sprint-archive/SKILL.md': { model: 'haiku', guards: { 'Bash|PowerShell': '--lane' } },
   '.claude/agents/implementer.md': { model: 'opus', guards: { 'Edit|Write': '--file-lock', 'Bash|PowerShell': '--lane' } },
   '.claude/agents/reviewer.md': { model: 'opus', guards: { 'Bash|PowerShell': '--read-only' } },
 };

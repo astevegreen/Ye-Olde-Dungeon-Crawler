@@ -29,6 +29,8 @@ state labels only with `node C:/Antigravity/YODC/scripts/sprint/queue.mjs move n
 ## 1. Load
 `gh issue view n --comments`. The body is the spec; in fix mode, the concerns in your prompt are the task.
 Read the spec's "Read first" files. Search only through the `scout` or `Explore` agent.
+A "Mode: fix. Concerns: …" message after your own hand-back continues your task: you already hold the spec,
+the issue and the worktree, so skip this step and fix in step 3's fix mode.
 
 ## 2. Stop early when
 the spec is unclear, contradicts `ARCHITECTURE.md`, or needs a product decision, a locked path, or a §8.1
@@ -41,7 +43,8 @@ back STATUS: BLOCKED.
   `git -C W fetch origin`.
 - Issue mode: if `sprint/n` exists, it holds earlier work: `git -C W switch sprint/n` and continue it as in
   fix mode. Otherwise `git -C W switch -c sprint/n origin/main`.
-  Fix mode: `git -C W switch sprint/n`; when the concern is a conflict with main, rebase it:
+  Fix mode: `git -C W switch sprint/n` first, since every hand-back (step 4) detaches it; when the concern is
+  a conflict with main, rebase it:
   `git -C W fetch origin` then `git -C W rebase --reapply-cherry-picks origin/main` (main may hold this task
   and its revert, which a plain rebase would silently drop), resolving conflicts in the task's favour only
   where the task owns the lines.

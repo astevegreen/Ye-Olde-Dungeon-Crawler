@@ -235,6 +235,9 @@ on the death screen, new mechanics (oil slick, shield `onBlock`, `bsp`/`cavern` 
 4. The supervisor trigger exists, its id is in Machinery, and the dry run showed an agent can switch it off.
 5. No other project's sprint or soak runs on this computer during the window (Machinery).
 6. The "Sprint questions" issue is answered and the reserve backlog approved (Planning day).
+7. Claude Code is 2.1.304 or later, both the `claude` on PATH (`claude --version`) and the desktop app's bundled
+   copy under `%APPDATA%\Claude\claude-code\`. A lane sends the reviewer's concerns back to the builder that
+   wrote the change (`SendMessage`), and before 2.1.304 a resumed subagent could forget its latest work.
 
 ## Turning it off
 

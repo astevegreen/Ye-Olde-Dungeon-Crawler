@@ -45,8 +45,11 @@ and `reason`:
 
 ## 2. Review and hand over
 1. STATUS DONE (or `resume`): run the reviewer with "Issue <n>, branch sprint/<n>."
-   CONCERNS: run the implementer once more with "Mode: fix. Issue: <n>. Worktree: W. Concerns: <list>", then
-   the reviewer again.
+   CONCERNS: send them to the implementer that built it, with `SendMessage` (load it with ToolSearch) to the
+   agent ID its run returned: "Mode: fix. Concerns: <list>". It still holds the spec and its own work. If the
+   message fails, or the reply shows it has lost the task (it asks which issue, or starts again from the
+   spec), run a fresh implementer with "Mode: fix. Issue: <n>. Worktree: W. Concerns: <list>"; after a
+   `resume` there is no builder to message, so start that fresh one at once. Then the reviewer again.
 2. Final PASS: `Q move <n> to-integrate --note '<the implementer's WHAT CHANGED and PLAYER-VISIBLE lines>'`.
    Concerns left: `Q move <n> held --note '<the concerns>'`.
    Write the note in single quotes, a line break as `\n`, and ’ for an apostrophe.

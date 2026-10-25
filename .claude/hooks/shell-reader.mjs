@@ -19,7 +19,7 @@ const unmask = (s) => s.replace(/[\u0001-\u0007]/g, (c) => UNMASK[c]);
 // A message flag's literal value is text the command stores and never runs (a commit message, an issue
 // body, a queue note): it is blanked, so a note that mentions `git push`, curl or --no-verify isn't read as
 // one. A value holding $ (or, in bash, a backtick) is read like any other word.
-const TEXT_FLAG = /(^|\s)(--note|--body|--comment|--title|--message|-m)(=|\s+)$/;
+const TEXT_FLAG = /(^|\s)(--note|--also|--body|--comment|--title|--message|-m)(=|\s+)$/;
 // PowerShell's call operator and dot-source run the command a variable or an expression names (`& $g push`,
 // `. (gcm git)`); in bash, `& $g` backgrounds and then runs one. `2>&1` and `&&` are not that &.
 const RUNS_VALUE = /(?<![>&])&(?![&>])\s*([$(]|"[^"]*\$)|(^|[;|\n{(&])\s*\.\s+([$(]|"[^"]*\$)/;
@@ -42,9 +42,14 @@ const PREFIX = {
   timeout: ['-s', '--signal', '-k', '--kill-after'], nohup: [], exec: ['-a'], time: [], stdbuf: ['-i', '-o', '-e'],
   setsid: [], xargs: ['-I', '-L', '-n', '-P', '-d', '-E', '-s', '-a', '--arg-file', '--delimiter', '--max-args',
     '--max-procs', '--max-chars', '--process-slot-var'],
+  // The course's lab tests run as `wsl -d Ubuntu -- bash dynamic-labs/regression-tests/automated/<lab>/run.sh`.
+  wsl: ['-d', '--distribution', '-u', '--user', '--cd'],
 };
 const SHELLS = new Set(['sh', 'bash', 'zsh', 'dash', 'ksh', 'fish']);
 const STRING_RUNNERS = new Set(['cmd', 'eval', 'invoke-expression', 'iex', 'invoke-command', 'icm']);
+// Programs Start-Process may not start: their arguments would run a command the guard never reads as one.
+const NOT_STARTED = new Set(['git', 'docker', 'docker-compose', 'podman', 'wsl', 'pwsh', 'powershell', 'curl', 'wget',
+  'invoke-webrequest', 'iwr', 'invoke-restmethod', 'irm']);
 const GIT_VALUED = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace', '--config-env']);
 // Git's subcommand: its first word that is not an option or an option's value.
 export const gitSub = (w) => {
@@ -58,11 +63,12 @@ export const gitSub = (w) => {
 /**
  * Reads one command line as `shell` ('bash' or 'powershell') would.
  * - text: the line with message values blanked, for checks that read it whole;
+ * - literalsBlank: the line with every literal string blanked (a pattern or a note may name `rm -r` or curl);
  * - textRead: its words as the shell reads them, joined (`--no-ver""ify` is --no-verify);
  * - parts: its simple commands, split on control operators, a substitution's commands among them;
  * - words(part): a part's words, quotes joined and escapes removed;
  * - commandsIn(words): the commands one simple command runs (itself, and what a wrapper runs), each
- *   { w, fromArgs, repl }; throws Unreadable when one can't be read word by word;
+ *   { w, at, fromArgs, repl } (`at`: its first word as written); throws Unreadable when one can't be read;
  * - refusal: why the line runs a command the reader can't see (`& $g`, `$(which git) push`), or null;
  * - gitHidden: git's subcommand or checkout is held in a variable or a substitution.
  */
@@ -104,7 +110,7 @@ export function readCommand(command, shell = 'bash') {
   }
   // In double quotes that run a command, only `$(…)` and bash's backticks hold commands, each read as a
   // command of its own; an operator elsewhere in them is text (`--body "Done; $n left"`).
-  function maskDouble(q) {
+  function maskDouble(q, blankAll) {
     let out = '';
     for (let k = 0; k < q.length; k++) {
       const c = q[k];
@@ -117,7 +123,7 @@ export function readCommand(command, shell = 'bash') {
       if (tick || (c === '$' && q[k + 1] === '(')) {
         const from = k + (tick ? 1 : 2);
         const end = tick ? tickEnd(q, from) : parenEnd(q, from);
-        out += q.slice(k, from) + maskQuoted(q.slice(from, end)) + (q[end] ?? '');
+        out += q.slice(k, from) + maskQuoted(q.slice(from, end), blankAll) + (q[end] ?? '');
         k = end;
         continue;
       }
@@ -126,7 +132,8 @@ export function readCommand(command, shell = 'bash') {
     return out;
   }
   // A literal in quotes is text: single quotes, or double quotes holding no $ (nor, in bash, a backtick).
-  function maskQuoted(s) {
+  // `blankAll` empties every literal, not only a message flag's value.
+  function maskQuoted(s, blankAll = false) {
     let out = '';
     for (let i = 0; i < s.length; i++) {
       const c = s[i];
@@ -142,8 +149,8 @@ export function readCommand(command, shell = 'bash') {
       const j = c === '"' ? doubleEnd(s, i + 1) : s.indexOf("'", i + 1) < 0 ? s.length : s.indexOf("'", i + 1);
       const q = s.slice(i, j + 1);
       const literal = c === "'" || !(PS ? /\$/ : /[$`]/).test(q);
-      if (literal && TEXT_FLAG.test(out)) out += "''";
-      else out += literal ? q.replace(/[|;&)`$\n]/g, (x) => MASK[x]) : maskDouble(q);
+      if (literal && (blankAll || TEXT_FLAG.test(out))) out += "''";
+      else out += literal ? q.replace(/[|;&)`$\n]/g, (x) => MASK[x]) : maskDouble(q, blankAll);
       i = j;
     }
     return out;
@@ -197,7 +204,7 @@ export function readCommand(command, shell = 'bash') {
       unreadable(`\`${w[0]}\` runs a command held in a variable, which the guard can't read; run it by name`);
     }
     const name = cmdName(w[0]);
-    const self = { w: [name, ...w.slice(1)], fromArgs, repl };
+    const self = { w: [name, ...w.slice(1)], at: w[0], fromArgs, repl };
     const inner = (rest, args = fromArgs, r = repl) => commandsIn(rest, args, r, depth + 1);
 
     if (name in PREFIX) {
@@ -207,6 +214,10 @@ export function readCommand(command, shell = 'bash') {
       for (; i < w.length; i++) {
         const t = w[i];
         if (t === '--') {
+          i++;
+          break;
+        }
+        if (name === 'wsl' && (t === '-e' || t === '--exec')) {
           i++;
           break;
         }
@@ -270,8 +281,8 @@ export function readCommand(command, shell = 'bash') {
     if (STRING_RUNNERS.has(name)) unreadable(`\`${name}\` runs a string the guard can't read; run the command itself`);
     if (['start-process', 'start', 'saps'].includes(name)) {
       const runs = w.slice(1).flatMap((t) => t.split(',')).map((t) => cmdName(t.replace(/^['"]|['"]$/g, '')));
-      if (runs.some((r) => r === 'git' || SHELLS.has(r) || STRING_RUNNERS.has(r) || r === 'pwsh' || r === 'powershell')) {
-        unreadable(`\`${name}\` may not start git or a shell; run the command itself`);
+      if (runs.some((r) => NOT_STARTED.has(r) || SHELLS.has(r) || STRING_RUNNERS.has(r))) {
+        unreadable(`\`${name}\` may not start git, Docker, WSL, a shell or a web fetch; run the command itself`);
       }
     }
     return [self];
@@ -279,6 +290,7 @@ export function readCommand(command, shell = 'bash') {
 
   return {
     text,
+    literalsBlank: unmask(maskQuoted(line, true)),
     textRead: words(text).join(' '),
     parts,
     words,

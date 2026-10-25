@@ -13,6 +13,9 @@ interface Case {
   command: string;
   textReadHas?: string;
   textLacks?: string;
+  literalsLack?: string;
+  literalsHas?: string;
+  at?: string;
 }
 const cases = JSON.parse(readFileSync(path.resolve(__dirname, '../../.claude/hooks/shell-reader.cases.json'), 'utf-8')) as {
   push: Case[];
@@ -55,5 +58,8 @@ describe('shell-reader', () => {
     const read = readCommand(c.command, c.shell);
     if (c.textReadHas) expect(read.textRead).toContain(c.textReadHas);
     if (c.textLacks) expect(read.text).not.toContain(c.textLacks);
+    if (c.literalsLack) expect(read.literalsBlank).not.toContain(c.literalsLack);
+    if (c.literalsHas) expect(read.literalsBlank).toContain(c.literalsHas);
+    if (c.at) expect(read.commandsIn(read.words(read.parts[0] ?? ''))[0]?.at).toBe(c.at);
   });
 });

@@ -5,6 +5,8 @@ export class Unreadable extends Error {}
 /** One command a simple command runs: its words, and whether find or xargs adds words to it (`repl` is the placeholder). */
 export interface Run {
   w: string[];
+  /** Its first word as written (`./run.sh`, `C:/x/git.exe`), before cmdName. */
+  at: string;
   fromArgs: boolean;
   repl: string | null;
 }
@@ -12,6 +14,8 @@ export interface Run {
 export interface Read {
   /** The line with message values blanked. */
   text: string;
+  /** The line with every literal string blanked. */
+  literalsBlank: string;
   /** Its words as the shell reads them, joined. */
   textRead: string;
   /** Its simple commands, a substitution's commands among them. */

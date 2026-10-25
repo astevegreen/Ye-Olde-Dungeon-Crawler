@@ -29,6 +29,25 @@ function openChoice(engine: GameEngine, ...args: Parameters<NonNullable<GameEngi
   if (open) engine.notifyPresentation('onChoiceInteract', () => open(...args));
 }
 
+const OVERBURDENED_HINT = 'You are overburdened and cannot move. Drop something to lighten your pack.';
+
+/**
+ * Heroes told they are too burdened to move since they last could. Transient, never saved:
+ * a reloaded hero is a new object and may be told once more.
+ */
+const overburdenHinted = new WeakSet<Entity>();
+
+/**
+ * A blocked step tells the hero once what to do; held keys after it stay silent and return
+ * no `message`, which presentation would log again (`runAndExplain`). No turn passes.
+ */
+function overburdenedHero(engine: GameEngine, hero: Player): ActionResult {
+  if (overburdenHinted.has(hero)) return { success: false, cost: 0 };
+  overburdenHinted.add(hero);
+  engine.log(OVERBURDENED_HINT);
+  return { success: false, cost: 0, message: OVERBURDENED_HINT };
+}
+
 export class MovementAction implements Action {
   public readonly entity: Entity;
   public readonly dx: number;
@@ -50,6 +69,8 @@ export class MovementAction implements Action {
     }
 
     if (!this.entity.canMove()) {
+      const hero = this.entity.type === 'player' ? (this.entity as Player) : undefined;
+      if (hero?.isImmobilizedByBurden()) return overburdenedHero(engine, hero);
       const message = `${this.entity.name} is overburdened and cannot move!`;
       engine.log(message);
       return {
@@ -58,6 +79,7 @@ export class MovementAction implements Action {
         message,
       };
     }
+    overburdenHinted.delete(this.entity);
 
     if (this.dx === 0 && this.dy === 0) {
       return {

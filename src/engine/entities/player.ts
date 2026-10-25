@@ -621,7 +621,12 @@ export class Player extends Actor {
 
   public override canMove(): boolean {
     if (!super.canMove()) return false;
-    return this.inventory.getEncumbrance(this.carryStrength) !== EncumbranceLevel.Immobilized;
+    return !this.isImmobilizedByBurden();
+  }
+
+  /** True when the pack alone is too heavy to move (`EncumbranceLevel.Immobilized`). */
+  public isImmobilizedByBurden(): boolean {
+    return this.inventory.getEncumbrance(this.carryStrength) === EncumbranceLevel.Immobilized;
   }
 
   public override getActionCost(baseCost: number): number {

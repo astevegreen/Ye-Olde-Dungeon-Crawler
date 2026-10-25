@@ -44,6 +44,9 @@ earlier run or this file.
 - `open`: go on.
 - `after`: the sprint drains. Do step 3, but start only `YODC integrate`, so the tasks that lanes finish after
   the window still land, and never a lane or plan session.
+  - `stoppedBy` `sprint-stop`: the owner ended the window early with `/sprint-stop`, at `window.end`. That is
+    a pause, not a fault: say "stopped by /sprint-stop at <end>" in step 4, and never ask for a
+    `/sprint-start`.
   - When no title's session is running or stuck, and `has-work "YODC integrate"` prints `"start": false`:
     1. `RemoteTrigger` `update` the trigger `supervisor` names with `{"enabled": false}`;
     2. comment "Sprint over" on issue #19 "Sprint log" with the lane lines of `Q status`;

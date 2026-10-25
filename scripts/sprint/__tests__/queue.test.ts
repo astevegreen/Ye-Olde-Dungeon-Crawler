@@ -375,7 +375,7 @@ describe('the cue (window, ledger, lock)', () => {
     const { local } = memory({});
     expect(q(['window'], noGh(local))).toEqual({
       code: 0,
-      out: { phase: 'none', environment: null, supervisor: null, archiver: null, logIssue: 19, titles: expect.arrayContaining(['YODC plan: fixes']) },
+      out: { phase: 'none', environment: null, supervisor: null, archiver: null, stoppedBy: null, logIssue: 19, titles: expect.arrayContaining(['YODC plan: fixes']) },
     });
   });
   it('window start opens the window from this minute, for the default hours, and clears the last ledger', () => {
@@ -407,10 +407,11 @@ describe('the cue (window, ledger, lock)', () => {
     expect(q(['window', 'ids', '--supervisor', 'trig_sup', '--archiver', 'trig_arch'], noGh(local)).out).toMatchObject({ supervisor: 'trig_sup', archiver: 'trig_arch' });
     expect(q(['window', 'archived'], noGh(local)).code).toBe(2);
     const later = new Date('2026-10-25T03:00:20Z');
-    expect(q(['window', 'stop'], noGh(local, later)).out).toMatchObject({ phase: 'after', window: { end: '2026-10-25T03:00Z' } });
+    expect(q(['window'], noGh(local)).out.stoppedBy).toBeNull();
+    expect(q(['window', 'stop'], noGh(local, later)).out).toMatchObject({ phase: 'after', window: { end: '2026-10-25T03:00Z' }, stoppedBy: 'sprint-stop' });
     expect(q(['window'], noGh(local, new Date('2026-10-25T03:01:00Z'))).out.phase).toBe('after');
     expect(q(['window', 'archived'], noGh(local, new Date('2026-10-25T04:00:00Z'))).out).toMatchObject({ phase: 'after', archiver: null });
-    expect(file(WINDOW_FILE)).toMatchObject({ supervisor: 'trig_sup', archiver: null, end: '2026-10-25T03:00:00.000Z' });
+    expect(file(WINDOW_FILE)).toMatchObject({ supervisor: 'trig_sup', archiver: null, end: '2026-10-25T03:00:00.000Z', stoppedBy: 'sprint-stop' });
   });
   it('an open window with no environment starts and archives nothing', () => {
     const { local } = memory({ [WINDOW_FILE]: { ...OCTOBER_WINDOW, start: '2026-10-24T20:00:00.000Z', end: '2026-10-25T20:00:00.000Z', environment: null } });

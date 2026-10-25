@@ -298,6 +298,8 @@ mechanics, renaming spells.
   finish the task in hand, and the supervisor drains: it starts only the integrator, for what the lanes
   finished, then switches itself off. The archiver switches itself off once no sprint session runs, and a new
   `/sprint-start` waits until it has.
+  `/sprint-stop` records itself (`stoppedBy: sprint-stop` in `queue.mjs window`), so the supervisor reports
+  the owner's pause as a stop, never as a fault.
 - **This computer's state**, never committed, in the git folder every worktree shares
   (`git rev-parse --git-common-dir`), written only by `queue.mjs`:
   - `sprint-window.json`: the window, the environment and the two scheduled tasks' ids;

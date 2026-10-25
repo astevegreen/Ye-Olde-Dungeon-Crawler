@@ -114,7 +114,8 @@ export function parseSprintDoc(text) {
 // /sprint-start opens the window when it runs, so starting a sprint needs no push. It, the supervisor and
 // /sprint-stop keep the sprint's state in the git folder every worktree shares (`git rev-parse
 // --git-common-dir`), never committed; every session of the sprint runs on this computer and reads it there:
-//   sprint-window.json     {start, end, environment, supervisor, archiver}: the window and the ids it acts on
+//   sprint-window.json     {start, end, environment, supervisor, archiver, stoppedBy}: the window, the ids it
+//                          acts on, and "sprint-stop" when /sprint-stop ended it
 //   sprint-triggers.json   [{title, id, at}]: every trigger the supervisor created, so it finds a session by
 //                          id: RemoteTrigger's list shows only the account's newest 20, and three sprints share it
 //   sprint-supervisor.lock {at}: one supervisor run at a time, whether the hour or a stopping session fired it
@@ -175,6 +176,8 @@ function windowFacts(doc, w, now) {
     environment: w?.environment ?? null,
     supervisor: w?.supervisor ?? null,
     archiver: w?.archiver ?? null,
+    // "sprint-stop": the owner ended the window early, a pause and not a fault.
+    stoppedBy: w?.stoppedBy ?? null,
     logIssue: doc.logIssue,
     titles: sessionTitles(doc),
   };
@@ -217,7 +220,7 @@ function windowCommand(doc, w, now, sub, { hours, environment, supervisor, archi
   }
   if (sub === 'stop') {
     if (phase !== 'open') throw refuse('no window is open', 'Nothing to stop; report it.');
-    const next = { ...w, end: minute(now) };
+    const next = { ...w, end: minute(now), stoppedBy: 'sprint-stop' };
     return { out: facts(next), writes: [[WINDOW_FILE, { ...next, start: w.start.toISOString(), end: next.end.toISOString() }]] };
   }
   if (sub === 'archived') {

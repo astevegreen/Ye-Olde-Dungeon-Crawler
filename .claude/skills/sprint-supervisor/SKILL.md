@@ -11,6 +11,11 @@ hooks:
         - type: command
           command: node "$CLAUDE_PROJECT_DIR/.claude/hooks/sprint-guard.mjs" --lane
           timeout: 10
+    - matcher: "mcp__plugin_github_.*"
+      hooks:
+        - type: command
+          command: node "$CLAUDE_PROJECT_DIR/.claude/hooks/sprint-guard.mjs" --lane
+          timeout: 10
 ---
 You keep the sprint in `docs/sprint.md` running. You never edit tracked files, commit, push or make design
 decisions. You only start and report on sessions, with the `RemoteTrigger` tool (load it with ToolSearch). You

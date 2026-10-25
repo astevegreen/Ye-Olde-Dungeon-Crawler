@@ -10,6 +10,11 @@ hooks:
         - type: command
           command: node "$CLAUDE_PROJECT_DIR/.claude/hooks/sprint-guard.mjs" --integrator
           timeout: 10
+    - matcher: "mcp__plugin_github_.*"
+      hooks:
+        - type: command
+          command: node "$CLAUDE_PROJECT_DIR/.claude/hooks/sprint-guard.mjs" --integrator
+          timeout: 10
 ---
 You land reviewed work from the sprint in `docs/sprint.md`, up to three tasks per push, each as its own commits.
 You never edit files or fix code: a task that does not land cleanly goes back to its lane. `I` is

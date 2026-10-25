@@ -37,15 +37,15 @@ function guards(lines: string[]): Record<string, string> {
 
 /** The sessions and helpers that run with nobody watching. */
 const WIRING: Record<string, { model: string; guards: Record<string, string> }> = {
-  '.claude/skills/sprint-supervisor/SKILL.md': { model: 'sonnet', guards: { 'Bash|PowerShell': '--lane' } },
-  '.claude/skills/sprint-lane/SKILL.md': { model: 'sonnet', guards: { 'Bash|PowerShell': '--lane' } },
-  '.claude/skills/sprint-plan/SKILL.md': { model: 'opus', guards: { 'Bash|PowerShell': '--lane' } },
-  '.claude/skills/sprint-research/SKILL.md': { model: 'sonnet', guards: { 'Bash|PowerShell': '--lane' } },
-  '.claude/skills/sprint-integrate/SKILL.md': { model: 'sonnet', guards: { 'Bash|PowerShell': '--integrator' } },
+  '.claude/skills/sprint-supervisor/SKILL.md': { model: 'sonnet', guards: { 'Bash|PowerShell': '--lane', 'mcp__plugin_github_.*': '--lane' } },
+  '.claude/skills/sprint-lane/SKILL.md': { model: 'sonnet', guards: { 'Bash|PowerShell': '--lane', 'mcp__plugin_github_.*': '--lane' } },
+  '.claude/skills/sprint-plan/SKILL.md': { model: 'opus', guards: { 'Bash|PowerShell': '--lane', 'mcp__plugin_github_.*': '--lane' } },
+  '.claude/skills/sprint-research/SKILL.md': { model: 'sonnet', guards: { 'Bash|PowerShell': '--lane', 'mcp__plugin_github_.*': '--lane' } },
+  '.claude/skills/sprint-integrate/SKILL.md': { model: 'sonnet', guards: { 'Bash|PowerShell': '--integrator', 'mcp__plugin_github_.*': '--integrator' } },
   '.claude/skills/sprint-status/SKILL.md': { model: 'sonnet', guards: {} },
-  '.claude/skills/sprint-start/SKILL.md': { model: 'sonnet', guards: { 'Bash|PowerShell': '--lane' } },
-  '.claude/skills/sprint-stop/SKILL.md': { model: 'sonnet', guards: { 'Bash|PowerShell': '--lane' } },
-  '.claude/skills/sprint-archive/SKILL.md': { model: 'haiku', guards: { 'Bash|PowerShell': '--lane' } },
+  '.claude/skills/sprint-start/SKILL.md': { model: 'sonnet', guards: { 'Bash|PowerShell': '--lane', 'mcp__plugin_github_.*': '--lane' } },
+  '.claude/skills/sprint-stop/SKILL.md': { model: 'sonnet', guards: { 'Bash|PowerShell': '--lane', 'mcp__plugin_github_.*': '--lane' } },
+  '.claude/skills/sprint-archive/SKILL.md': { model: 'haiku', guards: { 'Bash|PowerShell': '--lane', 'mcp__plugin_github_.*': '--lane' } },
   '.claude/agents/implementer.md': { model: 'opus', guards: { 'Edit|Write': '--file-lock', 'Bash|PowerShell': '--lane' } },
   '.claude/agents/reviewer.md': { model: 'opus', guards: { 'Bash|PowerShell': '--read-only' } },
 };
@@ -71,6 +71,10 @@ describe('sprint wiring', () => {
   it('every sprint skill is listed here, so a new one declares its guard', () => {
     const sprintSkills = SKILLS.filter((f) => /\/sprint-[^/]+\//.test(f));
     expect(sprintSkills.filter((f) => !(f in WIRING))).toEqual([]);
+  });
+
+  it.each(AGENTS.filter((f) => f in WIRING))('%s lists its tools, so no connector or plugin tool reaches it', (file) => {
+    expect(value(frontmatter(file), 'tools')).toMatch(/^[A-Za-z, ]+$/);
   });
 
   it.each(Object.entries(WIRING))('%s keeps its model and guard modes', (file, want) => {

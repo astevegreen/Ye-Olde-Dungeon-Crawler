@@ -41,6 +41,15 @@ describe('every unattended mode', () => {
   });
 });
 
+describe('the GitHub plugin, which signs in as the owner', () => {
+  it.each(['add_issue_comment', 'issue_write', 'create_pull_request', 'update_pull_request', 'merge_pull_request'])('refuses %s in every mode', (verb) => {
+    for (const mode of ['--lane', '--integrator', '--read-only']) expect(guard(mode, { body: 'x' }, process.cwd(), `mcp__plugin_github_github__${verb}`)).toBe(2);
+  });
+  it.each(['get_me', 'list_issues', 'search_issues', 'issue_read', 'pull_request_read'])('lets %s read', (verb) => {
+    expect(guard('--lane', {}, process.cwd(), `mcp__plugin_github_github__${verb}`)).toBe(0);
+  });
+});
+
 describe('--lane', () => {
   it('lets build work through', () => {
     for (const command of [

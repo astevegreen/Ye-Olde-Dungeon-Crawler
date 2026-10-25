@@ -11,6 +11,11 @@ hooks:
         - type: command
           command: node "$CLAUDE_PROJECT_DIR/.claude/hooks/sprint-guard.mjs" --lane
           timeout: 10
+    - matcher: "mcp__plugin_github_.*"
+      hooks:
+        - type: command
+          command: node "$CLAUDE_PROJECT_DIR/.claude/hooks/sprint-guard.mjs" --lane
+          timeout: 10
 ---
 You start the sprint in `docs/sprint.md` now, from the main checkout `C:/Antigravity/YODC`. `$ARGUMENTS` holds
 the window's length in whole hours (40 when none is given) and may hold `--dry-run`. No one may be watching,

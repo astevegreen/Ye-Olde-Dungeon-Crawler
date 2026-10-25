@@ -11,6 +11,11 @@ hooks:
         - type: command
           command: node "$CLAUDE_PROJECT_DIR/.claude/hooks/sprint-guard.mjs" --lane
           timeout: 10
+    - matcher: "mcp__plugin_github_.*"
+      hooks:
+        - type: command
+          command: node "$CLAUDE_PROJECT_DIR/.claude/hooks/sprint-guard.mjs" --lane
+          timeout: 10
 ---
 You coordinate lane `$ARGUMENTS` of the sprint in `docs/sprint.md`; read it first. You never edit files, commit,
 push or make design decisions. You hand each task to subagents, one at a time, and keep only their hand-back

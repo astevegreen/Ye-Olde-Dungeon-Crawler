@@ -11,6 +11,9 @@
 //   --file-lock   Edit|Write: the sprint never edits its own machinery or the owner's files
 // Every Bash mode also refuses what no unattended session may do: skip hooks, force or delete
 // on the remote, discard work, change gh auth, or fetch from the web.
+// Every mode refuses the GitHub plugin's write tools (mcp__plugin_github_github__*): the plugin signs in
+// as the owner, so its comments never notify the owner and would read as the owner's answers. Sprint
+// sessions write to GitHub with gh, signed in as the bot.
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { gitSub, readCommand, Unreadable } from './shell-reader.mjs';
@@ -29,6 +32,13 @@ const LOCKED = [
   /^package(-lock)?\.json$/, /^src\/engine\/storage\/migrator\.ts$/, /^scripts\/__tests__\/(sprintGuard|shellReader)\.test\.ts$/,
   /^scripts\/sprint\//,
 ];
+
+const tool = String(input.tool_name ?? '');
+if (tool.startsWith('mcp__plugin_github_')) {
+  const verb = tool.slice(tool.lastIndexOf('__') + 2);
+  if (!/^(get|list|search)_|_read$/.test(verb)) deny(`${verb} writes to GitHub as the owner; comment and edit with gh, signed in as the bot`);
+  process.exit(0);
+}
 
 if (MODE === '--file-lock') {
   const file = path.resolve(String(input.cwd ?? process.cwd()), String(input.tool_input?.file_path ?? ''));

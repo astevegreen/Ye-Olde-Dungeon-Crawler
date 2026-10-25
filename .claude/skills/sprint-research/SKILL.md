@@ -10,6 +10,11 @@ hooks:
         - type: command
           command: node "$CLAUDE_PROJECT_DIR/.claude/hooks/sprint-guard.mjs" --lane
           timeout: 10
+    - matcher: "mcp__plugin_github_.*"
+      hooks:
+        - type: command
+          command: node "$CLAUDE_PROJECT_DIR/.claude/hooks/sprint-guard.mjs" --lane
+          timeout: 10
 ---
 You run lane `research` of the sprint in `docs/sprint.md`; read it and `.claude/skills/soak/SKILL.md` first.
 You never edit tracked files, commit or decide a rule. `R` is `C:/Antigravity/YODC-research`. A soak runs for

@@ -335,6 +335,9 @@ mechanics, renaming spells.
   - It archives sessions finished or stuck for an hour, and `unarchive_session` undoes a mistake.
 - **Agents and guard.** Agents: `implementer` and `reviewer` (`.claude/agents/`); guard
   `.claude/hooks/sprint-guard.mjs`.
+  - Sprint sessions write to GitHub only with `gh`, signed in as the bot. The GitHub plugin signs in as the
+    owner, so its comments never notify the owner and would read as the owner's answers: the project turns
+    it off, and the guard refuses its write tools in every sprint skill. The agents list their tools.
 - **Before the sprint:** the tag `pre-sprint-2026-10-24` marks `main` as the sprint found it. A bug hunt whose
   issue names no commit reads from there, and the morning-after figures count from it.
 - **The queue.** `scripts/sprint/queue.mjs` holds the sprint's bookkeeping rules once, tested on October's

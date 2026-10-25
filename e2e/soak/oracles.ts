@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { RAID_SKIPPED, diedAfterRaid } from './oracleRules';
+import { RAID_SKIPPED, adjacentRepeats, diedAfterRaid } from './oracleRules';
 import type { Finding, FindingCategory, FindingSeverity, FindingTag, SoakOpening } from './types';
 
 export interface ActionContext {
@@ -312,6 +312,8 @@ export async function runOracles(
         tilePassable: e.map.getTile(p.x, p.y)?.passable ?? true,
         messageCount: (w.__soakLogTotal ?? 0) as number,
         messages: ((w.__soakLogTail ?? []) as string[]).slice(-40),
+        // The strip under the map as shown, oldest first; none on the title screen.
+        logRows: Array.from(document.querySelectorAll('#log-messages-stream .log-line'), (el) => el.textContent ?? ''),
         saved: Object.fromEntries(villagers.map((id) => [id, Boolean(e.getWorldFlag(`${id}_saved`))])) as Record<string, boolean>,
         stairsSeen,
       };
@@ -439,18 +441,19 @@ export async function runOracles(
   }
 
   // --- Text -----------------------------------------------------------------------------
-  const counts = new Map<string, number>();
   for (const msg of newMessages) {
-    counts.set(msg, (counts.get(msg) ?? 0) + 1);
     if (/undefined|NaN|\[object|\$\{|\{\{/.test(msg)) addFinding('text', 'S3', `raw token in log line: "${msg}"`);
     const doubled = /\b([A-Za-z]{2,})\s+\1\b/i.exec(msg);
     if (doubled) addFinding('text', 'S3', `doubled word "${doubled[0]}" in log line: "${msg}"`);
     if (/^[a-z]/.test(msg.trim())) addFinding('text', 'S3', `log line starts lowercase: "${msg}"`);
     if (/\b[a-z]{2,}_[a-z0-9_]+\b/.test(msg)) addFinding('text', 'S3', `raw snake_case id in log line: "${msg}"`);
   }
-  // Four goblins hitting for 3 each write four identical lines: the game working, but a
-  // log a player has to read, so a player-experience note rather than a text bug.
-  for (const [msg, n] of counts) if (n >= 3) addFinding('ux', 'S4', `one action logged the same line ${n} times: "${msg}"`);
+  // Repeats are intended (four wolves biting write four lines) and the strip folds them into one
+  // row with a count, so only what it shows is checked: two adjacent rows with the same line.
+  // Only on an action that logged, so rows still on screen are not filed again on every key.
+  if (newMessages.length > 0) {
+    for (const r of adjacentRepeats(live.logRows)) addFinding('ux', 'S4', `the log shows the same line on ${r.rows} adjacent rows: "${r.line}"`);
+  }
   // Spam while the hero only waits: something logs every turn on its own (a monster's
   // "waits a moment", a status ticking). A hero walking into walls is the bot, not spam.
   if (key && state.boundKeys.wait.has(key) && newMessages.length > 0) {

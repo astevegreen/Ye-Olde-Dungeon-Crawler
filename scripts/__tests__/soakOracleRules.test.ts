@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countFindings, diedAfterRaid } from '../../e2e/soak/oracleRules';
+import { adjacentRepeats, countFindings, diedAfterRaid } from '../../e2e/soak/oracleRules';
 
 /** The soak's pure oracle rules (e2e/soak/oracleRules.ts); Vitest skips e2e/, so they are tested here. */
 
@@ -29,6 +29,38 @@ describe('diedAfterRaid', () => {
   it('keeps only the last 20 log lines', () => {
     const messages = Array.from({ length: 25 }, (_, i) => `m${i}`);
     expect(diedAfterRaid({ ...played, messages })).toBe(`died 50 turns after the raid: ${messages.slice(-20).join(' | ')}`);
+  });
+});
+
+describe('adjacentRepeats', () => {
+  const bite = 'A bites you for 3.';
+
+  it('finds a line shown on adjacent rows, with the length of the run', () => {
+    expect(adjacentRepeats([bite, bite, bite])).toEqual([{ line: bite, rows: 3 }]);
+  });
+
+  it('treats a row with a count and one without as the same line', () => {
+    expect(adjacentRepeats([`${bite} (×2)`, bite])).toEqual([{ line: bite, rows: 2 }]);
+  });
+
+  it('says nothing for a folded row followed by another line', () => {
+    expect(adjacentRepeats([`${bite} (×4)`, 'B misses.'])).toEqual([]);
+  });
+
+  it('says nothing for lines that repeat on rows apart, as a melee of three turns shows', () => {
+    expect(adjacentRepeats([bite, 'B misses.', bite, 'B misses.', bite, 'B misses.'])).toEqual([]);
+  });
+
+  it('says nothing for different lines or an empty strip', () => {
+    expect(adjacentRepeats(['One.', 'Two.', 'Three.'])).toEqual([]);
+    expect(adjacentRepeats([])).toEqual([]);
+  });
+
+  it('reports each run apart', () => {
+    expect(adjacentRepeats(['One.', 'One.', 'Two.', 'Three.', 'Three. (×2)', 'Three.'])).toEqual([
+      { line: 'One.', rows: 2 },
+      { line: 'Three.', rows: 3 },
+    ]);
   });
 });
 

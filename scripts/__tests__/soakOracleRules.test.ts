@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countFindings, diedAfterRaid } from '../../e2e/soak/oracleRules';
+import { countFindings, diedAfterRaid, findingTagsOf } from '../../e2e/soak/oracleRules';
 
 /** The soak's pure oracle rules (e2e/soak/oracleRules.ts); Vitest skips e2e/, so they are tested here. */
 
@@ -45,5 +45,24 @@ describe('countFindings', () => {
 
   it('gives zeroes for a clean run', () => {
     expect(countFindings([])).toEqual({ bug: 0, softlock: 0, text: 0, ux: 0, tagged: 0 });
+  });
+});
+
+describe('findingTagsOf', () => {
+  it("keeps each tagged signature's tag and leaves untagged ones out", () => {
+    expect(
+      findingTagsOf(
+        new Map([
+          ['ux|key took #ms', { tag: 'latency' as const }],
+          ['ux|more than # turns on floor #', { tag: 'pacing' as const }],
+          ['bug|thrown', {}],
+        ])
+      )
+    ).toEqual({ 'ux|key took #ms': 'latency', 'ux|more than # turns on floor #': 'pacing' });
+  });
+
+  it('gives an empty record, not nothing, for a run with no tagged finding', () => {
+    expect(findingTagsOf(new Map([['bug|thrown', {}]]))).toEqual({});
+    expect(findingTagsOf([])).toEqual({});
   });
 });

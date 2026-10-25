@@ -36,6 +36,9 @@ export interface ReportSummary {
   endedBy: string;
   deepestFloor: number;
   findings: Record<string, number>;
+  /** Each tagged signature's tag (`latency`, `pacing`). Absent from soaks before 25 Oct 2026,
+   *  whose findings all read as untagged. */
+  findingTags?: Record<string, string>;
   bot?: { deathCause?: string };
   magic?: {
     floors: Record<string, FloorTally>;
@@ -400,18 +403,29 @@ export function soakReport(all: ReportSummary[], opts: ReportOptions): string {
 
   // --- 5. Is magic broken? -------------------------------------------------------
   out.push('\n## 5. Is magic broken?');
-  // A run is (folder, seed): seed 3 in two folders is two affected runs.
-  const fam = new Map<string, { seeds: Set<string>; count: number; example: string }>();
+  // A run is (folder, seed): seed 3 in two folders is two affected runs. `fam` holds every
+  // finding; `untagged` and `tagged` split it by the run's tag record.
+  type Family = Map<string, { seeds: Set<string>; count: number }>;
+  const fam: Family = new Map();
+  const untagged: Family = new Map();
+  const tagged: Family = new Map();
+  const tagsSeen = new Set<string>();
+  const addTo = (into: Family, sig: string, s: ReportSummary, n: number) => {
+    const e = into.get(family(sig)) ?? { seeds: new Set<string>(), count: 0 };
+    e.seeds.add(JSON.stringify([s.folder ?? '', s.seed]));
+    e.count += n;
+    into.set(family(sig), e);
+  };
   for (const s of runs) {
     for (const [sig, n] of Object.entries(s.findings ?? {})) {
-      const k = family(sig);
-      const e = fam.get(k) ?? { seeds: new Set<string>(), count: 0, example: sig };
-      e.seeds.add(JSON.stringify([s.folder ?? '', s.seed]));
-      e.count += n;
-      fam.set(k, e);
+      addTo(fam, sig, s, n);
+      const tag = s.findingTags?.[sig];
+      addTo(tag ? tagged : untagged, sig, s, n);
+      if (tag) tagsSeen.add(tag);
     }
   }
-  const famRows = [...fam].sort((a, b) => b[1].seeds.size - a[1].seeds.size || b[1].count - a[1].count);
+  const ranked = (f: Family) => [...f].sort((a, b) => b[1].seeds.size - a[1].seeds.size || b[1].count - a[1].count);
+  const famRows = ranked(fam);
   const magicRows = famRows.filter(([k]) => /magic|spell|cast|mana|void|grimoire|rune|altar|stone/i.test(k));
   out.push(`Magic findings (anomalies from the tap, and any finding naming spells, mana or stones): ${magicRows.length ? '' : 'none.'}`);
   if (magicRows.length) out.push(table(['finding', 'seeds', 'count'], magicRows.map(([k, e]) => [k, e.seeds.size, e.count])));
@@ -425,7 +439,14 @@ export function soakReport(all: ReportSummary[], opts: ReportOptions): string {
   }
   out.push(`Casts ${casts}, failed (spent nothing) ${failed} (${pct(failed, casts + failed)}).`);
   out.push('\nAll findings by family, ranked by seeds affected.');
-  out.push(famRows.length ? table(['finding', 'seeds', 'count'], famRows.slice(0, 25).map(([k, e]) => [k, e.seeds.size, e.count])) : 'None.');
+  const untaggedRows = ranked(untagged);
+  out.push(untaggedRows.length ? table(['finding', 'seeds', 'count'], untaggedRows.slice(0, 25).map(([k, e]) => [k, e.seeds.size, e.count])) : 'None.');
+  if (tagged.size) {
+    const listed = ranked(tagged).map(([k, e]) => `${k} ${e.seeds.size} seeds, ${e.count} findings`);
+    out.push(`Tagged, left out (${[...tagsSeen].sort().join(', ')}): ${listed.join('; ')}.`);
+  }
+  const before = runs.filter((s) => !s.findingTags).length;
+  if (before) out.push(`${before} of ${runs.length} runs predate the tag record: their findings all count as untagged.`);
 
   return out.join('\n');
 }

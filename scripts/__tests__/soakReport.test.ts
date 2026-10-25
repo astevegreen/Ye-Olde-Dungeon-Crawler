@@ -148,6 +148,55 @@ describe('soak report', () => {
     expect(twoFolders).toContain('| bug: magic: cast of slow succeeded without spending its turn | 2 | 4 |');
   });
 
+  describe('tagged findings (latency, pacing) apart from the ranked table', () => {
+    const MAGIC = 'bug|magic: cast of slow succeeded without spending its turn|spellPipeline.ts';
+    const LATENCY = 'ux|slow key: # ms on m';
+    const PACING = 'softlock|stalled: more than # turns on floor # without seeing the stairs down';
+    const STUCK = 'softlock|stalled: no move for # actions';
+    const tagged = (seed: number, over: Partial<ReportSummary> = {}) =>
+      run(seed, 'caster', 'first', {
+        findings: { [MAGIC]: 2, [LATENCY]: 5, [PACING]: 3, [STUCK]: 1 },
+        findingTags: { [LATENCY]: 'latency', [PACING]: 'pacing' },
+        ...over,
+      });
+    /** The all-findings section: from its heading to the end. */
+    const allFindings = (text: string) => text.slice(text.indexOf('All findings by family'));
+
+    it('leaves an all-tagged family out of the table and lists it below, with its seeds and count', () => {
+      const text = allFindings(soakReport([tagged(1), tagged(2)], { coldStages: [300] }));
+      expect(text).toContain(`| ${MAGIC.split('|').slice(0, 2).join(': ')} | 2 | 4 |`);
+      expect(text).not.toContain('| ux: slow key |');
+      expect(text).toContain('Tagged, left out (latency, pacing): ux: slow key 2 seeds, 10 findings; softlock: stalled 2 seeds, 6 findings.');
+    });
+
+    it('keeps a mixed family in the table, counting only its untagged signatures', () => {
+      const text = allFindings(soakReport([tagged(1), tagged(2)], { coldStages: [300] }));
+      expect(text).toContain('| softlock: stalled | 2 | 2 |');
+    });
+
+    it('says nothing more when no run tagged a finding', () => {
+      const text = allFindings(soakReport([run(1, 'caster', 'first', { findingTags: {} })], { coldStages: [300] }));
+      expect(text).not.toContain('Tagged, left out');
+      expect(text).not.toContain('predate the tag record');
+    });
+
+    it('reads an older summary as all untagged, and says once how many runs predate the tag record', () => {
+      const text = allFindings(soakReport([tagged(1), tagged(2, { findingTags: undefined })], { coldStages: [300] }));
+      // Seed 2's latency findings count as untagged: one seed in the table, one in the line.
+      expect(text).toContain('| ux: slow key | 1 | 5 |');
+      expect(text).toContain('Tagged, left out (latency, pacing): ux: slow key 1 seeds, 5 findings; softlock: stalled 1 seeds, 3 findings.');
+      expect(text.split('predate the tag record').length).toBe(2);
+      expect(text).toContain('1 of 2 runs predate the tag record: their findings all count as untagged.');
+      expect(allFindings(report)).toContain('2 of 2 runs predate the tag record');
+    });
+
+    it('leaves the magic table counting tagged findings as before', () => {
+      const magicRun = tagged(1, { findingTags: { [MAGIC]: 'latency' } });
+      const text = soakReport([magicRun], { coldStages: [300] });
+      expect(text.slice(0, text.indexOf('All findings by family'))).toContain('| bug: magic: cast of slow succeeded without spending its turn | 1 | 2 |');
+    });
+  });
+
   describe('how the soak stopped (runs.jsonl)', () => {
     const seedLine = (seed: number, stoppedBy?: string) => JSON.stringify({ seed, status: 'passed', ...(stoppedBy ? { stoppedBy } : {}), timestamp: `t${seed}` });
     const runnerLine = (stoppedBy: string, unfinishedSeeds: number[], error?: string) =>

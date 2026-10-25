@@ -44,3 +44,14 @@ export function countFindings(findings: Iterable<{ category: FindingCategory; ta
   }
   return counts;
 }
+
+/**
+ * Each tagged signature's tag, for a run's summary, so the report can list noise apart.
+ * Untagged signatures are left out; a clean run gives `{}`, never nothing: a missing record
+ * marks a summary from before the tags were kept.
+ */
+export function findingTagsOf(sigs: Iterable<[string, { tag?: FindingTag }]>): Record<string, FindingTag> {
+  const tags: Record<string, FindingTag> = {};
+  for (const [sig, { tag }] of sigs) if (tag) tags[sig] = tag;
+  return tags;
+}

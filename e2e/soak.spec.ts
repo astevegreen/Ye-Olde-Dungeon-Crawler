@@ -17,7 +17,7 @@ import {
   normalizeSignature,
   type ActionContext,
 } from './soak/oracles';
-import { countFindings } from './soak/oracleRules';
+import { countFindings, findingTagsOf } from './soak/oracleRules';
 import type { Finding, FindingCategory, FindingSeverity, FindingTag, ActionLogEntry, FloorPace, SoakSummary, SoakPolicy, SoakOpening } from './soak/types';
 
 /**
@@ -429,6 +429,7 @@ test.describe('soak @soak', () => {
         latency: { samples: sorted.length, p50: pct(0.5), p95: pct(0.95), max: sorted[sorted.length - 1] ?? 0 },
         findingCounts,
         findings: Object.fromEntries([...runSigs].map(([sig, s]) => [sig, s.count])),
+        findingTags: findingTagsOf(runSigs),
         raid: {
           ending: oracleState.raidEndedReason ?? 'still running',
           villagersFreed: Object.keys(oracleState.villagersFreed).length,

@@ -69,6 +69,8 @@ export interface SoakSummary {
   findingCounts: FindingCounts;
   /** Every signature seen in this run, with how many times it fired. */
   findings: Record<string, number>;
+  /** The tag of each tagged signature in `findings`; `{}` when none was tagged. */
+  findingTags: Record<string, FindingTag>;
   raid: {
     ending: string;
     villagersFreed: number;

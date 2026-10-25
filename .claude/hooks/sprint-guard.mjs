@@ -5,7 +5,8 @@
 // Both refuse dependency changes and git writes to the main checkout (only fetch, worktree and
 // `merge --ff-only` touch it), and run the sprint queue (scripts/sprint/queue.mjs) only on its own.
 // Both read the command a wrapper runs (env, nice, timeout, xargs, find -exec, ...) and refuse a command
-// string they can't read (sh -c, pwsh -Command, cmd, eval) and git aliases.
+// string they can't read (sh -c, pwsh -Command, cmd, eval), a command or git subcommand held in a variable
+// or a substitution, and git aliases. Words are read as the shell reads them (bash or PowerShell, by tool).
 //   --read-only   Bash: inspection commands only (the reviewer)
 //   --file-lock   Edit|Write: the sprint never edits its own machinery or the owner's files
 // Every Bash mode also refuses what no unattended session may do: skip hooks, force or delete
@@ -41,30 +42,50 @@ if (MODE === '--file-lock') {
   process.exit(0);
 }
 
-// A backslash before a newline joins the two lines into one command, as bash does: `git \⏎push` pushes.
-const command = String(input.tool_input?.command ?? '').replace(/\\\r?\n/g, ' ');
+// The escape character: bash's backslash, PowerShell's backtick (in bash a backtick runs a command).
+const PS = input.tool_name === 'PowerShell';
+const ESC = PS ? '`' : '\\';
+// An escape before a newline joins the two lines into one command: `git \⏎push` pushes, in PowerShell `git `⏎push`.
+const command = String(input.tool_input?.command ?? '').replace(PS ? /`\r?\n/g : /\\\r?\n/g, ' ');
 // Simple commands: split on control operators, keeping the words of each. A literal in quotes is text:
-// single quotes, or double quotes holding no $ or backtick (which can run a command there). Inside one,
-// |, ;, &, ), a backtick, $ and a newline are masked, so a search pattern ("a\|b") or a multi-line note
-// isn't split. So is an operator escaped with a backslash outside quotes (`sed -n 1p\;9p`, find's `\;`).
+// single quotes, or double quotes holding no $ (nor, in bash, a backtick), which can run a command there.
+// Inside one, |, ;, &, ), a backtick, $ and a newline are masked, so a search pattern ("a\|b") or a
+// multi-line note isn't split. So is an escaped operator outside quotes (`sed -n 1p\;9p`, find's `\;`).
 const MASK = { '|': '\u0001', ';': '\u0002', '&': '\u0003', ')': '\u0004', '`': '\u0005', $: '\u0006', '\n': '\u0007' };
 const UNMASK = Object.fromEntries(Object.entries(MASK).map(([k, v]) => [v, k]));
 // A message flag's literal value is text the command stores and never runs (a commit message, an issue
 // body, a queue note): it is blanked before every check, so a note that mentions `git push`, curl or
 // --no-verify isn't read as one. A value holding $ or a backtick is read like any other word.
 const TEXT_FLAG = /(^|\s)(--note|--body|--comment|--title|--message|-m)(=|\s+)$/;
+// In double quotes that run a command, only `$(…)` and bash's backticks hold commands: an operator
+// elsewhere in them is text (`--body "Done; $n left"`).
+function textOutsideRuns(q) {
+  let out = '';
+  let depth = 0;
+  let tick = false;
+  for (let k = 0; k < q.length; k++) {
+    const c = q[k];
+    if (c === ESC) { out += c + (q[k + 1] ?? ''); k++; continue; }
+    if (c === '$' && q[k + 1] === '(') { depth++; out += '$('; k++; continue; }
+    if (c === '(' && depth) depth++;
+    else if (c === ')' && depth) { depth--; out += c; continue; }
+    else if (c === '`' && !PS) tick = !tick;
+    out += !depth && !tick && /[|;&)\n]/.test(c) ? MASK[c] : c;
+  }
+  return out;
+}
 function maskQuoted(s) {
   let out = '';
   for (let i = 0; i < s.length; i++) {
     const c = s[i];
-    if (c === '\\') { out += `\\${/[|;&)]/.test(s[i + 1] ?? '') ? MASK[s[i + 1]] : s[i + 1] ?? ''}`; i++; continue; }
+    if (c === ESC) { out += `${ESC}${/[|;&)]/.test(s[i + 1] ?? '') ? MASK[s[i + 1]] : s[i + 1] ?? ''}`; i++; continue; }
     if (c !== '"' && c !== "'") { out += c; continue; }
     let j = i + 1;
-    while (j < s.length && s[j] !== c) j += c === '"' && s[j] === '\\' ? 2 : 1;
+    while (j < s.length && s[j] !== c) j += c === '"' && s[j] === ESC ? 2 : 1;
     const q = s.slice(i, j + 1);
-    const literal = c === "'" || !/[$`]/.test(q);
+    const literal = c === "'" || !(PS ? /\$/ : /[$`]/).test(q);
     if (literal && TEXT_FLAG.test(out)) out += "''";
-    else out += literal ? q.replace(/[|;&)`$\n]/g, (x) => MASK[x]) : q;
+    else out += literal ? q.replace(/[|;&)`$\n]/g, (x) => MASK[x]) : textOutsideRuns(q);
     i = j;
   }
   return out;
@@ -76,13 +97,25 @@ const text = masked.replace(/[\u0001-\u0007]/g, (c) => UNMASK[c]);
 // `. (gcm git)`); in bash, `& $g` backgrounds and then runs one. `2>&1` and `&&` are not that &.
 const RUNS_VALUE = /(?<![>&])&(?![&>])\s*([$(]|"[^"]*\$)|(^|[;|\n{(&])\s*\.\s+([$(]|"[^"]*\$)/;
 if (RUNS_VALUE.test(masked)) deny('`& $x`, `& (…)` and `. $x` run a command the guard can\'t read; run it by name');
+// In bash, a command named by a substitution (`$(which git) push`, `"$(which git)" push`, `` `which git` push ``)
+// runs what it prints.
+if (!PS && /(^|[;|&\n({!]|\b(then|do|else)\s)\s*"?(\$\(|`)/.test(masked)) {
+  deny('a command named by `$(…)` or backticks runs what it prints, which the guard can\'t read; run it by name');
+}
 // A lone & ends a command (bash's background) or starts one (PowerShell's call operator); `2>&1` and `&>`
 // are redirects.
 const parts = masked
-  .split(/&&|\|\||(?<!>)&(?!>)|[;|\n`]|\$\(|\)/)
+  .split(PS ? /&&|\|\||(?<!>)&(?!>)|[;|\n]|\$\(|\)/ : /&&|\|\||(?<!>)&(?!>)|[;|\n`]|\$\(|\)/)
   .map((p) => p.replace(/[\u0001-\u0007]/g, (c) => UNMASK[c]).trim())
   .filter(Boolean);
-const words = (s) => s.match(/"[^"]*"|'[^']*'|\S+/g)?.map((w) => w.replace(/^(["'])(.*)\1$/, '$2')) ?? [];
+// A word as the shell reads it: its quoted and unquoted pieces joined (`git "pu"sh` and `git pu''sh` are git
+// push), without the quotes, and without an escape outside single quotes (`git pu\sh`, PowerShell's `git pu`sh`).
+const E = PS ? '`' : '\\\\';
+const WORD = new RegExp(`(?:[^\\s"']+|"(?:[^"${E}]|${E}.)*"|'[^']*'|["'])+`, 'g');
+const PIECE = new RegExp(`"((?:[^"${E}]|${E}.)*)"|'([^']*)'|["']|[^"']+`, 'g');
+const unescape = (s, inDouble) => (PS ? s.replace(/`(.)/g, '$1') : s.replace(inDouble ? /\\([$`"\\])/g : /\\(.)/g, '$1'));
+const words = (s) => s.match(WORD)?.map((w) => w.replace(PIECE, (piece, dq, sq) =>
+  sq ?? (dq !== undefined ? unescape(dq, true) : /^["']$/.test(piece) ? '' : unescape(piece, false)))) ?? [];
 
 const ALWAYS = [
   [/--no-verify\b|\bSKIP_HOOKS\b|core\.hooksPath/, 'hooks are never skipped'],
@@ -92,7 +125,9 @@ const ALWAYS = [
   [/\brm\s+-\S*r|\bremove-item\b[^\n]*-recurse|\brmdir\b|\brd\s+\/s/i, 'no recursive delete'],
   [/\b(curl|wget|invoke-webrequest|iwr|invoke-restmethod|irm)\b/i, 'no web fetches'],
 ];
-for (const [re, why] of ALWAYS) if (re.test(text)) deny(why);
+// Read as written and as the shell reads its words: `--no-ver""ify` skips hooks too.
+const textRead = words(text).join(' ');
+for (const [re, why] of ALWAYS) if (re.test(text) || re.test(textRead)) deny(why);
 
 const isPush = (w) => w[0] === 'git' && w.includes('push') && !w.includes('stash');
 // Git Bash on Windows writes C:/x as /c/x; elsewhere /c/x is a real path.
@@ -141,7 +176,7 @@ function commandsIn(raw, fromArgs = false, repl = null, depth = 0) {
   const w = [...raw];
   // PowerShell runs the command an assignment stores: `$x = git push`, `$x=git push`, `$env:X += …`.
   for (let lead = true; lead && w.length;) {
-    const bare = w[0].replace(/^(\[[\w.]+\])*@?[({]+/, '');
+    const bare = w[0].replace(/^(\[[\w.]+\])*@?[({]+|^(\[[\w.]+\])+$/, '');
     const glued = /^(\[[\w.]+\])*\$[^\s=]+?[-+*/%]?=(.*)$/.exec(w[0]);
     if (LEAD.has(w[0]) || ASSIGN.test(w[0]) || !bare) w.shift();
     else if (bare !== w[0]) w[0] = bare;
@@ -240,6 +275,11 @@ if (MODE === '--lane' || MODE === '--integrator') {
   let cwd = String(input.cwd ?? process.cwd());
   // Git config set from the environment can define an alias that runs any command.
   if (/\bGIT_CONFIG_(PARAMETERS|COUNT|KEY_\d+)\b/.test(text)) deny('no git config from the environment');
+  // Git's subcommand or checkout in a variable or a substitution (`git $p`, `git $(echo push)`, `git -C "$d" commit`,
+  // PowerShell's splatted `git @a`) can't be read.
+  if (/(?<![\w.-])git(\.exe)?["']?(\s+(-C|-c|--git-dir|--work-tree|--namespace|--config-env)\s+\S+|\s+-\S+)*\s+["']?[$`@]/i.test(masked)) {
+    deny('git\'s subcommand and checkout are written out in the sprint, not held in a variable or a substitution');
+  }
   for (const p of parts) {
     const top = words(p);
     if (top[0] === 'cd' && top[1]) cwd = path.resolve(cwd, native(top[1]));

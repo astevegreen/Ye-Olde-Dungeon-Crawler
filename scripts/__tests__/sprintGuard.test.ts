@@ -21,7 +21,7 @@ function guard(mode: string, toolInput: Record<string, unknown>, cwd = process.c
   return run.status ?? -1;
 }
 const bash = (mode: string, command: string, cwd?: string): number => guard(mode, { command }, cwd);
-const ps = (mode: string, command: string): number => guard(mode, { command }, undefined, 'PowerShell');
+const ps = (mode: string, command: string, cwd?: string): number => guard(mode, { command }, cwd, 'PowerShell');
 
 describe('every unattended mode', () => {
   it.each([
@@ -270,6 +270,43 @@ describe('commands an assignment stores or a variable holds', () => {
   });
 });
 
+describe('a word as the shell reads it', () => {
+  // The course's guard found these (Oct 2026): quotes and escapes joined into a word, and a value or a
+  // substitution in the command's or git's subcommand's place.
+  it.each([
+    'p=push; git $p origin HEAD:main',
+    'git $(echo push) origin HEAD:main',
+    'git `echo push` origin HEAD:main',
+    'git -C "$d" commit -m x',
+    '$(which git) push origin HEAD:main',
+    '"$(which git)" push origin HEAD:main',
+    'git "pu"sh origin HEAD:other',
+    "git pu''sh origin HEAD:other",
+    'git pu\\sh origin HEAD:other',
+    'git commit --no-ver""ify -m x',
+  ])('refuses %s in bash', (command) => {
+    for (const mode of ['--lane', '--integrator']) expect(bash(mode, command), `${mode} ${command}`).toBe(2);
+  });
+  it.each([
+    '[void] (git push origin HEAD:other)',
+    'git pu`sh origin HEAD:other',
+    'git `\npush origin HEAD:other',
+    '$a = @("push","origin","HEAD:main"); git @a',
+  ])('refuses %s in PowerShell', (command) => {
+    for (const mode of ['--lane', '--integrator']) expect(ps(mode, command), `${mode} ${command}`).toBe(2);
+  });
+  it('reads operators inside a double-quoted value as text, outside its substitutions', () => {
+    for (const command of [
+      'gh issue comment 5 --body "Done; $n left"',
+      'gh issue comment 5 --body "Fixed (see $url) & more | less"',
+      'echo "today: $(date +%F); ok"',
+    ]) expect(bash('--lane', command), command).toBe(0);
+    expect(bash('--lane', 'echo "a; $(echo hi; git push origin HEAD:main)"')).toBe(2);
+    expect(ps('--lane', 'git -C C:\\Antigravity\\YODC-lane-ux status')).toBe(0);
+    expect(ps('--lane', 'Write-Output "a`tb; $x"')).toBe(0);
+  });
+});
+
 describe('--integrator', () => {
   it('pushes only HEAD to main', () => {
     expect(bash('--integrator', 'git -C C:/Antigravity/YODC-integrate push origin HEAD:main')).toBe(0);
@@ -354,20 +391,25 @@ describe('--file-lock', () => {
     expect(edit(path.join(lane, 'src/content/cotw/new-file.ts'))).toBe(0);
   });
   it('keeps git writes out of the main checkout', () => {
+    // Bash reads an unquoted backslash as an escape, so Git Bash commands write C:/x.
+    const m = main.split(path.sep).join('/');
+    const l = lane.split(path.sep).join('/');
     for (const mode of ['--lane', '--integrator']) {
       expect(bash(mode, 'git switch -C sprint/3 origin/main', main)).toBe(2);
-      expect(bash(mode, `git -C ${main} cherry-pick abc..def`, lane)).toBe(2);
-      expect(bash(mode, `cd ${main} && git commit -m x`, lane)).toBe(2);
+      expect(bash(mode, `git -C ${m} cherry-pick abc..def`, lane)).toBe(2);
+      expect(bash(mode, `git -C "${main}" cherry-pick abc..def`, lane)).toBe(2);
+      expect(ps(mode, `git -C ${main} cherry-pick abc..def`, lane)).toBe(2);
+      expect(bash(mode, `cd ${m} && git commit -m x`, lane)).toBe(2);
       expect(bash(mode, 'git stash', main)).toBe(2);
       expect(bash(mode, 'git fetch origin --prune && git merge --ff-only origin/main', main)).toBe(0);
-      expect(bash(mode, `git -C ${lane} switch --discard-changes -C sprint/3 origin/main`, main)).toBe(0);
+      expect(bash(mode, `git -C ${l} switch --discard-changes -C sprint/3 origin/main`, main)).toBe(0);
       expect(bash(mode, 'git commit -m x', lane)).toBe(0);
-      expect(bash(mode, `git -C ${lane} stash push -m left`, main)).toBe(0);
-      expect(bash(mode, `git -C ${main} stash push -m x`, lane)).toBe(2);
+      expect(bash(mode, `git -C ${l} stash push -m left`, main)).toBe(0);
+      expect(bash(mode, `git -C ${m} stash push -m x`, lane)).toBe(2);
       // Through a wrapper, and past a `-c` setting before the subcommand.
-      expect(bash(mode, `env git -C ${main} commit -m x`, lane)).toBe(2);
-      expect(bash(mode, `git -c user.name=x -C ${main} commit -m x`, lane)).toBe(2);
-      expect(bash(mode, `find ${main} -maxdepth 0 -exec git -C {} commit -m x \\;`, lane)).toBe(2);
+      expect(bash(mode, `env git -C ${m} commit -m x`, lane)).toBe(2);
+      expect(bash(mode, `git -c user.name=x -C ${m} commit -m x`, lane)).toBe(2);
+      expect(bash(mode, `find ${m} -maxdepth 0 -exec git -C {} commit -m x \\;`, lane)).toBe(2);
     }
   });
   it('refuses the main checkout and the locked paths', () => {

@@ -9,6 +9,7 @@ import { HREFNA_CHOICE, HREFNA_REACTION_CHOICES } from './hrefna';
 import { OATH_BROKEN_FLAG, OATH_HONORED_FLAG } from './oath';
 import { COTW_MILESTONE_CHOICES, COTW_SAGA_CHOICES } from './perks';
 import { COTW_ESSENCE_BY_ELEMENT } from './items/essences';
+import { ROT_CHOICES } from './rot';
 
 export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
   /**
@@ -676,6 +677,7 @@ export const COTW_CHOICES: Record<string, ChoiceDefinition> = {
     cancelable: true,
     cancelLabel: 'Not now',
   },
+  ...ROT_CHOICES,
 };
 
 

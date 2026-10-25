@@ -78,6 +78,7 @@ import {
 } from './firstSpell';
 import { IRON_CLANS_BARROW_PLACEMENTS, IRON_CLANS_HOOKS, IVALDA } from './ironClans';
 import { SKALDIC_RUNESTONE_LORE } from './runestones';
+import { ROT_FIXED_TILE_PLACEMENTS, ROT_HOOKS, ROT_MARKS, ROT_SCRIPTED_VAULT_PLACEMENTS, ROT_TRACKED_MILESTONES } from './rot';
 import {
   VIDNIR_DEFEATED_TRIGGER,
   COTW_ZONE_VIGNETTES_HOOK,
@@ -192,6 +193,8 @@ export const cotwManifest: GameContentManifest = {
     { flag: 'verdandi_loom_resolved', label: "Verðandi's Weave", description: 'Chose a strand of fate upon Verðandi’s Loom.', icon: '🕸️', riddle: 'On the living bark a shuttle flies, measuring the rot against the wood.' },
     { flag: 'ratatoskr_roost_resolved', label: 'Roost of Ratatoskr', description: 'Humored the cosmic messenger upon the World-Bark.', icon: '🐿️', riddle: 'Between root and bough scuttles a sharp tongue with news of two worlds.' },
     { flag: 'skuld_mirror_resolved', label: "Skuld's Portent", description: 'Gazed upon the final hour in Skuld’s Mirror.', icon: '🪞', riddle: 'Before the heartwood, a dark glass shows what shall be when dragon meets blade.' },
+    // Act II, The Rot Below (rot.ts).
+    ...ROT_TRACKED_MILESTONES,
   ],
   // The runestones' verses and rune-lore, kept in the Story's Carved Verses once read.
   loreEntries: SKALDIC_RUNESTONE_LORE,
@@ -232,6 +235,7 @@ export const cotwManifest: GameContentManifest = {
     COTW_VOID_DEBT_BEFORE_HOOK,
     COTW_FIRST_VOID_DEBT_HOOK,
     COTW_FIRST_ALTAR_RITE_HOOK,
+    ...ROT_HOOKS,
   ],
   storyChoiceTriggers: [OATH_TRIGGER, ZEALOT_LEADER_TRIGGER, VIDNIR_DEFEATED_TRIGGER, ...SIPHON_GIFT_TRIGGERS],
   attributeMilestones: COTW_ATTRIBUTE_MILESTONES,
@@ -259,11 +263,12 @@ export const cotwManifest: GameContentManifest = {
       townsfolk: 10,
       temple_standing: 0,
       iron_clans: -15,
+      sap_tappers: 0,
     },
   },
   factions: COTW_FACTIONS,
   deepestFloorCounter: COTW_DEEPEST_FLOOR_COUNTER,
-  heroMarks: ALTAR_MARKS,
+  heroMarks: [...ALTAR_MARKS, ...ROT_MARKS],
   statusEffects: [
     {
       id: 'poison',
@@ -358,6 +363,7 @@ export const cotwManifest: GameContentManifest = {
     { floor: 39, tileId: 'galdr_altar_tyr', placement: 'middle_room_center' },
     { floor: 43, tileId: 'galdr_altar_hel', placement: 'middle_room_center' },
     { floor: 47, tileId: 'galdr_altar_odin', placement: 'middle_room_center' },
+    ...ROT_FIXED_TILE_PLACEMENTS,
   ],
   runeOfReturn: {
     attunementNpcId: 'npc-rune-smith',
@@ -400,6 +406,7 @@ export const cotwManifest: GameContentManifest = {
     { floor: VERDANDI_LOOM_FLOOR, vaultId: VERDANDI_LOOM_VAULT_ID },
     { floor: RATATOSKR_ROOST_FLOOR, vaultId: RATATOSKR_ROOST_VAULT_ID },
     { floor: SKULD_MIRROR_FLOOR, vaultId: SKULD_MIRROR_VAULT_ID },
+    ...ROT_SCRIPTED_VAULT_PLACEMENTS,
   ],
   // Townsfolk standing moves shop prices (hostage ritual outcome, story choices).
   roomDecoration: COTW_ROOM_DECORATION,

@@ -1,6 +1,7 @@
 import type { ActionHook, FactionDefinition, MerchantPricingRules } from '../../engine';
 import { TOWN_BUILDINGS } from './townLayout';
 import { IRON_CLANS_MET_FLAG } from './ironClans';
+import { SAP_TAPPERS_FACTION } from './rot';
 
 /** Set the first time the hero steps into the temple: the Temple faction's `metFlag`. */
 export const TEMPLE_MET_FLAG = 'temple_met';
@@ -27,6 +28,8 @@ export const COTW_FACTIONS: FactionDefinition[] = [
   { id: 'temple_standing', name: 'Temple of the Aesir', metFlag: TEMPLE_MET_FLAG },
   // Met by reading the Smithy's Accord or speaking with Ivalda (ironClans.ts).
   { id: 'iron_clans', name: 'Iron Clans', metFlag: IRON_CLANS_MET_FLAG },
+  // Met by speaking with any of Act II's three hub NPCs (rot.ts).
+  SAP_TAPPERS_FACTION,
 ];
 
 const TEMPLE = TOWN_BUILDINGS.find((b) => b.buildingType === 'temple')!.bounds;

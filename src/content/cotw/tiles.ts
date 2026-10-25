@@ -2,6 +2,7 @@ import type { TileDefinition } from '../../engine';
 import { SKALDIC_RUNESTONE_TILES } from './runestones';
 import { IRON_CLANS_BARROW_TILES } from './ironClans';
 import { SIPHON_CORE_TILE_DEFINITION } from './siphonPylon';
+import { ROT_TILES } from './rot';
 
 /** Bjarnarhaven's lanes and street furniture (townLayout.ts). */
 const townThing = (type: string, name: string, glyph: string, description: string): TileDefinition => ({
@@ -361,5 +362,6 @@ export const COTW_TILES: TileDefinition[] = [
       'A towering frame of frost-carved bone enclosing a polished pool of dark volcanic glass. The portents of what shall be churn within its obsidian depth.',
     interactionHandlerId: 'skuld_mirror_choice',
   },
+  ...ROT_TILES,
 ];
 

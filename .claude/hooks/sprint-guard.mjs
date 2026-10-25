@@ -72,8 +72,14 @@ function maskQuoted(s) {
 const masked = maskQuoted(command);
 // The command as the checks read it: message values blanked, everything else as written.
 const text = masked.replace(/[\u0001-\u0007]/g, (c) => UNMASK[c]);
+// PowerShell's call operator and dot-source run the command a variable or an expression names (`& $g push`,
+// `. (gcm git)`); in bash, `& $g` backgrounds and then runs one. `2>&1` and `&&` are not that &.
+const RUNS_VALUE = /(?<![>&])&(?![&>])\s*([$(]|"[^"]*\$)|(^|[;|\n{(&])\s*\.\s+([$(]|"[^"]*\$)/;
+if (RUNS_VALUE.test(masked)) deny('`& $x`, `& (…)` and `. $x` run a command the guard can\'t read; run it by name');
+// A lone & ends a command (bash's background) or starts one (PowerShell's call operator); `2>&1` and `&>`
+// are redirects.
 const parts = masked
-  .split(/&&|\|\||[;|\n`]|\$\(|\)/)
+  .split(/&&|\|\||(?<!>)&(?!>)|[;|\n`]|\$\(|\)/)
   .map((p) => p.replace(/[\u0001-\u0007]/g, (c) => UNMASK[c]).trim())
   .filter(Boolean);
 const words = (s) => s.match(/"[^"]*"|'[^']*'|\S+/g)?.map((w) => w.replace(/^(["'])(.*)\1$/, '$2')) ?? [];
@@ -105,8 +111,9 @@ const GIT_WRITES = new Set(['switch', 'checkout', 'commit', 'rebase', 'reset', '
 
 // A command's name as the shell runs it: `/usr/bin/git`, `git.exe` and `Git` are all git.
 const cmdName = (x) => path.posix.basename(String(x ?? '').replace(/\\/g, '/')).toLowerCase().replace(/\.(exe|cmd|bat)$/, '');
-// Words before the command itself: shell keywords and grouping (`then git push`, `(git push`, `{ git push`).
-const LEAD = new Set(['!', '{', '(', 'if', 'then', 'else', 'elif', 'do', 'while', 'until']);
+// Words before the command itself: shell keywords, grouping and the prefixes PowerShell adds (`then git push`,
+// `(git push`, `{ git push`, `@(git push`, `[void](git push`, `. { git push }`), and assignments (`x=1 git push`).
+const LEAD = new Set(['!', '{', '(', '.', 'if', 'then', 'else', 'elif', 'do', 'while', 'until']);
 const ASSIGN = /^[A-Za-z_]\w*=/;
 // Wrappers that run the rest of their words as a command, and their options that take a value.
 const PREFIX = {
@@ -132,10 +139,24 @@ const gitSub = (w) => {
 function commandsIn(raw, fromArgs = false, repl = null, depth = 0) {
   if (depth > 4) deny('too many nested wrappers to read');
   const w = [...raw];
-  while (w.length && LEAD.has(w[0])) w.shift();
-  if (w[0]) w[0] = w[0].replace(/^[({]+/, '');
-  while (w.length && ASSIGN.test(w[0])) w.shift();
-  if (!w.length || !w[0]) return [];
+  // PowerShell runs the command an assignment stores: `$x = git push`, `$x=git push`, `$env:X += …`.
+  for (let lead = true; lead && w.length;) {
+    const bare = w[0].replace(/^(\[[\w.]+\])*@?[({]+/, '');
+    const glued = /^(\[[\w.]+\])*\$[^\s=]+?[-+*/%]?=(.*)$/.exec(w[0]);
+    if (LEAD.has(w[0]) || ASSIGN.test(w[0]) || !bare) w.shift();
+    else if (bare !== w[0]) w[0] = bare;
+    else if (glued && glued[2]) w[0] = glued[2];
+    else if (glued) w.shift();
+    else if (/^(\[[\w.]+\])*\$\S+$/.test(w[0]) && /^[-+*/%]?=$/.test(w[1] ?? '')) w.splice(0, 2);
+    else lead = false;
+  }
+  if (!w.length) return [];
+  if (w[0].startsWith('$')) {
+    // PowerShell shows a value here (`$x`, `$x.Count`, `$x | …`) and runs one only through & or ., refused
+    // above; bash runs the command the variable holds.
+    if (input.tool_name === 'PowerShell') return [];
+    deny(`\`${w[0]}\` runs a command held in a variable, which the guard can't read; run it by name`);
+  }
   const name = cmdName(w[0]);
   const self = { w: [name, ...w.slice(1)], fromArgs, repl };
   const inner = (rest, args = fromArgs, r = repl) => commandsIn(rest, args, r, depth + 1);

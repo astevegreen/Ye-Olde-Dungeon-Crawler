@@ -29,7 +29,8 @@ ToolSearch.
 the FAIL line and the run carries on, so one dry run names every problem. Otherwise the first refusal ends the
 run.
 
-Your last message starts with exactly one of these lines, then at most 8 lines from step 6:
+Your last message starts with exactly one of these lines, with nothing before it (the root cue reads line 1),
+then at most 8 lines from step 6:
 - `STARTED yodc window <start>–<end>`, both from `Q window start` (they end in `Z`)
 - `REFUSED yodc: <reason>`
 - `DRY-RUN OK yodc`
@@ -65,9 +66,11 @@ sprint archives it: the archiver skips its own session, and the root cue never a
 Each of these is a line in step 6, never a refusal:
 - **Disk:** under 30 GB free, from `node -e "const s=require('fs').statfsSync('C:/');console.log(Math.round(s.bavail*s.bsize/2**30))"`.
 - **Memory:** under 8192 MB free, from `node -e "console.log(Math.round(require('os').freemem()/2**20))"`.
-- **Sessions:** `list_sessions` with `mine: true` and `limit: 100` shows 10 or more whose `session_status` is not
-  `SESSION_STATUS_ARCHIVED` and whose `environment_id` is step 1.3's: "<n> YODC sessions are not archived; archive
-  some on the rc host". Other projects' sessions are theirs to count.
+- **Sessions:** 10 or more sessions whose `session_status` is not `SESSION_STATUS_ARCHIVED` and whose
+  `environment_id` is step 1.3's: "10 or more YODC sessions are not archived; archive some on the rc host". Read
+  `list_sessions` with `mine: true` and `limit: 10`, then the next page with `after_id` set to its `last_id`. Stop at
+  the tenth such session, when the pages run out, or after 10 pages ("could not count the YODC sessions" when none
+  of these ends it): a bigger page runs to 200,000 characters. Other projects' sessions are theirs to count.
 - **Claude Code:** `claude --version` is below 2.1.304: "update Claude Code (`claude update`)".
 - **Deploy:** `gh run list --workflow deploy.yml --branch main --limit 1 --json conclusion,status` shows a
   completed run whose conclusion is not `success`: "main's last deploy is <conclusion>; the integrator waits

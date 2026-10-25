@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -10,15 +10,18 @@ import { spawnSync } from 'node:child_process';
  */
 
 const GUARD = path.resolve(__dirname, '../../.claude/hooks/sprint-guard.mjs');
+// Each case spawns the guard: while other sessions load the computer, 30 of them run past 5 s.
+vi.setConfig({ testTimeout: 30_000 });
 
-function guard(mode: string, toolInput: Record<string, unknown>, cwd = process.cwd()): number {
+function guard(mode: string, toolInput: Record<string, unknown>, cwd = process.cwd(), tool = 'Bash'): number {
   const run = spawnSync(process.execPath, [GUARD, mode], {
-    input: JSON.stringify({ tool_input: toolInput, cwd }),
+    input: JSON.stringify({ tool_name: tool, tool_input: toolInput, cwd }),
     encoding: 'utf-8',
   });
   return run.status ?? -1;
 }
 const bash = (mode: string, command: string, cwd?: string): number => guard(mode, { command }, cwd);
+const ps = (mode: string, command: string): number => guard(mode, { command }, undefined, 'PowerShell');
 
 describe('every unattended mode', () => {
   it.each([
@@ -219,6 +222,51 @@ describe('commands run through a wrapper', () => {
         'gh issue comment 12 --body "sh -c is refused"',
       ]) expect(bash(mode, command), `${mode} ${command}`).toBe(0);
     }
+  });
+});
+
+describe('commands an assignment stores or a variable holds', () => {
+  // Terminal Dusk's guard let these through (Oct 2026): PowerShell runs what it assigns, and & runs a value.
+  it.each([
+    '$x = git push origin HEAD:other',
+    '$x=git push origin HEAD:other',
+    '$x += git push origin HEAD:other',
+    '$env:X = git push origin HEAD:other',
+    '[string]$x = git push origin HEAD:other',
+    '$o.p = git push origin HEAD:other',
+    '$x = @(git push origin HEAD:other)',
+    '[void](git push origin HEAD:other)',
+    '& "git" push origin HEAD:other',
+    "& 'C:\\Program Files\\Git\\bin\\git.exe' push origin HEAD:other",
+    '& { git push origin HEAD:other }',
+    '. { git push origin HEAD:other }',
+    '$g = "git"; & $g push origin HEAD:main',
+    '& "$g" push origin HEAD:main',
+    '& (Get-Command git) push origin HEAD:main',
+    '. $script',
+  ])('refuses %s in PowerShell', (command) => {
+    for (const mode of ['--lane', '--integrator']) expect(ps(mode, command), `${mode} ${command}`).toBe(2);
+  });
+  it.each([
+    'g=git; $g push origin HEAD:main',
+    '"$g" push origin HEAD:main',
+    'x="git push origin HEAD:main"; $x',
+  ])('refuses %s in bash', (command) => {
+    for (const mode of ['--lane', '--integrator']) expect(bash(mode, command), `${mode} ${command}`).toBe(2);
+  });
+  it('lets a stored or shown value through', () => {
+    for (const command of [
+      '$x = git status',
+      '& git status',
+      '$LASTEXITCODE',
+      '$files | Where-Object { $_.Length -gt 0 } | Select-Object -First 3',
+      '$r = Get-Content x.txt; $r.Count',
+      '. ./scripts/x.ps1',
+    ]) expect(ps('--lane', command), command).toBe(0);
+    for (const command of ['npm test > out.txt 2>&1 &', 'ls . $HOME', 'x=$(git status) && echo "$x"']) {
+      expect(bash('--lane', command), command).toBe(0);
+    }
+    expect(ps('--integrator', '$out = git -C C:/Antigravity/YODC-integrate push origin HEAD:main')).toBe(0);
   });
 });
 

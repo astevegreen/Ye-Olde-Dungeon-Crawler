@@ -6,6 +6,7 @@ import type { BoundKeys } from './oracles';
 import type { DispatchedAction } from './policies';
 import { lineOfFire } from './lineOfFire';
 import { healReserve, shouldHeal } from './healPlan';
+import { shouldEscape } from './escapePlan';
 import { telegraphChoice, telegraphExit } from './telegraphExit';
 import { quickBarMove } from './quickBarPlan';
 import { controlTarget, shouldReveal } from './oddSpellPlan';
@@ -15,6 +16,8 @@ const LINE_OF_FIRE_SRC = lineOfFire.toString();
 /** The heal decision and the damage-spell reserve (healPlan.ts), as source text like `lineOfFire`. */
 const SHOULD_HEAL_SRC = shouldHeal.toString();
 const HEAL_RESERVE_SRC = healReserve.toString();
+/** When to cast the escape spell (escapePlan.ts). */
+const SHOULD_ESCAPE_SRC = shouldEscape.toString();
 /** The way out of a telegraph one step can't clear, and the choice under one (telegraphExit.ts). */
 const TELEGRAPH_EXIT_SRC = telegraphExit.toString();
 const TELEGRAPH_CHOICE_SRC = telegraphChoice.toString();
@@ -505,6 +508,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       lineOfFireSrc: string;
       shouldHealSrc: string;
       healReserveSrc: string;
+      shouldEscapeSrc: string;
       telegraphExitSrc: string;
       telegraphChoiceSrc: string;
       quickWant: { spellId: string; slot: number; pressed: boolean } | null;
@@ -1386,6 +1390,27 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       const shouldHealFn = new Function(`return (${args.shouldHealSrc})`)() as typeof shouldHeal;
       const healReserveFn = new Function(`return (${args.healReserveSrc})`)() as typeof healReserve;
       const escapeCast = () => castables.find((c) => c.type === 'movement' && (c.sp.targetType === 'self' || c.sp.targetingMode === 'self'));
+      const shouldEscapeFn = new Function(`return (${args.shouldEscapeSrc})`)() as typeof shouldEscape;
+      // Beside Hliðskjálf, Phase Door lands where it is aimed (its slot's `spellPatch`): aim at the
+      // open tile in reach and sight farthest from every foe, two tiles at least; none, no escape.
+      const escapeAt = (c: { id: string; key: string; sp: any }) => {
+        const patch = (e.diagnostics?.resolvedCasts?.() ?? []).find((r: any) => r.spellId === c.id)?.spellPatch;
+        if (!patch?.targetType || patch.targetType === 'self') return castAt(c, 'escape');
+        const sp = { ...c.sp, ...patch };
+        const reach = sp.range ?? 0;
+        let best: { x: number; y: number } | null = null;
+        let bestGap = 1;
+        for (let dy = -reach; dy <= reach; dy++) {
+          for (let dx = -reach; dx <= reach; dx++) {
+            const t = { x: p.x + dx, y: p.y + dy };
+            if (Math.hypot(dx, dy) > reach || !e.map.inBounds(t.x, t.y) || !e.map.getTile(t.x, t.y)?.passable) continue;
+            if (e.map.getEntityAt(t.x, t.y) || avoid(t.x, t.y) || inDanger(t.x, t.y) || !lineOfSight(p, t)) continue;
+            const gap = Math.min(...hostiles.map((m: any) => cheb(m, t)));
+            if (gap > bestGap) [best, bestGap] = [t, gap];
+          }
+        }
+        return best ? castAt({ ...c, sp }, 'escape', best) : null;
+      };
       // Whether the hero wants a Heal now; with none castable, only the life threshold counts.
       const wantsHeal = () =>
         shouldHealFn({
@@ -1837,11 +1862,25 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           })
             ? healable
             : undefined;
+        // Badly hurt in melee, or ringed by three: an escape spell before any potion or scroll, and
+        // before that Heal once a Heal has failed to lift the hero, or the Seiðr can't pay for both
+        // (escapePlan.ts).
+        const escape = escapeCast();
+        const escapeNow =
+          escape &&
+          shouldEscapeFn({
+            hp: p.hp,
+            maxHp: p.maxHp,
+            adjacentFoes: adjHostiles.length,
+            mana: p.mana,
+            escapeCost: escape.cost,
+            healCost: heal ? heal.cost : null,
+            justHealed: heal ? curTurn - (args.lastCast[heal.id] ?? -1e9) <= 2 : false,
+          })
+            ? escapeAt(escape)
+            : null;
+        if (escapeNow) return escapeNow;
         if (heal) return castAt(heal, 'heal');
-        // Badly hurt in melee, or ringed by three: an escape spell before any scroll.
-        const ringed = adjHostiles.length >= 3 && p.hp <= p.maxHp * 0.6;
-        const escape = adjHostiles.length > 0 && (p.hp <= p.maxHp * 0.3 || ringed) ? escapeCast() : undefined;
-        if (escape) return castAt(escape, 'escape');
         if (p.hp <= Math.max(p.maxHp * 0.45, 12)) {
           const potKey = findHealingPotionKey();
           if (potKey) return { action: { type: 'key' as const, key: potKey }, curPos, curTurn, curFloor, potion: true };
@@ -2307,6 +2346,7 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       lineOfFireSrc: LINE_OF_FIRE_SRC,
       shouldHealSrc: SHOULD_HEAL_SRC,
       healReserveSrc: HEAL_RESERVE_SRC,
+      shouldEscapeSrc: SHOULD_ESCAPE_SRC,
       telegraphExitSrc: TELEGRAPH_EXIT_SRC,
       telegraphChoiceSrc: TELEGRAPH_CHOICE_SRC,
       quickWant: state.quickWant,

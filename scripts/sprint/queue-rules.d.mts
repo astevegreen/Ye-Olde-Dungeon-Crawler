@@ -2,6 +2,7 @@
 
 export const OWNER: string;
 export const BOT: string;
+export const AUDIT: string;
 export const MEMORY_FLOOR_MB: number;
 export const WINDOW_FILE: string;
 export const TRIGGERS_FILE: string;

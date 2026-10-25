@@ -14,6 +14,7 @@ import {
   matchesId,
   nextJob,
   normalizeIssues,
+  ownerReply,
   parseSprintDoc,
   planMove,
   researchQueue,
@@ -202,6 +203,17 @@ describe('held work', () => {
     const [i] = normalizeIssues([issue(5, '[task] B1: x', ['lane:fixes', 'held'], '', [['greenbeanbot', '2026-10-21T10:00:00Z', 'Implementer: machine. knip ran out of memory']])]);
     expect(heldRetry(i!, 8000)).toMatchObject({ retry: true });
     expect(heldRetry(i!, 3000)).toMatchObject({ retry: false });
+  });
+  it('a Gemini audit posted after the owner\'s answer never hides it', () => {
+    const [i] = normalizeIssues([
+      issue(5, '[task] B1: x', ['lane:fixes', 'blocked'], '', [
+        ['greenbeanbot', '2026-10-21T10:00:00Z', 'Plan: which label?'],
+        ['astevegreen', '2026-10-21T11:00:00Z', 'Use the short one.'],
+        ['greenbeanbot', '2026-10-21T12:00:00Z', '<!-- gemini-audit -->\n**Gemini audit: spec**\n\nNo findings.'],
+      ]),
+    ]);
+    expect(ownerReply(i!)?.body).toBe('Use the short one.');
+    expect(heldRetry({ ...i!, labels: ['lane:fixes', 'held'] }, 8000)).toMatchObject({ retry: true, why: 'the owner replied' });
   });
   it('a comment by anyone else changes nothing', () => {
     const [i] = normalizeIssues([

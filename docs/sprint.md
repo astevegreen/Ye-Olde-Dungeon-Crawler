@@ -70,7 +70,11 @@ Both Act II lanes edit `src/content/cotw/index.ts`: keep each change to its own 
 ## Flow
 
 1. `sprint-plan <lane>` turns backlog items into issues titled `[task] <ID>: <what>`, labelled `lane:<lane>`
-   and `sprint-ready`.
+   and `spec-review`. Gemini then audits the specs (`node scripts/gemini-audit.mjs specs <issues>`, as Terminal
+   Dusk does); the plan session applies the valid points, answers the rest on the issue, and swaps
+   `spec-review` for `sprint-ready` (the owner's request of 25 Oct: "I want Gemini/Agy to be used for YODC and
+   the course in the same way they are used for terminal dusk"). An audit that fails or is skipped holds
+   nothing up.
 2. `sprint-lane <lane>` takes one at a time: the `implementer` builds it on branch `sprint/<issue>` from
    `origin/main` in the lane's worktree and commits (the pre-commit hook gates each commit); the `reviewer`
    reads `git diff origin/main...sprint/<issue>`. PASS: label `to-integrate`.
@@ -79,7 +83,7 @@ Both Act II lanes edit `src/content/cotw/index.ts`: keep each change to its own 
    and logs what players will see. A conflict sends back only the issue that caused it; a red gate or a red
    deploy sends the batch through again one issue at a time, and the one that fails alone goes back as `held`.
 
-Labels: `lane:*`, `sprint-ready`, `in-progress`, `to-integrate`, `held`, `blocked`, `proposal`. Which issue is
+Labels: `lane:*`, `spec-review`, `sprint-ready`, `in-progress`, `to-integrate`, `held`, `blocked`, `proposal`. Which issue is
 ready, whose comment counts, when held work is retried, whether a session has work and the status block are
 decided by the queue (`scripts/sprint/queue.mjs`, Machinery), never by hand.
 Progress, questions and every push go to the pinned issue #19 "Sprint log". Its body is the status block,

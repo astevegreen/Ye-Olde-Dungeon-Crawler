@@ -123,6 +123,61 @@ test('every belt slot holds what it shows, at 1366 and 1920 wide', async ({ page
   }
 });
 
+// The F1 card over the Spellbook covered the right end of its recent-messages strip at
+// 1366x768 (X7, #88). It fits above the strip whole; a card too tall for the window scrolls
+// its keys and keeps its tip in view, since keys can't scroll a card off the modal stack.
+test('the F1 card ends above the recent messages at 1366x768, and a tall one keeps its tip', async ({ page }) => {
+  const fit = () =>
+    page.evaluate(() => {
+      const card = document.querySelector<HTMLElement>('#context-help-overlay .ui-dialog')!;
+      const body = card.querySelector<HTMLElement>('.ui-dialog-body')!;
+      const keys = card.querySelector<HTMLElement>('.fh-keys')!;
+      const tip = [...card.querySelectorAll<HTMLElement>('.ui-fact')].pop()!.getBoundingClientRect();
+      const box = card.getBoundingClientRect();
+      const strip = document.querySelector('.cm-recent .recent-messages')?.getBoundingClientRect();
+      return {
+        width: Math.round(box.width),
+        bottom: box.bottom,
+        stripTop: strip?.top ?? null,
+        bodyScrolls: body.scrollHeight > body.clientHeight + 1,
+        keysScroll: keys.scrollHeight > keys.clientHeight + 1,
+        tipInView: tip.top >= box.top && tip.bottom <= body.getBoundingClientRect().bottom + 1,
+      };
+    });
+  const help = page.locator('#context-help-overlay');
+
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto(pathToFileURL(BUNDLE).href);
+  await page.locator('#btn-menu-help').click();
+  await expect(help).toBeVisible();
+  const guide = await fit();
+  expect(guide, 'the exploration guide scrolls its keys, not its tip').toMatchObject({ keysScroll: true, bodyScrolls: false, tipInView: true });
+  await page.keyboard.press('Escape');
+  await expect(help).toBeHidden();
+
+  await page.locator('#btn-menu-new-game').click();
+  await page.locator('#btn-create-embark').click();
+  await pastTheOpening(page);
+  await page.keyboard.press('KeyZ');
+  await expect(page.locator('.cm-recent .recent-messages')).toBeVisible();
+  await page.keyboard.press('F1');
+  await expect(help).toContainText('Spellbook');
+  const small = await fit();
+  expect(small.stripTop).not.toBeNull();
+  expect(small.bottom, 'the card ends above the recent messages').toBeLessThanOrEqual(small.stripTop!);
+  expect(small, 'the Spellbook card fits whole').toMatchObject({ bodyScrolls: false, keysScroll: false });
+  await page.keyboard.press('F1');
+  await expect(help).toBeHidden();
+
+  // 1920x1080 keeps the card as it was: 420px wide at the 1.25 scale.
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.keyboard.press('F1');
+  await expect(help).toContainText('Spellbook');
+  await expect.poll(async () => (await fit()).width).toBe(525);
+  const large = await fit();
+  expect(large.bottom).toBeLessThanOrEqual(large.stripTop!);
+});
+
 // On a wide window the console keeps together under the wider map: spread to the column's
 // edges, at 2560 its pieces stood 70px apart and the belt floated in 450px of empty bar.
 test('the console keeps its pieces together on a wide window', async ({ page }) => {

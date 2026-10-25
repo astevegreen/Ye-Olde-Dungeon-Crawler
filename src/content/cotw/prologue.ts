@@ -397,10 +397,11 @@ const PROLOGUE_MOVE_HOOK: ActionHook = {
   execute: ({ action, actor, engine }) => {
     if (actor !== engine.player || !(action instanceof MovementAction)) return;
     if (!isPrologueRunning(engine.worldState, COTW_PROLOGUE)) return;
-    // The rite ran out after the last action: the night ends before this move frees anyone.
-    if (getFlag(engine.worldState, FLAG_COVEN_FLED)) {
+    // The rite ran out after the last action, or a blow outside any action struck the hero
+    // down: the night ends before this move frees anyone, and the hero wakes where they fell.
+    if (getFlag(engine.worldState, FLAG_COVEN_FLED) || engine.player.wasHeldAtHpFloor) {
       endRaid(engine);
-      return;
+      return { proceed: false, result: { success: true, cost: 0 } };
     }
     const x = actor.x + action.dx;
     const y = actor.y + action.dy;

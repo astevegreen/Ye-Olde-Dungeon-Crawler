@@ -253,8 +253,12 @@ describe('cotw prologue: the night raid', () => {
       covenFlees(engine);
       expect(isPrologueRunning(engine.worldState, COTW_PROLOGUE)).toBe(true);
 
+      const before = { x: engine.player.x, y: engine.player.y };
       const result = step(engine, 1, 0);
 
+      // The move that ends the night stops there: the hero does not step onto the emptied tile.
+      expect({ x: engine.player.x, y: engine.player.y }).toEqual(before);
+      expect(result.cost).toBe(0);
       expect(result.message ?? '').not.toMatch(/You free/);
       expect(engine.messages.some((m) => m.includes('You free'))).toBe(false);
       expect(getCounter(engine.worldState, SAVED)).toBe(0);
@@ -311,6 +315,28 @@ describe('cotw prologue: the night raid', () => {
     expect(engine.getWorldFlag('cotw_prologue_struck_down')).toBe(true);
     expect(engine.messages.some((m) => m.includes('A blow takes you off your feet.'))).toBe(true);
     expect(engine.messages.some((m) => m.includes('The chant breaks off.'))).toBe(false);
+  });
+
+  it('a hero held at the HP floor outside the pipeline ends the night on the next bump, freeing no one', () => {
+    const engine = newRun();
+    const eir = villager(engine, 'prologue-eir');
+    for (const e of engine.map.getAllEntities()) {
+      if (e instanceof Monster && Math.max(Math.abs(e.x - eir.x), Math.abs(e.y - eir.y)) <= 1) engine.removeEntity(e);
+    }
+    engine.map.moveEntity(engine.player, eir.x - 1, eir.y);
+    // Damage that lands outside any action (a status tick): no post hook sees it.
+    engine.player.takeDamage(engine.player.hp + 100);
+    expect(engine.player.wasHeldAtHpFloor).toBe(true);
+    const before = { x: engine.player.x, y: engine.player.y };
+
+    const result = step(engine, 1, 0);
+
+    expect(engine.getWorldFlag('prologue-eir_saved')).toBeFalsy();
+    expect(engine.messages.some((m) => m.includes('You free'))).toBe(false);
+    expect(engine.messages.some((m) => m.includes('A blow takes you off your feet.'))).toBe(true);
+    expect(isPrologueRunning(engine.worldState, COTW_PROLOGUE)).toBe(false);
+    expect({ x: engine.player.x, y: engine.player.y }).toEqual(before);
+    expect(result.cost).toBe(0);
   });
 
   it("Hallvard dies once his last words are heard, and the cellar opens", () => {

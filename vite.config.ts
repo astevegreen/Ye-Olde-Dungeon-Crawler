@@ -7,10 +7,11 @@ import { availableParallelism } from 'node:os';
 
 declare const process: any;
 
-// The tests that spawn processes to try the repo's own tooling: the gate scripts, gate stamps
-// and handoff notes. About half the suite's time, for code most commits never touch.
+// The tests that spawn processes to try the repo's own tooling: the gate scripts, gate stamps,
+// handoff notes and the pre-push hook's sprint lock. About half the suite's time, for code most
+// commits never touch.
 const TOOLING_TESTS = [
-  'scripts/__tests__/{encapsulationGateWidening,engineCreepGate,gateStamp,handoffNotes,mainScopeGateWidening,purityGatePatterns}.test.ts',
+  'scripts/__tests__/{encapsulationGateWidening,engineCreepGate,gateStamp,handoffNotes,mainScopeGateWidening,purityGatePatterns,pushLock}.test.ts',
 ];
 
 // Shown on the title screens (src/ui/branding.ts), so the UI never claims a version the build isn't.

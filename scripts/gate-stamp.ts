@@ -25,6 +25,7 @@ const COMMANDS: Record<string, GateCommand> = {
     ...npm('run', 'test:tooling'),
     paths: [
       'scripts/',
+      '.githooks/',
       '.claude/skills/handoff/notes.mjs',
       '.claude/hooks/handoff-nudge.mjs',
       'package.json',

@@ -64,6 +64,7 @@ in its own persistent worktree, so lanes never share a working tree.
 | `research` | `lane:research` | `C:/Antigravity/YODC-research`    | Soaks and bug hunts; reports and proposals as issue comments, no repo changes |
 
 The integrator works in `C:/Antigravity/YODC-integrate`. The main checkout is only fetched and fast-forwarded.
+While the window is open, the pre-push hook refuses a push to main from any other folder (`scripts/sprint/push-lock.mjs`).
 Both Act II lanes edit `src/content/cotw/index.ts`: keep each change to its own lines, so cherry-picks apply.
 
 ## Flow

@@ -294,7 +294,8 @@ mechanics, renaming spells.
   `REFUSED yodc: <reason>`. `/sprint-start --dry-run` makes every check and read, writes nothing, and ends
   `DRY-RUN OK yodc` or `DRY-RUN FAIL yodc: <items>`. The start session stays open, since the archiver may post
   into it; the root cue never archives start sessions.
-- **Stopping.** The window ends on its own. `/sprint-stop` (optional) ends it now. Either way, running sessions
+- **Stopping.** The window ends on its own. `/sprint-stop` (optional) ends it now, and switches off the
+  supervisor, its wake and every one-shot session still waiting to fire. Either way, running sessions
   finish the task in hand, and the supervisor drains: it starts only the integrator, for what the lanes
   finished, then switches itself off. The archiver switches itself off once no sprint session runs, and a new
   `/sprint-start` waits until it has.

@@ -1,6 +1,6 @@
 ---
 name: sprint-stop
-description: End the YODC sprint's window now and switch its supervisor off; sessions already running finish the task in hand. Run only as /sprint-stop.
+description: End the YODC sprint's window now and switch its supervisor, its wake and its waiting sessions off; sessions already running finish the task in hand. Run only as /sprint-stop.
 disable-model-invocation: true
 model: sonnet
 hooks:
@@ -22,11 +22,16 @@ starts with exactly one of these lines, then at most 6 lines:
    - Each lane and plan session finishes the task in hand, then stops at its window check.
    - The supervisor starts nothing more.
    - The integrator lands what is already `to-integrate`.
-3. `RemoteTrigger` `update` the `supervisor` id with `{"enabled": false}` (load RemoteTrigger with ToolSearch).
-   When it is refused, add the line "switch the supervisor off at https://claude.ai/code/routines/<id>". Until
-   then its runs stop at their window check.
+3. Switch the supervisor off: `update_trigger` the `supervisor` id with enabled `false`, then the `wake` id
+   the same way, each one `Q window` names (load `update_trigger` and `get_trigger` with ToolSearch; auto mode
+   refused `RemoteTrigger` `update` here on 25 Oct). When one is refused, add the line "switch <name> off at
+   https://claude.ai/code/routines/<id>". Until then their runs stop at their window check.
    Leave the archiver alone: it switches itself off once no sprint session is left running, and only then can a
    new `/sprint-start` open a window.
-4. Write "Sprint stopped at <end>." and the lane lines of `Q status` with the Write tool to
+4. `Q sessions` gives the last trigger for each session title. `get_trigger` each one that is not null: an
+   enabled one whose `run_once_at` is still ahead is a restart waiting out a usage limit, or a lane or plan
+   session not yet started. `update_trigger` it with enabled `false`, so it starts no session that would only
+   stop at its window check.
+5. Write "Sprint stopped at <end>." and the lane lines of `Q status` with the Write tool to
    `C:/Antigravity/YODC/.prompts/tmp/sprint-stop.md`. Then run
    `gh issue comment <logIssue> --body-file C:/Antigravity/YODC/.prompts/tmp/sprint-stop.md`.

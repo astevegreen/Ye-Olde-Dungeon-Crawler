@@ -32,6 +32,30 @@ export function diedAfterRaid(r: RaidDeathInput): string | null {
   return `died ${after} turns after the raid: ${r.messages.slice(-20).join(' | ')}`;
 }
 
+export interface AdjacentRepeat {
+  /** The line as shown, its "(×N)" count stripped. */
+  line: string;
+  /** How many adjacent rows show it. */
+  rows: number;
+}
+
+/**
+ * Each line the log strip shows on two or more adjacent rows: the strip folds a line into the
+ * row just above it (`collapseByAction`), so such a run is a display failure. The same line on
+ * rows apart is normal: three turns of melee show "hit, bitten, hit, bitten, hit, bitten".
+ * `rows` is the strip's text, oldest first; "X attacks. (×3)" and "X attacks." are one line.
+ */
+export function adjacentRepeats(rows: readonly string[]): AdjacentRepeat[] {
+  const runs: AdjacentRepeat[] = [];
+  for (const row of rows) {
+    const line = row.replace(/ \(×\d+\)$/, '');
+    const last = runs[runs.length - 1];
+    if (last?.line === line) last.rows++;
+    else runs.push({ line, rows: 1 });
+  }
+  return runs.filter((r) => r.rows >= 2);
+}
+
 /**
  * Distinct signatures per category for a run's summary. Tagged findings (latency, pacing)
  * are noise-prone, so they are counted apart under `tagged` and leave the categories alone.

@@ -8,7 +8,7 @@ import { SoakPrng } from './soak/prng';
 import { decideChaosAction, decidePlayerAction, type DispatchedAction } from './soak/policies';
 import { BUILDS, buildFor, classifyDeath, isRunestoneChoice, runestonePolicyFor } from './soak/playerBot';
 import { drainMagicAnomalies, readMagic, tapMagic } from './soak/magicTap';
-import { formatSoakFlags, parseSoakFlags } from './soak/soakFlags';
+import { parseSoakFlags, setSoakFlags, soakRepro } from './soak/soakFlags';
 import {
   createInitialOracleState,
   openModes,
@@ -245,12 +245,8 @@ test.describe('soak @soak', () => {
 
     // Before the deep-start jump, so the floor it builds sees them; on a run from town, before
     // the first action.
-    if (worldFlags.length > 0) {
-      await page.evaluate((flags) => {
-        for (const { flag, value } of flags) window.__cotwEngine!.setWorldFlag(flag, value);
-      }, worldFlags);
-      console.log(`[soak] World flags set: ${worldFlags.map((f) => `${f.flag}=${f.value}`).join(', ')}`);
-    }
+    const flagsSet = await setSoakFlags(page, worldFlags);
+    if (flagsSet) console.log(flagsSet);
 
     const runestonesGranted: Record<string, string> = {};
     // Deep start: the hero is outfitted as one who reached the floor might be, and dropped
@@ -347,10 +343,7 @@ test.describe('soak @soak', () => {
 
     // A deep start replays only with its floor (and level) named; a run with flags, with them.
     const startLevel = parseInt(process.env.SOAK_START_LEVEL ?? '0', 10) || 0;
-    const deepRepro = startFloor > 0 ? ` SOAK_START_FLOOR=${startFloor}${startLevel ? ` SOAK_START_LEVEL=${startLevel}` : ''}` : '';
-    const flagsRepro = worldFlags.length > 0 ? ` SOAK_FLAGS=${formatSoakFlags(worldFlags)}` : '';
-    const repro = (i: number) =>
-      `SOAK=1 SOAK_SEED=${seed} SOAK_POLICY=${policy} SOAK_OPENING=${opening}${deepRepro}${flagsRepro} SOAK_ACTIONS=${i + 1} npx playwright test e2e/soak.spec.ts --project=chromium --workers=1`;
+    const repro = (i: number) => soakRepro({ seed, policy, opening, startFloor, startLevel, flags: worldFlags }, i + 1);
     const harnessFinding = (i: number, turn: number, floor: number, category: FindingCategory, severity: FindingSeverity, detail: string, frame?: string, tag?: FindingTag): Finding => ({
       sig: normalizeSignature(category, detail, frame),
       category,

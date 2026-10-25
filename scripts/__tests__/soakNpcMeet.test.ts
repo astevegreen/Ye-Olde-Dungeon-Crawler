@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { npcToMeet, type FloorNpc } from '../../e2e/soak/npcMeet';
+import { isNpcBump, npcChoiceKey, npcToMeet, recordNpcDecision, type FloorNpc, type NpcMeetState } from '../../e2e/soak/npcMeet';
 
 /**
  * K1: the player bot walks to a dungeon NPC with a choice once it has seen it, and bumps it
@@ -40,5 +40,87 @@ describe('npcToMeet: the dungeon NPC the bot goes to talk to', () => {
     expect(rebuilt(13, [HOSTAGE, IVALDA], all, [])).toEqual(IVALDA);
     expect(rebuilt(0, [IVALDA], all, [])).toBeNull();
     expect(rebuilt(13, [IVALDA], all, ['ivalda'])).toBeNull();
+  });
+});
+
+describe('isNpcBump: only the step onto the NPC meets it', () => {
+  it('is not a bump while the hero walks toward the NPC', () => {
+    expect(isNpcBump({ x: 8, y: 4 }, IVALDA)).toBe(false);
+    expect(isNpcBump({ x: 9, y: 3 }, IVALDA)).toBe(false);
+  });
+
+  it('is a bump when the step targets the NPC tile (the hero stays adjacent)', () => {
+    expect(isNpcBump({ x: 10, y: 4 }, IVALDA)).toBe(true);
+  });
+
+  it('answers the same when rebuilt from its source text', () => {
+    const rebuilt = new Function(`return (${isNpcBump.toString()})`)() as typeof isNpcBump;
+    expect(rebuilt({ x: 10, y: 4 }, IVALDA)).toBe(true);
+    expect(rebuilt({ x: 9, y: 4 }, IVALDA)).toBe(false);
+  });
+});
+
+describe('npcChoiceKey: how the bot answers an NPC choice', () => {
+  it('leaves with Escape, recording left, when no option is open (Ivalda without Iron Clans standing)', () => {
+    expect(npcChoiceKey(null, false)).toEqual({ key: 'Escape', option: 'left' });
+  });
+
+  it('presses Enter on the highlighted option and records its id', () => {
+    expect(npcChoiceKey('temper', true)).toEqual({ key: 'Enter', option: 'temper' });
+  });
+
+  it('highlights the first open option first, recording nothing yet', () => {
+    expect(npcChoiceKey(null, true)).toEqual({ key: 'ArrowDown' });
+  });
+
+  it('answers the same when rebuilt from its source text', () => {
+    const rebuilt = new Function(`return (${npcChoiceKey.toString()})`)() as typeof npcChoiceKey;
+    expect(rebuilt(null, false)).toEqual({ key: 'Escape', option: 'left' });
+    expect(rebuilt('forge_spell', true)).toEqual({ key: 'Enter', option: 'forge_spell' });
+  });
+});
+
+describe('recordNpcDecision: what summary.json gets', () => {
+  const fresh = (): NpcMeetState => ({ npcsMet: {}, npcChoice: null });
+
+  it('meets nobody on the walk toward the NPC', () => {
+    const state = fresh();
+    recordNpcDecision(state, 13, {});
+    expect(state).toEqual(fresh());
+  });
+
+  it('marks the NPC met on the bump, unanswered until its choice is', () => {
+    const state = fresh();
+    recordNpcDecision(state, 13, { npcBump: { id: 'ivalda' } });
+    expect(state.npcsMet).toEqual({ ivalda: { floor: 13, option: 'unanswered' } });
+    expect(state.npcChoice).toEqual({ id: 'ivalda' });
+  });
+
+  it('records left when the bot escapes the choice, and stops tracking it once it closes', () => {
+    const state = fresh();
+    recordNpcDecision(state, 13, { npcBump: { id: 'ivalda' } });
+    recordNpcDecision(state, 13, { npcKey: { id: 'ivalda', option: 'left' } });
+    expect(state.npcsMet.ivalda).toEqual({ floor: 13, option: 'left' });
+    recordNpcDecision(state, 13, {});
+    expect(state.npcChoice).toBeNull();
+    expect(state.npcsMet.ivalda.option).toBe('left');
+  });
+
+  it('keeps tracking the choice while the bot highlights, then records the option it entered', () => {
+    const state = fresh();
+    recordNpcDecision(state, 26, { npcBump: { id: 'hub_two' } });
+    recordNpcDecision(state, 26, { npcKey: { id: 'hub_two' } });
+    expect(state.npcChoice).toEqual({ id: 'hub_two' });
+    expect(state.npcsMet.hub_two.option).toBe('unanswered');
+    recordNpcDecision(state, 26, { npcKey: { id: 'hub_two', option: 'spare' } });
+    expect(state.npcsMet.hub_two).toEqual({ floor: 26, option: 'spare' });
+  });
+
+  it('keeps the NPC met after its choice closes, so npcToMeet never sends the bot back to it', () => {
+    const state = fresh();
+    recordNpcDecision(state, 13, { npcBump: { id: 'ivalda' } });
+    recordNpcDecision(state, 13, { npcKey: { id: 'ivalda', option: 'left' } });
+    recordNpcDecision(state, 13, {});
+    expect(npcToMeet(13, [IVALDA], all, Object.keys(state.npcsMet))).toBeNull();
   });
 });

@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test';
+
 /** A world flag a soak run sets before it starts (`SOAK_FLAGS`). */
 export interface SoakFlag {
   flag: string;
@@ -28,4 +30,35 @@ export function parseSoakFlags(raw: string | undefined): SoakFlag[] {
 export function formatSoakFlags(flags: SoakFlag[]): string {
   const list = flags.map((f) => (f.value ? f.flag : `${f.flag}=false`)).join(',');
   return /^[\w:.,=-]*$/.test(list) ? list : `'${list.replaceAll("'", "'\\''")}'`;
+}
+
+/**
+ * Sets each flag through the page's engine (`setWorldFlag`) and returns the run's log line.
+ * The spec calls it before the deep-start jump, so the floor that builds sees them, and on a
+ * run from town before the first action. No flags: nothing is set and nothing logged (`null`).
+ */
+export async function setSoakFlags(page: Pick<Page, 'evaluate'>, flags: SoakFlag[]): Promise<string | null> {
+  if (flags.length === 0) return null;
+  await page.evaluate((list: SoakFlag[]) => {
+    for (const { flag, value } of list) window.__cotwEngine!.setWorldFlag(flag, value);
+  }, flags);
+  return `[soak] World flags set: ${flags.map((f) => `${f.flag}=${f.value}`).join(', ')}`;
+}
+
+/** What a finding's repro line needs to replay its run. */
+export interface SoakReproRun {
+  seed: number;
+  policy: string;
+  opening: string;
+  startFloor: number;
+  startLevel: number;
+  flags: SoakFlag[];
+}
+
+/** The command that replays a run up to `actions` actions: a deep start names its floor (and
+ *  level), and a run with flags names them, from town too. */
+export function soakRepro(run: SoakReproRun, actions: number): string {
+  const deep = run.startFloor > 0 ? ` SOAK_START_FLOOR=${run.startFloor}${run.startLevel ? ` SOAK_START_LEVEL=${run.startLevel}` : ''}` : '';
+  const flags = run.flags.length > 0 ? ` SOAK_FLAGS=${formatSoakFlags(run.flags)}` : '';
+  return `SOAK=1 SOAK_SEED=${run.seed} SOAK_POLICY=${run.policy} SOAK_OPENING=${run.opening}${deep}${flags} SOAK_ACTIONS=${actions} npx playwright test e2e/soak.spec.ts --project=chromium --workers=1`;
 }

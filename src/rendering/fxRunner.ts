@@ -303,7 +303,8 @@ export class CanvasFXRunner {
    */
   private watchForStall(): void {
     if (this.stallTimer !== null || typeof setTimeout === 'undefined') return;
-    const wait = Math.max(0, this.trackDeadline - performance.now()) + FRAME_STALL_SLACK_MS;
+    // To the deadline's slack, not a full slack from now: a frame may have pushed it back.
+    const wait = Math.max(0, this.trackDeadline + FRAME_STALL_SLACK_MS - performance.now());
     this.stallTimer = setTimeout(() => {
       this.stallTimer = null;
       if (this.isDestroyed || !this.isPlaying) return;

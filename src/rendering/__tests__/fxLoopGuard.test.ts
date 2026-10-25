@@ -83,21 +83,32 @@ describe('a slow but steady frame rate plays every batch to its end (#77)', () =
   const HOLD_MS = 250;
   const BURST_MS = 437.5;
 
-  /** Frames every `frameMs` on a fixed clock, as a slow compositor delivers them. */
-  const slowFrames = (frameMs: number): void => {
+  /**
+   * Frames every `frameMs` on a fixed clock, as a slow compositor delivers them. Returns a
+   * stall switch: a frame asked for at its time or later never comes (the GPU stalls).
+   */
+  const slowFrames = (frameMs: number): ((at: number) => void) => {
+    let stopAt = Infinity;
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
     vi.stubGlobal('window', {});
     vi.stubGlobal('requestAnimationFrame', (cb: (t: number) => void) => {
-      setTimeout(() => cb(performance.now()), frameMs - (performance.now() % frameMs));
+      if (performance.now() < stopAt) setTimeout(() => cb(performance.now()), frameMs - (performance.now() % frameMs));
       return 1;
     });
     vi.stubGlobal('cancelAnimationFrame', () => {});
+    return (at) => { stopAt = at; };
   };
-  /** When the burst should end: each wave starts on the first frame after the last one ended. */
-  const burstEnd = (queuedAt: number, steps: number, frameMs: number): number => {
-    const frameAfter = (t: number) => Math.ceil(t / frameMs) * frameMs;
-    const landed = frameAfter(queuedAt + STEP_MS * steps);
-    return frameAfter(landed + HOLD_MS) + BURST_MS;
+  const frameAfter = (t: number, frameMs: number) => Math.ceil(t / frameMs) * frameMs;
+  /** The frames a batch's waves start on: each starts on the first frame after the last one ended. */
+  const waveStarts = (queuedAt: number, steps: number, frameMs: number): { hold: number; burst: number } => {
+    const hold = frameAfter(queuedAt + STEP_MS * steps, frameMs);
+    return { hold, burst: frameAfter(hold + HOLD_MS, frameMs) };
+  };
+  /** When the burst should end. */
+  const burstEnd = (queuedAt: number, steps: number, frameMs: number): number => waveStarts(queuedAt, steps, frameMs).burst + BURST_MS;
+  const newInputHandler = (): InputHandler => {
+    const engine = new GameEngine({ map: new GameMap(30, 30), player: new Player({ position: { x: 10, y: 10 } }) });
+    return new InputHandler(engine, () => {}, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, new SettingsManager(new MemoryStorage()));
   };
 
   afterEach(() => {
@@ -107,8 +118,7 @@ describe('a slow but steady frame rate plays every batch to its end (#77)', () =
   });
 
   it('at 150 ms a frame, holds input until the burst has played its whole length', async () => {
-    const engine = new GameEngine({ map: new GameMap(30, 30), player: new Player({ position: { x: 10, y: 10 } }) });
-    const ih = new InputHandler(engine, () => {}, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, new SettingsManager(new MemoryStorage()));
+    const ih = newInputHandler();
     slowFrames(150);
     const warn = vi.spyOn(flightRecorder, 'warn');
     await vi.advanceTimersByTimeAsync(1000);
@@ -170,6 +180,74 @@ describe('a slow but steady frame rate plays every batch to its end (#77)', () =
       }
     }
     expect(fired).toEqual([]);
+  });
+
+  it('frames that stop mid-batch still free input: the stalled wave, the waves after it, then 250 ms', async () => {
+    const STALL_SLACK_MS = 250;
+    const late: string[] = [];
+    for (const frameMs of [100, 150, 200]) {
+      for (const stalls of ['hold', 'burst'] as const) {
+        for (let phase = 0; phase < frameMs; phase += 25) {
+          const ih = newInputHandler();
+          const stallAt = slowFrames(frameMs);
+          const warn = vi.spyOn(flightRecorder, 'warn');
+          await vi.advanceTimersByTimeAsync(1000 + phase);
+          const starts = waveStarts(performance.now(), 4, frameMs);
+          // The last frame to come is the one that starts the stalled wave.
+          stallAt(starts[stalls]);
+          const runner = new CanvasFXRunner({ art: () => ART });
+          const release = ih.holdInput();
+          void runner.playEffects(batch(4)).finally(release);
+          const freeAt = starts[stalls] + (stalls === 'hold' ? HOLD_MS + BURST_MS : BURST_MS) + STALL_SLACK_MS;
+          await vi.advanceTimersByTimeAsync(freeAt - 1 - performance.now());
+          const lockedBefore = ih.isInputLocked;
+          await vi.advanceTimersByTimeAsync(2);
+          if (!lockedBefore || ih.isInputLocked || warn.mock.calls.length !== 1) {
+            late.push(`${frameMs} ms frames stalled in the ${stalls}, phase ${phase}: locked before ${lockedBefore}, after ${ih.isInputLocked}, warnings ${warn.mock.calls.length}`);
+          }
+          runner.destroy();
+          warn.mockRestore();
+          vi.useRealTimers();
+          vi.unstubAllGlobals();
+          ih.destroy();
+        }
+      }
+    }
+    expect(late).toEqual([]);
+  });
+
+  it('a second cast queued while the first plays: both play out, then input frees, with no stall warning', async () => {
+    const wrong: string[] = [];
+    for (let frameMs = 120; frameMs <= 300; frameMs += 30) {
+      for (let phase = 0; phase < frameMs; phase += 25) {
+        const ih = newInputHandler();
+        slowFrames(frameMs);
+        const warn = vi.spyOn(flightRecorder, 'warn');
+        await vi.advanceTimersByTimeAsync(1000 + phase);
+        const runner = new CanvasFXRunner({ art: () => ART });
+        const first = waveStarts(performance.now(), 4, frameMs);
+        // The first burst is seen to end on a frame, and the second batch starts on that frame.
+        const secondEnd = burstEnd(frameAfter(first.burst + BURST_MS, frameMs), 2, frameMs);
+        // As main.ts does: each batch holds input until it ends.
+        const releaseFirst = ih.holdInput();
+        void runner.playQueue(batch(4)).finally(releaseFirst);
+        await vi.advanceTimersByTimeAsync(100);
+        const releaseSecond = ih.holdInput();
+        void runner.playQueue(batch(2)).finally(releaseSecond);
+        await vi.advanceTimersByTimeAsync(secondEnd - 1 - performance.now());
+        const lockedBefore = ih.isInputLocked;
+        await vi.advanceTimersByTimeAsync(2000);
+        if (!lockedBefore || ih.isInputLocked || warn.mock.calls.length > 0) {
+          wrong.push(`${frameMs} ms frames, phase ${phase}: locked before ${lockedBefore}, after ${ih.isInputLocked}, warnings ${warn.mock.calls.length}`);
+        }
+        runner.destroy();
+        warn.mockRestore();
+        vi.useRealTimers();
+        vi.unstubAllGlobals();
+        ih.destroy();
+      }
+    }
+    expect(wrong).toEqual([]);
   });
 });
 

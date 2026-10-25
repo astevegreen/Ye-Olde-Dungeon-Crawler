@@ -43,11 +43,13 @@ back STATUS: BLOCKED.
   `git -C W fetch origin`.
 - Issue mode: if `sprint/n` exists, it holds earlier work: `git -C W switch sprint/n` and continue it as in
   fix mode. Otherwise `git -C W switch -c sprint/n origin/main`.
-  Fix mode: `git -C W switch sprint/n` first, since every hand-back (step 4) detaches it; when the concern is
-  a conflict with main, rebase it:
-  `git -C W fetch origin` then `git -C W rebase --reapply-cherry-picks origin/main` (main may hold this task
-  and its revert, which a plain rebase would silently drop), resolving conflicts in the task's favour only
-  where the task owns the lines.
+  Then restore what a stopped session left of this task: when `git -C W stash list` has entries
+  `On sprint/n:`, `git -C W stash pop stash@{k}` the newest of them (the lowest k). A conflict: resolve it in
+  the stash's favour, since it is the newer work; the stash stays listed.
+  Fix mode: `git -C W switch sprint/n` first, since every hand-back (step 4) detaches it, then restore as
+  above; when the concern is a conflict with main, rebase it: `git -C W fetch origin` then
+  `git -C W rebase --reapply-cherry-picks origin/main` (main may hold this task and its revert, which a plain
+  rebase would silently drop), resolving conflicts in the task's favour only where the task owns the lines.
 - Run `cd W && npm ls --depth=0`. Only if it fails (packages missing or not matching `package.json`), run
   `cd W && npm ci`. Never list, read or diff `node_modules` or `package-lock.json` yourself: the project's
   permission rules refuse it.
@@ -66,7 +68,9 @@ back STATUS: BLOCKED.
   issue, move it to `held`, and hand back STATUS: GATE-FAILED.
 
 ## 4. Hand back
-`git -C W switch --detach` so the branch is free for the reviewer and the integrator. Your final message,
+When `git -C W status --porcelain` lists anything (work the gates never let you commit), first
+`git -C W stash --include-untracked -m "unfinished"` while still on `sprint/n`, so the next build of it
+restores it. Then `git -C W switch --detach` so the branch is free for the reviewer and the integrator. Your final message,
 exactly:
 STATUS: DONE | BLOCKED | GATE-FAILED
 BRANCH: sprint/n

@@ -48,7 +48,9 @@ and `reason`:
 - `build`: `Q move <n> in-progress`, then run the implementer with "Mode: issue. Issue: <n>. Worktree: W."
 - `fix`: `Q move <n> in-progress`, then run the implementer with "Mode: fix. Issue: <n>. Worktree: W.
   Concerns: <concerns>".
-- `resume`: a stopped session built it; its branch holds the commits. Go straight to 2.1's reviewer run.
+- `resume`: a stopped session built it; its branch holds the commits. Go straight to 2.1's reviewer run,
+  unless `git -C W stash list` has an entry `On sprint/<n>:`: the session also left unfinished work, so run
+  the implementer as for `build`, which restores it.
 
 **Wake.** Each time you take an issue, whatever its mode, before the implementer or the reviewer runs:
 `get_session` with no id (load it and `update_trigger` with ToolSearch), then

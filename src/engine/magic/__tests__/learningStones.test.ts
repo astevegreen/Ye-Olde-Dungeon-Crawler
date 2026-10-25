@@ -263,6 +263,18 @@ describe('Shard and stone', () => {
     expect(effectiveManaCost(player, spell(picked, 'fire'))).toBe(20);
   });
 
+  it('does not report a read as learned while every grimoire slot is full', () => {
+    player.addItem(shard());
+    stepOn();
+    const face = learningStoneCard(engine)!.faces[0].id;
+    // Every slot is full: learnSpellResult answers `full` and the spell only waits.
+    player.learnSpellResult = () => ({ outcome: 'full', opened: [] });
+    const read = engine.beginEventCapture();
+    engine.handlePlayerAction(new ReadLearningStoneAction(player, face));
+    expect(player.spellsKnown).toEqual([]);
+    expect(read.find((e) => e.type === 'learning_stone_read')?.data?.learned).toBe(false);
+  });
+
   it('shows the same faces again after "not now"', () => {
     player.addItem(shard());
     stepOn();

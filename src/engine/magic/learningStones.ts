@@ -452,6 +452,7 @@ export class ReadLearningStoneAction implements Action {
     const shard = heldShard(engine, config);
     if (!shortcut && shard) this.entity.inventory.removeItem(shard.id);
     let message: string;
+    let learnedSpell = false;
     if (this.spellId === null) {
       const rune = shardToRune(engine, config, record);
       message = rune ? formatMagicMessage(config.messages.rune, { essence: rune.displayName }) : 'The shard crumbles.';
@@ -461,17 +462,19 @@ export class ReadLearningStoneAction implements Action {
       record.shortcut = undefined;
       if (shortcut) this.entity.learningStones.costShares[this.spellId] = config.shortcutCostMultiplier ?? 0.9;
       const learned = this.entity.learnSpellResult(this.spellId);
+      learnedSpell = learned.outcome === 'learned';
       const spell = spellFor(engine, this.spellId);
       const waiting = learned.outcome === 'full' ? ' Every slot in your grimoires is full: it waits in your spellbook until you make room.' : '';
       message = formatMagicMessage(config.messages.learned, { spell: spell?.name ?? this.spellId, stone: stoneName(engine) }) + waiting;
       engine.log(message);
     }
-    // `learned` tells a read that taught a spell from one that made the shard a rune.
+    // `learned` is true only for a read that put the spell in a grimoire slot: a rune, or a
+    // spell left waiting because every slot is full, teaches nothing to slot yet.
     engine.emitGameEvent({
       type: 'learning_stone_read',
       turn: engine.turnCount,
       actorId: this.entity.id,
-      data: { floor: engine.currentFloor, spellId: this.spellId ?? undefined, learned: this.spellId !== null, shortcut },
+      data: { floor: engine.currentFloor, spellId: this.spellId ?? undefined, learned: learnedSpell, shortcut },
     });
     const cost = this.entity.getActionCost(BASE_ACTION_COST);
     this.entity.consumeEnergy(cost);

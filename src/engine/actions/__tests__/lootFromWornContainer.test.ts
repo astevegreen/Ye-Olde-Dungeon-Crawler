@@ -7,7 +7,7 @@ import { Item } from '../../items/item';
 import { PotionItem } from '../../items/consumables';
 import { CoinItem } from '../../economy/currency';
 import { createScaledItem } from '../../dungeon/lootSpawner';
-import { LootFromContainerAction } from '../inventory-actions';
+import { LootAllFromContainerAction, LootFromContainerAction } from '../inventory-actions';
 
 /**
  * B1 (sprint, 21 Oct): taking an item out of a worn belt, purse or rune pouch moved it straight
@@ -22,6 +22,9 @@ const make = (id: string, n = 1) => {
 
 const take = (engine: GameEngine, container: Container, item: Item) =>
   new LootFromContainerAction(engine.player, container, item).perform(engine);
+
+const takeAll = (engine: GameEngine, container: Container) =>
+  new LootAllFromContainerAction(engine.player, container).perform(engine);
 
 /** Fills the pack to its last cm³, so nothing with bulk fits. */
 const fillPack = (engine: GameEngine) => {
@@ -117,6 +120,90 @@ describe('taking an item out of a worn container', () => {
   });
 });
 
+/**
+ * F1 (sprint, 25 Oct; #70): Take all from a worn belt, purse or rune pouch put every item straight
+ * back, spent a turn, and logged "Looted N items". It moves them to the pack now.
+ */
+describe('taking everything out of a worn container', () => {
+  it('moves the potions from the worn belt into the pack and leaves the belt empty', () => {
+    const engine = newHero();
+    const inv = engine.player.inventory;
+    const belt = inv.belt!;
+    const held = [...belt.getItems()];
+    const potion = held.find((i) => i instanceof PotionItem)!;
+    expect(potion).toBeDefined();
+    const inPack = countOf(inv.primaryPack, potion.definitionId);
+    const energy = engine.player.energy;
+
+    const result = takeAll(engine, belt);
+
+    expect(result.success).toBe(true);
+    expect(result.cost).toBeGreaterThan(0);
+    expect(engine.player.energy).toBe(energy - result.cost);
+    expect(belt.getItems()).toHaveLength(0);
+    const potions = held.filter((i) => i.definitionId === potion.definitionId).reduce((n, i) => n + (i.quantity ?? 1), 0);
+    expect(countOf(inv.primaryPack, potion.definitionId)).toBe(inPack + potions);
+    expect(result.message).toContain(`Looted ${held.length} item`);
+    expect(result.message).toContain('(stored in pack)');
+    expect(engine.messages.at(-1)).toBe(result.message);
+  });
+
+  it('moves the coins from the worn purse into the pack, all of them', () => {
+    const engine = newHero();
+    const inv = engine.player.inventory;
+    const purse = inv.purse!;
+    const inPurse = coinsIn(purse);
+    expect(inPurse).toBeGreaterThan(0);
+    const inPack = coinsIn(inv.primaryPack);
+
+    const result = takeAll(engine, purse);
+
+    expect(result.success).toBe(true);
+    expect(result.cost).toBeGreaterThan(0);
+    expect(result.message).toContain('(stored in pack)');
+    expect(coinsIn(purse)).toBe(0);
+    expect(coinsIn(inv.primaryPack)).toBe(inPack + inPurse);
+  });
+
+  it('moves an essence from the worn rune pouch into the pack', () => {
+    const engine = newHero();
+    const inv = engine.player.inventory;
+    const pouch = inv.paperdoll.getItem('runes') as Container;
+    const essence = make('essence_isa');
+    expect(inv.storeItem(essence).destination).toBe('runes');
+
+    const result = takeAll(engine, pouch);
+
+    expect(result.success).toBe(true);
+    expect(result.message).toContain('(stored in pack)');
+    expect(pouch.getItem(essence.id)).toBeNull();
+    expect(inv.primaryPack.getItem(essence.id)).toBe(essence);
+  });
+
+  it('with no room in the pack, fails at no cost, says why, and leaves every item in the container', () => {
+    const engine = newHero();
+    const inv = engine.player.inventory;
+    const belt = inv.belt!;
+    const held = belt.getItems().map((i) => [i, i.quantity] as const);
+    expect(held.length).toBeGreaterThan(0);
+    fillPack(engine);
+    const energy = engine.player.energy;
+
+    const result = takeAll(engine, belt);
+
+    expect(result).toMatchObject({ success: false, cost: 0 });
+    expect(result.message).toMatch(/^Could not loot from .+: .+/);
+    expect(result.message).not.toContain('Looted');
+    expect(engine.messages.at(-1)).toBe(result.message);
+    expect(engine.player.energy).toBe(energy);
+    expect(belt.getItems()).toHaveLength(held.length);
+    for (const [item, quantity] of held) {
+      expect(belt.getItem(item.id)).toBe(item);
+      expect(item.quantity).toBe(quantity);
+    }
+  });
+});
+
 describe('taking an item out of a chest on the ground', () => {
   const chestHolding = (engine: GameEngine, ...items: Item[]) => {
     const chest = new Container({
@@ -153,5 +240,29 @@ describe('taking an item out of a chest on the ground', () => {
     expect(belt.getItem(scroll.id)).toBe(scroll);
     expect((inv.paperdoll.getItem('runes') as Container).getItem(essence.id)).toBe(essence);
     expect(coinsIn(inv.purse)).toBeGreaterThanOrEqual(5);
+  });
+
+  it('Take all still prefers the belt, the purse and the rune pouch, and says where each went', () => {
+    const engine = newHero();
+    const inv = engine.player.inventory;
+    const belt = inv.belt!;
+    const loose = belt.getItems()[0];
+    belt.removeItem(loose.id);
+    inv.primaryPack.addItem(loose);
+    const scroll = make('scroll_phase_door');
+    const coins = new CoinItem({ id: 'b1-coins', denomination: 'silver', count: 5 });
+    const essence = make('essence_berkano');
+    const chest = chestHolding(engine, scroll, coins, essence);
+    const inPurse = coinsIn(inv.purse);
+
+    const result = takeAll(engine, chest);
+
+    expect(result.success).toBe(true);
+    expect(result.message).toContain('Looted 3 items from Chest');
+    expect(result.message).toContain('(stored in belt, purse, runes)');
+    expect(chest.getItems()).toHaveLength(0);
+    expect(belt.getItem(scroll.id)).toBe(scroll);
+    expect((inv.paperdoll.getItem('runes') as Container).getItem(essence.id)).toBe(essence);
+    expect(coinsIn(inv.purse)).toBe(inPurse + 5);
   });
 });

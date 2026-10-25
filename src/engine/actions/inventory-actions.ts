@@ -296,6 +296,13 @@ export class QuickLootAction implements Action {
   }
 }
 
+/** Out of a worn belt, purse or rune pouch, items go to the pack, never straight back: the container to skip. */
+function wornSource(player: Player, container: Container): Container | undefined {
+  const inv = player.inventory;
+  const worn = container !== inv.primaryPack && inv.paperdoll.getAllEquipped().some((eq) => eq.item === container);
+  return worn ? container : undefined;
+}
+
 export class LootFromContainerAction implements Action {
   public readonly player: Player;
   public readonly container: Container;
@@ -319,11 +326,7 @@ export class LootFromContainerAction implements Action {
     }
 
     const takenName = removed.displayName;
-    // Out of a worn belt, purse or rune pouch, the item goes to the pack, never straight back.
-    const inv = this.player.inventory;
-    const worn =
-      this.container !== inv.primaryPack && inv.paperdoll.getAllEquipped().some((eq) => eq.item === this.container);
-    const storeResult = inv.storeItem(removed, worn ? this.container : undefined);
+    const storeResult = this.player.inventory.storeItem(removed, wornSource(this.player, this.container));
     if (!storeResult.success) {
       this.container.addItem(removed);
       const msg = `Cannot loot ${this.item.displayName}: ${storeResult.reason}`;
@@ -405,15 +408,18 @@ export class LootAllFromContainerAction implements Action {
     }
 
     const looted: string[] = [];
+    const destinations = new Set<string>();
     let failureReason: string | undefined;
+    const except = wornSource(this.player, this.container);
 
     for (const item of items) {
       const removed = this.container.removeItem(item.id);
       if (!removed) continue;
       const removedName = removed.displayName;
-      const res = this.player.inventory.storeItem(removed);
+      const res = this.player.inventory.storeItem(removed, except);
       if (res.success) {
         looted.push(removedName);
+        destinations.add(res.destination);
       } else {
         this.container.addItem(removed);
         failureReason = res.reason;
@@ -431,7 +437,7 @@ export class LootAllFromContainerAction implements Action {
     this.player.consumeEnergy(cost);
 
     const names = looted.join(', ');
-    let msg = `Looted ${looted.length} item${looted.length > 1 ? 's' : ''} from ${this.container.displayName}: ${names}.`;
+    let msg = `Looted ${looted.length} item${looted.length > 1 ? 's' : ''} from ${this.container.displayName}: ${names} (stored in ${[...destinations].join(', ')}).`;
     if (failureReason) {
       msg += ` (${failureReason})`;
     }

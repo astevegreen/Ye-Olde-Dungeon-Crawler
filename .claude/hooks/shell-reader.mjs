@@ -20,6 +20,8 @@ const unmask = (s) => s.replace(/[\u0001-\u0007]/g, (c) => UNMASK[c]);
 // body, a queue note): it is blanked, so a note that mentions `git push`, curl or --no-verify isn't read as
 // one. A value holding $ (or, in bash, a backtick) is read like any other word.
 const TEXT_FLAG = /(^|\s)(--note|--also|--body|--comment|--title|--message|-m)(=|\s+)$/;
+// Bash's `$'…'` single-character escapes.
+const ANSI = { a: '\x07', b: '\b', e: '\x1b', E: '\x1b', f: '\f', n: '\n', r: '\r', t: '\t', v: '\v', '\\': '\\', "'": "'", '"': '"', '?': '?' };
 // PowerShell's call operator and dot-source run the command a variable or an expression names (`& $g push`,
 // `. (gcm git)`); in bash, `& $g` backgrounds and then runs one. `2>&1` and `&&` are not that &.
 const RUNS_VALUE = /(?<![>&])&(?![&>])\s*([$(]|"[^"]*\$)|(^|[;|\n{(&])\s*\.\s+([$(]|"[^"]*\$)/;
@@ -46,6 +48,8 @@ const PREFIX = {
   wsl: ['-d', '--distribution', '-u', '--user', '--cd'],
 };
 const SHELLS = new Set(['sh', 'bash', 'zsh', 'dash', 'ksh', 'fish']);
+// A script read from input: `bash /dev/stdin <<'EOF'`, `echo … | sh -`, `source /dev/fd/3`.
+const STDIN = /^(-|\/dev\/stdin|\/dev\/fd\/\d+|\/proc\/[^/]+\/fd\/\d+)$/;
 const STRING_RUNNERS = new Set(['cmd', 'eval', 'invoke-expression', 'iex', 'invoke-command', 'icm']);
 // Programs Start-Process may not start: their arguments would run a command the guard never reads as one.
 const NOT_STARTED = new Set(['git', 'docker', 'docker-compose', 'podman', 'wsl', 'pwsh', 'powershell', 'curl', 'wget',
@@ -80,8 +84,8 @@ export function readCommand(command, shell = 'bash') {
   const heredocs = [];
   const raw = String(command ?? '');
   // An escape before a newline joins the two lines into one command: `git \⏎push` pushes, in PowerShell `git `⏎push`.
-  // A heredoc's body is input, not commands, so it is folded first (its own escapes are literal).
-  const line = (PS ? foldHereStrings(raw) : foldHeredocs(raw)).replace(PS ? /`\r?\n/g : /\\\r?\n/g, ' ');
+  // Comments, `$'…'` strings and heredoc bodies are folded first (fold, below); a body's own escapes are literal.
+  const line = fold(raw).replace(PS ? /`\r?\n/g : /\\\r?\n/g, ' ');
 
   // Where a run that starts at i ends, as the shell finds it. `$(…)` holds a command of its own, whose quotes
   // and parentheses nest (`"$(echo "a"; git push)"` is one string); a bash backtick run ends at the next
@@ -130,66 +134,173 @@ export function readCommand(command, shell = 'bash') {
     }
     return runs;
   }
-  // Bash heredocs (`cat <<'EOF'` … `EOF`), wherever a command can stand, a `$(…)` inside double quotes included (the
-  // usual `git commit -m "$(cat <<'EOF' … EOF)"`). A quoted delimiter (<<'X', <<"X", <<\X) keeps the body literal, so
-  // the body is cut out; an unquoted body runs only its `$(…)` and backticks, which stay, one to a line. `<<-` strips
-  // leading tabs before the delimiter is matched; `<<<` is a here-string and `$((a<<2))` arithmetic.
-  function foldHeredocs(s) {
+  // Decodes the bash `$'…'` escape at s[k] into [the character, the escape's length] (`$'\x70ush'` is push).
+  function ansiEscape(s, k) {
+    const rest = s.slice(k + 1);
+    if (rest[0] in ANSI) return [ANSI[rest[0]], 2];
+    let m = /^x([0-9a-fA-F]{1,2})/.exec(rest) ?? /^u([0-9a-fA-F]{1,4})/.exec(rest) ?? /^U([0-9a-fA-F]{1,8})/.exec(rest);
+    if (m) return [String.fromCodePoint(parseInt(m[1], 16)), 2 + m[1].length];
+    m = /^[0-7]{1,3}/.exec(rest);
+    if (m) return [String.fromCharCode(parseInt(m[0], 8)), 1 + m[0].length];
+    m = /^c(.)/.exec(rest);
+    if (m) return [String.fromCharCode(m[1].charCodeAt(0) & 31), 3];
+    return [`\\${rest[0] ?? ''}`, 2];
+  }
+  // One pass over the line before anything else reads it, keeping the contexts the shell keeps (a command, a
+  // `(…)` or `$(…)`, a bash backtick run, double quotes), so that:
+  // - a comment is dropped: a `#` that starts a word, to the end of its line (after a space, `;`, `|`, `&`, `(`, a
+  //   subshell's `)`, and in bash `<` or `>`; in PowerShell also `{` and `}`), and PowerShell's `<# … #>`; nothing
+  //   in one opens a string or a heredoc;
+  // - bash's `$'…'` is decoded into a plain single-quoted string;
+  // - a heredoc body is input, not commands, wherever its `<<` stands (a `$(…)` inside double quotes included, the
+  //   usual `git commit -m "$(cat <<'EOF' … EOF)"`). A quoted delimiter (<<'X', <<"X", <<\X) keeps the body literal,
+  //   so the body is cut out; an unquoted body runs only its `$(…)` and backticks, which stay, one to a line. `<<-`
+  //   strips leading tabs before the delimiter is matched; `<<<` is a here-string and `$((a<<2))` arithmetic.
+  // - PowerShell's here-strings read the same way: @'…'@ is literal, @"…"@ runs only its `$(…)`. One opens only
+  //   where a word starts and ends its line, and closes at a line starting '@ or "@.
+  function fold(s) {
     let out = '';
     let pending = [];
-    // The contexts the scan is in: cmd (a command line, a `$(…)` or a `(…)`), dq (double quotes) and ` (backticks).
     const stack = ['cmd'];
+    // Whether the next character starts a word, so that a `#` there starts a comment.
+    let start = true;
     for (let i = 0; i < s.length; i++) {
       const c = s[i];
       const ctx = stack[stack.length - 1];
-      if (c === '\\') {
+      if (c === ESC) {
         out += c + (s[i + 1] ?? '');
         i++;
+        start = false;
         continue;
       }
       if (ctx === 'dq') {
-        if (c === '"') stack.pop();
-        else if (s.startsWith('$((', i)) {
+        if (c === '"') {
+          stack.pop();
+          start = false;
+        } else if (!PS && s.startsWith('$((', i)) {
           const end = parenEnd(s, i + 2);
           out += s.slice(i, end + 1);
           i = end;
           continue;
         } else if (s.startsWith('$(', i)) {
-          stack.push('(');
+          stack.push('$(');
           out += '$(';
           i++;
+          start = true;
           continue;
-        } else if (c === '`') stack.push('`');
+        } else if (c === '`' && !PS) {
+          stack.push('`');
+          out += c;
+          start = true;
+          continue;
+        }
         out += c;
+        continue;
+      }
+      // A command context.
+      if (c === '#' && start) {
+        const nl = s.indexOf('\n', i);
+        i = (nl < 0 ? s.length : nl) - 1;
+        continue;
+      }
+      if (PS && start && s.startsWith('<#', i)) {
+        const end = s.indexOf('#>', i + 2);
+        i = (end < 0 ? s.length : end + 2) - 1;
+        out += ' ';
+        continue;
+      }
+      const here = PS && start ? /^@(['"])[ \t]*\r?\n/.exec(s.slice(i, i + 64)) : null;
+      if (here) {
+        const from = i + here[0].length;
+        const close = s.indexOf(`\n${here[1]}@`, from - 1);
+        const body = s.slice(from, close < 0 ? s.length : close).replace(/\r$/, '');
+        const quoted = here[1] === "'";
+        heredocs.push({ quoted, body });
+        out += quoted ? "''" : `"${runsIn(body).join(' ')}"`;
+        i = (close < 0 ? s.length : close + 3) - 1;
+        start = false;
         continue;
       }
       if (c === "'") {
         const end = s.indexOf("'", i + 1) < 0 ? s.length : s.indexOf("'", i + 1);
         out += s.slice(i, end + 1);
         i = end;
+        start = false;
         continue;
       }
-      if (s.startsWith('$((', i)) {
+      if (!PS && c === '$' && s[i + 1] === "'") {
+        let text = '';
+        let k = i + 2;
+        while (k < s.length && s[k] !== "'") {
+          if (s[k] === '\\') {
+            const [ch, len] = ansiEscape(s, k);
+            text += ch;
+            k += len;
+          } else {
+            text += s[k];
+            k++;
+          }
+        }
+        out += `'${text.replace(/'/g, "'\\''")}'`;
+        i = k;
+        start = false;
+        continue;
+      }
+      if (!PS && s.startsWith('$((', i)) {
         const end = parenEnd(s, i + 2);
         out += s.slice(i, end + 1);
         i = end;
+        start = false;
         continue;
       }
-      if (c === '"') stack.push('dq');
-      else if (c === '(') stack.push('(');
-      else if (c === ')' && ctx === '(') stack.pop();
-      else if (c === '`') {
-        if (ctx === '`') stack.pop();
-        else stack.push('`');
-      } else if (c === '<' && s[i + 1] === '<' && s[i + 2] !== '<' && s[i - 1] !== '<') {
+      if (s.startsWith('$(', i)) {
+        stack.push('$(');
+        out += '$(';
+        i++;
+        start = true;
+        continue;
+      }
+      if (c === '"') {
+        stack.push('dq');
+        out += c;
+        start = false;
+        continue;
+      }
+      if (c === '(') {
+        stack.push('(');
+        out += c;
+        start = true;
+        continue;
+      }
+      if (c === ')' && (ctx === '(' || ctx === '$(')) {
+        stack.pop();
+        out += c;
+        // A word may go on after a substitution's `)` (`$(x)#y`), never after a subshell's.
+        start = ctx === '(' || PS;
+        continue;
+      }
+      if (c === '`' && !PS) {
+        if (ctx === '`') {
+          stack.pop();
+          start = false;
+        } else {
+          stack.push('`');
+          start = true;
+        }
+        out += c;
+        continue;
+      }
+      if (!PS && c === '<' && s[i + 1] === '<' && s[i + 2] !== '<' && s[i - 1] !== '<') {
         const op = /^<<(-?)[ \t]*((?:[^\s;|&<>()'"\\]|\\.|'[^']*'|"[^"]*")+)/.exec(s.slice(i));
         if (op) {
           pending.push({ strip: op[1] === '-', delimiter: op[2].replace(/\\(.)|['"]/g, '$1'), quoted: /['"\\]/.test(op[2]) });
           out += op[0];
           i += op[0].length - 1;
+          start = false;
           continue;
         }
-      } else if (c === '\n' && pending.length) {
+      }
+      if (c === '\n' && pending.length) {
         out += c;
         let p = i + 1;
         for (const doc of pending) {
@@ -207,23 +318,13 @@ export function readCommand(command, shell = 'bash') {
         }
         pending = [];
         i = p - 1;
+        start = true;
         continue;
       }
       out += c;
+      start = (PS ? /[\s;|&(){}]/ : /[\s;|&<>]/).test(c);
     }
     return out;
-  }
-  // PowerShell's here-strings: @'…'@ is literal text, and @"…"@ runs only its `$(…)`.
-  function foldHereStrings(s) {
-    return s
-      .replace(/@'[ \t]*\r?\n([\s\S]*?)\r?\n'@/g, (_, body) => {
-        heredocs.push({ quoted: true, body });
-        return "''";
-      })
-      .replace(/@"[ \t]*\r?\n([\s\S]*?)\r?\n"@/g, (_, body) => {
-        heredocs.push({ quoted: false, body });
-        return `"${runsIn(body).join(' ')}"`;
-      });
   }
   // In double quotes that run a command, only `$(…)` and bash's backticks hold commands, each read as a
   // command of its own; an operator elsewhere in them is text (`--body "Done; $n left"`).
@@ -301,6 +402,8 @@ export function readCommand(command, shell = 'bash') {
   // `fromArgs`: find or xargs adds words to it, `repl` being xargs' or find's placeholder.
   function commandsIn(raw, fromArgs = false, repl = null, depth = 0) {
     if (depth > 4) unreadable('too many nested wrappers to read');
+    // `.` with no file, or input as its file (`. <(…)` leaves it alone), runs what it reads.
+    if (raw[0] === '.' && (raw.length === 1 || STDIN.test(raw[1]))) unreadable('`.` runs a script read from input, which the guard can\'t read');
     const w = [...raw];
     // PowerShell runs the command an assignment stores: `$x = git push`, `$x=git push`, `$env:X += …`.
     for (let lead = true; lead && w.length;) {
@@ -314,6 +417,7 @@ export function readCommand(command, shell = 'bash') {
       else lead = false;
     }
     if (!w.length) return [];
+    if (STDIN.test(w[0])) unreadable(`\`${w[0]}\` runs a script read from input, which the guard can't read`);
     if (w[0].startsWith('$')) {
       // PowerShell shows a value here (`$x`, `$x.Count`, `$x | …`) and runs one only through & or ., refused
       // above; bash runs the command the variable holds.
@@ -370,6 +474,7 @@ export function readCommand(command, shell = 'bash') {
         }
         if (/^\d*</.test(t)) continue;
         if (t === '--') {
+          if (STDIN.test(w[i + 1] ?? '')) unreadable(`\`${name}\` runs a script read from input, which the guard can't read`);
           script = i + 1 < w.length;
           break;
         }
@@ -379,10 +484,16 @@ export function readCommand(command, shell = 'bash') {
           continue;
         }
         if (/^[-+]/.test(t)) continue;
+        if (STDIN.test(t)) unreadable(`\`${name}\` runs a script read from input, which the guard can't read`);
         script = true;
         break;
       }
       if (!script) unreadable(`\`${name}\` with no script reads its commands from input, which the guard can't read`);
+      return [self];
+    }
+    if (name === 'source') {
+      const file = w.slice(1).find((t) => !t.startsWith('-') || t === '-');
+      if (!file || STDIN.test(file)) unreadable('`source` runs a script read from input, which the guard can\'t read');
       return [self];
     }
     if (name === 'pwsh' || name === 'powershell') {

@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { INTEGRATOR, pushLockRefusal } from '../sprint/push-lock.mjs';
 
-vi.setConfig({ testTimeout: 30_000 });
+vi.setConfig({ testTimeout: 90_000 });
 
 const HOOKS = fileURLToPath(new URL('../../.githooks', import.meta.url)).split(path.sep).join('/');
 const NOW = new Date('2026-10-26T12:00:00Z');

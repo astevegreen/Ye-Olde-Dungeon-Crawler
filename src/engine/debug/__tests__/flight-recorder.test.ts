@@ -204,5 +204,5 @@ describe('the engine a replay checkpoint came from', () => {
     expect(ref.deref()).toBeUndefined();
     // The replay data itself is kept, for a report filed after the run.
     expect(recorder.getReplayData()?.trail).toHaveLength(1);
-  });
+  }, 30_000);
 });

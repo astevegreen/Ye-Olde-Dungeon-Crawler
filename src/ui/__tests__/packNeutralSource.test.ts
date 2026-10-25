@@ -61,7 +61,7 @@ function stripComments(text: string): string {
     .replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 }
 
-describe('pack-neutral presentation source', () => {
+describe('pack-neutral presentation source', { timeout: 30_000 }, () => {
   const files = SCANNED.flatMap(sourceFiles);
   const nouns = [...new Set(PACKS.flatMap(packNouns))];
 

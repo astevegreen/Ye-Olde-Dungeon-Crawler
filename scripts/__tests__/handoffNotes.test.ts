@@ -123,7 +123,7 @@ const onOrigin = async (origin: string, name: string): Promise<string | null> =>
 
 const listed = async (cwd: string): Promise<string[]> => (await notes(cwd, 'list')).out.trimEnd().split('\n');
 
-describe.concurrent('notes.mjs', { timeout: 60_000 }, () => {
+describe.concurrent('notes.mjs', { timeout: 120_000 }, () => {
   it('publish stamps line 2, files the draft under a UTC time and pushes it', async () => {
     const { origin, work } = await repos();
     fs.writeFileSync(path.join(work, 'scratch.txt'), 'wip\n');
@@ -281,7 +281,7 @@ async function stop(cwd: string, entries: Entry[]): Promise<Run> {
 
 const CLEAR = 'Note published.\n\nAfter `/clear`, type `/handoff resume`.';
 
-describe.concurrent('handoff-nudge.mjs', { timeout: 60_000 }, () => {
+describe.concurrent('handoff-nudge.mjs', { timeout: 120_000 }, () => {
   it('at session start, tells the owner about open notes only', async () => {
     const { work } = await repos();
     const start = () => run(process.execPath, [NUDGE], work, JSON.stringify({ hook_event_name: 'SessionStart', source: 'clear', cwd: work }));

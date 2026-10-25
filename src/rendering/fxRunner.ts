@@ -179,7 +179,7 @@ export class CanvasFXRunner {
   private readonly art: () => SpellFxCatalog | undefined;
   /** Flights that end where a burst of their batch goes off: the burst draws their impact. */
   private readonly landsInBurst = new WeakSet<ProjectileEffectDescriptor>();
-  /** When the queued tactical batches should all have ended, frames or not (#47). */
+  /** When the queued tactical batches should all have ended, frames or not (#47); a frame that starts a wave pushes it back (#77). */
   private trackDeadline = 0;
   private stallTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -337,8 +337,21 @@ export class CanvasFXRunner {
       impact(ctx, x, y, p, cs);
     }, art.msImpact);
     if (hold) {
-      this.activeEffects.push({ type: 'hold', startTime: performance.now(), durationMs: Math.min(IMPACT_HOLD_MS, art.msImpact), completed: false });
+      const now = performance.now();
+      const durationMs = Math.min(IMPACT_HOLD_MS, art.msImpact);
+      this.activeEffects.push({ type: 'hold', startTime: now, durationMs, completed: false });
+      this.extendDeadline(now, durationMs);
     }
+  }
+
+  /**
+   * A frame just started something that plays `ms`: the track ends no sooner than that plus the
+   * waves still queued. Each wave starts only on a frame, so on a slow frame rate a batch runs
+   * past the length it was queued with; the guard must wait for that, not cut it short (#77).
+   */
+  private extendDeadline(now: number, ms: number): void {
+    const queued = this.queuedTracks.reduce((sum, w) => sum + waveMs(w), 0);
+    this.trackDeadline = Math.max(this.trackDeadline, now + ms + queued);
   }
 
   /** The pack's art for an effect, when it draws one. */
@@ -366,6 +379,7 @@ export class CanvasFXRunner {
     for (const desc of nextBatch) {
       this.activeEffects.push(this.createActiveEffect(desc, now));
     }
+    this.extendDeadline(now, waveMs(nextBatch));
   }
 
   private createActiveEffect(desc: VisualEffectDescriptor, now: number): ActiveEffect {

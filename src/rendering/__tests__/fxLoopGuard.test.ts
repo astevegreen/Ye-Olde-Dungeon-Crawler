@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { allowIsolatedFailures } from '../../../tests/setup/isolatedFailures';
 import { CanvasFXRunner } from '../fxRunner';
-import { GameEngine, GameMap, Player, MemoryStorage } from '../../engine';
-import type { VisualEffectDescriptor } from '../../engine';
+import { GameEngine, GameMap, Player, MemoryStorage, flightRecorder } from '../../engine';
+import type { SpellFxCatalog, VisualEffectDescriptor } from '../../engine';
 import { InputHandler } from '../input-handler';
 import { SettingsManager } from '../../ui/settings/settingsManager';
 
@@ -67,6 +67,109 @@ describe('a batch frees input by its own length when frames stop (#47)', () => {
     runner.destroy();
     vi.unstubAllGlobals();
     ih.destroy();
+  });
+});
+
+describe('a slow but steady frame rate plays every batch to its end (#77)', () => {
+  // A flight that does not land on the burst's epicentre, so its drawn impact holds the track
+  // between the two waves: three wave boundaries, each seen only on a frame.
+  const ART: SpellFxCatalog = { elements: { fire: { impact: () => {}, msBolt: 100, msImpact: 400 } } };
+  const batch = (steps: number): VisualEffectDescriptor[] => [
+    { type: 'projectile', origin: { x: 10, y: 10 }, path: Array.from({ length: steps }, (_, i) => ({ x: 11 + i, y: 10 })), color: '#f00', fx: 'fire', stepDelayMs: 22, travelMode: 'smooth' },
+    { type: 'burst', epicenter: { x: 20, y: 20 }, radius: 2, color: '#f00', fx: 'fire', durationMs: 250, style: 'shockwave' },
+  ];
+  // Slowed 1.75x: 38.5 ms a step; the hold is min(250, msImpact); the burst 437.5 ms.
+  const STEP_MS = 38.5;
+  const HOLD_MS = 250;
+  const BURST_MS = 437.5;
+
+  /** Frames every `frameMs` on a fixed clock, as a slow compositor delivers them. */
+  const slowFrames = (frameMs: number): void => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
+    vi.stubGlobal('window', {});
+    vi.stubGlobal('requestAnimationFrame', (cb: (t: number) => void) => {
+      setTimeout(() => cb(performance.now()), frameMs - (performance.now() % frameMs));
+      return 1;
+    });
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+  };
+  /** When the burst should end: each wave starts on the first frame after the last one ended. */
+  const burstEnd = (queuedAt: number, steps: number, frameMs: number): number => {
+    const frameAfter = (t: number) => Math.ceil(t / frameMs) * frameMs;
+    const landed = frameAfter(queuedAt + STEP_MS * steps);
+    return frameAfter(landed + HOLD_MS) + BURST_MS;
+  };
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('at 150 ms a frame, holds input until the burst has played its whole length', async () => {
+    const engine = new GameEngine({ map: new GameMap(30, 30), player: new Player({ position: { x: 10, y: 10 } }) });
+    const ih = new InputHandler(engine, () => {}, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, new SettingsManager(new MemoryStorage()));
+    slowFrames(150);
+    const warn = vi.spyOn(flightRecorder, 'warn');
+    await vi.advanceTimersByTimeAsync(1000);
+    const runner = new CanvasFXRunner({ art: () => ART });
+    const end = burstEnd(performance.now(), 4, 150);
+
+    const release = ih.holdInput();
+    void runner.playQueue(batch(4)).finally(release);
+    await vi.advanceTimersByTimeAsync(end - 1 - performance.now());
+    expect(runner.isPlaying).toBe(true);
+    expect(ih.isInputLocked).toBe(true);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(ih.isInputLocked).toBe(false);
+    expect(warn).not.toHaveBeenCalled();
+    runner.destroy();
+    vi.unstubAllGlobals();
+    ih.destroy();
+  });
+
+  it('at any slow frame rate, no batch ends before its burst has played its whole length', async () => {
+    const cut: string[] = [];
+    for (let frameMs = 120; frameMs <= 500; frameMs += 20) {
+      for (let steps = 1; steps <= 4; steps++) {
+        for (let phase = 0; phase < frameMs; phase += 15) {
+          slowFrames(frameMs);
+          await vi.advanceTimersByTimeAsync(1000 + phase);
+          const runner = new CanvasFXRunner({ art: () => ART });
+          const end = burstEnd(performance.now(), steps, frameMs);
+          let endedAt = Number.NaN;
+          void runner.playEffects(batch(steps)).then(() => { endedAt = performance.now(); });
+          await vi.advanceTimersByTimeAsync(3000);
+          if (!(endedAt >= end)) cut.push(`${frameMs} ms frames, ${steps} steps, phase ${phase}: ended ${end - endedAt} ms early`);
+          runner.destroy();
+          vi.useRealTimers();
+          vi.unstubAllGlobals();
+        }
+      }
+    }
+    expect(cut).toEqual([]);
+  });
+
+  it('at frames under 250 ms apart, the stall guard never fires', async () => {
+    const fired: string[] = [];
+    for (let frameMs = 120; frameMs < 250; frameMs += 10) {
+      for (let steps = 1; steps <= 4; steps++) {
+        for (let phase = 0; phase < frameMs; phase += 15) {
+          slowFrames(frameMs);
+          const warn = vi.spyOn(flightRecorder, 'warn');
+          await vi.advanceTimersByTimeAsync(1000 + phase);
+          const runner = new CanvasFXRunner({ art: () => ART });
+          void runner.playEffects(batch(steps));
+          await vi.advanceTimersByTimeAsync(3000);
+          if (warn.mock.calls.length > 0) fired.push(`${frameMs} ms frames, ${steps} steps, phase ${phase}`);
+          runner.destroy();
+          warn.mockRestore();
+          vi.useRealTimers();
+          vi.unstubAllGlobals();
+        }
+      }
+    }
+    expect(fired).toEqual([]);
   });
 });
 

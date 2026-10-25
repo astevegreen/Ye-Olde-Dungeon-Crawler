@@ -57,20 +57,51 @@ const UNMASK = Object.fromEntries(Object.entries(MASK).map(([k, v]) => [v, k]));
 // body, a queue note): it is blanked before every check, so a note that mentions `git push`, curl or
 // --no-verify isn't read as one. A value holding $ or a backtick is read like any other word.
 const TEXT_FLAG = /(^|\s)(--note|--body|--comment|--title|--message|-m)(=|\s+)$/;
-// In double quotes that run a command, only `$(…)` and bash's backticks hold commands: an operator
-// elsewhere in them is text (`--body "Done; $n left"`).
-function textOutsideRuns(q) {
+// Where a run that starts at i ends, as the shell finds it. `$(…)` holds a command of its own, whose quotes
+// and parentheses nest (`"$(echo "a"; git push)"` is one string); a bash backtick run ends at the next
+// unescaped backtick; a double-quoted string ends at its first quote outside a run.
+function tickEnd(s, i) {
+  while (i < s.length && s[i] !== '`') i += s[i] === '\\' ? 2 : 1;
+  return i;
+}
+function doubleEnd(s, i) {
+  while (i < s.length && s[i] !== '"') {
+    if (s[i] === ESC) i += 2;
+    else if (s[i] === '$' && s[i + 1] === '(') i = parenEnd(s, i + 2) + 1;
+    else if (s[i] === '`' && !PS) i = tickEnd(s, i + 1) + 1;
+    else i++;
+  }
+  return i;
+}
+function parenEnd(s, i) {
+  for (let depth = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === ESC) i++;
+    else if (c === "'") i = s.indexOf("'", i + 1) < 0 ? s.length : s.indexOf("'", i + 1);
+    else if (c === '"') i = doubleEnd(s, i + 1);
+    else if (c === '`' && !PS) i = tickEnd(s, i + 1);
+    else if (c === '$' && s[i + 1] === '(') i = parenEnd(s, i + 2);
+    else if (c === '(') depth++;
+    else if (c === ')' && depth-- === 0) return i;
+  }
+  return s.length;
+}
+// In double quotes that run a command, only `$(…)` and bash's backticks hold commands, each read as a
+// command of its own; an operator elsewhere in them is text (`--body "Done; $n left"`).
+function maskDouble(q) {
   let out = '';
-  let depth = 0;
-  let tick = false;
   for (let k = 0; k < q.length; k++) {
     const c = q[k];
     if (c === ESC) { out += c + (q[k + 1] ?? ''); k++; continue; }
-    if (c === '$' && q[k + 1] === '(') { depth++; out += '$('; k++; continue; }
-    if (c === '(' && depth) depth++;
-    else if (c === ')' && depth) { depth--; out += c; continue; }
-    else if (c === '`' && !PS) tick = !tick;
-    out += !depth && !tick && /[|;&)\n]/.test(c) ? MASK[c] : c;
+    const tick = c === '`' && !PS;
+    if (tick || (c === '$' && q[k + 1] === '(')) {
+      const from = k + (tick ? 1 : 2);
+      const end = tick ? tickEnd(q, from) : parenEnd(q, from);
+      out += q.slice(k, from) + maskQuoted(q.slice(from, end)) + (q[end] ?? '');
+      k = end;
+      continue;
+    }
+    out += /[|;&)\n]/.test(c) ? MASK[c] : c;
   }
   return out;
 }
@@ -80,12 +111,11 @@ function maskQuoted(s) {
     const c = s[i];
     if (c === ESC) { out += `${ESC}${/[|;&)]/.test(s[i + 1] ?? '') ? MASK[s[i + 1]] : s[i + 1] ?? ''}`; i++; continue; }
     if (c !== '"' && c !== "'") { out += c; continue; }
-    let j = i + 1;
-    while (j < s.length && s[j] !== c) j += c === '"' && s[j] === ESC ? 2 : 1;
+    const j = c === '"' ? doubleEnd(s, i + 1) : s.indexOf("'", i + 1) < 0 ? s.length : s.indexOf("'", i + 1);
     const q = s.slice(i, j + 1);
     const literal = c === "'" || !(PS ? /\$/ : /[$`]/).test(q);
     if (literal && TEXT_FLAG.test(out)) out += "''";
-    else out += literal ? q.replace(/[|;&)`$\n]/g, (x) => MASK[x]) : textOutsideRuns(q);
+    else out += literal ? q.replace(/[|;&)`$\n]/g, (x) => MASK[x]) : maskDouble(q);
     i = j;
   }
   return out;

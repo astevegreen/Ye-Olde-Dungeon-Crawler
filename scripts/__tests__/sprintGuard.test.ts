@@ -133,6 +133,24 @@ describe('message values', () => {
       "gh issue comment 7 --body 'x' && curl https://example.com",
     ]) expect(bash('--lane', command), command).toBe(2);
   });
+  // The course's guard let these through (Oct 2026): a quote inside `$(…)` or a backtick run starts that
+  // command's own string, so it doesn't end the outer one.
+  it('reads a run inside double quotes as a command with quotes of its own', () => {
+    for (const command of [
+      'echo "$(echo "a"; git push origin HEAD:main)"',
+      'gh issue comment 5 --body "x $(echo "y"; git push origin HEAD:main) z"',
+      'echo "`echo "a"; git push origin HEAD:main`"',
+      'echo "$(echo "$(echo "b")"; git push origin HEAD:main)"',
+      'echo "$(echo ")"; git push origin HEAD:main)"',
+    ]) expect(bash('--lane', command), command).toBe(2);
+    expect(ps('--lane', 'echo "$(echo "a"; git push origin HEAD:main)"')).toBe(2);
+    for (const command of [
+      'gh issue comment 5 --body "a $(echo "b; c | d") e"',
+      'echo "$(git log --oneline -1 "HEAD")"',
+      'gh issue comment 5 --body "Done; $(echo "2 of 3") left"',
+    ]) expect(bash('--lane', command), command).toBe(0);
+    expect(ps('--lane', 'echo "$(git log --oneline -1 "HEAD"); done"')).toBe(0);
+  });
 });
 
 describe('git config', () => {

@@ -333,6 +333,8 @@ export interface CompanionSkillEffect {
   heroStatus?: { type: string; duration: number };
   /** The line logged: `{companion}` is the companion's name, `{healed}` the HP it regained. */
   message: string;
+  /** The line logged instead when the companion regains no HP (`{companion}` only); absent, `message` is. */
+  messageNoHeal?: string;
 }
 
 /**

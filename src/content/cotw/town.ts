@@ -216,6 +216,7 @@ export const COTW_TOWN: TownLayoutDefinition = {
           companionHealPercent: 0.2,
           heroStatus: { type: 'haste', duration: 3 },
           message: '{companion} lets out a rallying howl! (+{healed} HP to {companion}, you feel hastened for 3 turns)',
+          messageNoHeal: '{companion} lets out a rallying howl! (you feel hastened for 3 turns)',
         },
         // An order costs the hero's turn; the wait keeps it from healing the companion to full for free.
         cooldown: 50,

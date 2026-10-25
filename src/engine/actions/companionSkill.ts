@@ -50,7 +50,8 @@ export class UseCompanionSkillAction implements Action {
     }
     if (skill.cooldown) setCounter(engine.worldState, counter, engine.turnCount + skill.cooldown);
     this.player.consumeEnergy(BASE_ACTION_COST);
-    const message = effect.message.replace(/\{companion\}/g, companion.name).replace(/\{healed\}/g, String(healed));
+    const template = healed === 0 && effect.messageNoHeal ? effect.messageNoHeal : effect.message;
+    const message = template.replace(/\{companion\}/g, companion.name).replace(/\{healed\}/g, String(healed));
     engine.log(message);
     return { success: true, cost: BASE_ACTION_COST, message };
   }

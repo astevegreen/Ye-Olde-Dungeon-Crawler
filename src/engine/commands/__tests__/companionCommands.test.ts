@@ -104,6 +104,48 @@ describe('Companion commands via EngineCommandBus (docs/architecture/content-com
       expect(result.message).toBe('Test Companion howls (+10 HP).');
     });
 
+    // At full health the companion regains nothing, and the line read "(+0 HP)".
+    it('logs the no-heal line when the skill heals nothing, and the heal line when it heals', () => {
+      const effect = { ...SKILL_PACK.town.services.trainerSkills[0].effect, messageNoHeal: '{companion} howls.' };
+      const pack = { ...SKILL_PACK, town: { services: { trainerSkills: [{ ...SKILL_PACK.town.services.trainerSkills[0], effect }] } } };
+      const howlWith = (hp: number | null) => {
+        const engine = buildEngine(pack);
+        const companion = Companion.fromDefinition(TEST_DEF_ID, `skill-comp-noheal-${hp}`, { x: 11, y: 10 })!;
+        companion.unlockSkill('test_howl');
+        if (hp !== null) companion.hp = hp;
+        engine.attachCompanion(companion);
+        const turn = engine.turnCount;
+        const result = new EngineCommandBus(engine).dispatch({ type: 'use_companion_skill', payload: { skillId: 'test_howl' } });
+        return { result, engine, turn };
+      };
+
+      const full = howlWith(null);
+      expect(full.result).toMatchObject({ success: true, message: 'Test Companion howls.' });
+      expect(full.engine.messages).toContain('Test Companion howls.');
+      expect(full.engine.player.statusManager.hasStatus('haste')).toBe(true);
+      expect(full.engine.turnCount).toBe(full.turn + 1);
+
+      const hurt = howlWith(1);
+      expect(hurt.result).toMatchObject({ success: true, message: 'Test Companion howls (+10 HP).' });
+      expect(hurt.engine.player.statusManager.hasStatus('haste')).toBe(true);
+      expect(hurt.engine.turnCount).toBe(hurt.turn + 1);
+    });
+
+    it('logs its one message whether or not it heals, when the pack gives no no-heal line', () => {
+      for (const hp of [null, 1]) {
+        const engine = buildEngine(SKILL_PACK);
+        const companion = Companion.fromDefinition(TEST_DEF_ID, `skill-comp-onemsg-${hp}`, { x: 11, y: 10 })!;
+        companion.unlockSkill('test_howl');
+        if (hp !== null) companion.hp = hp;
+        engine.attachCompanion(companion);
+
+        const result = new EngineCommandBus(engine).dispatch({ type: 'use_companion_skill', payload: { skillId: 'test_howl' } });
+
+        expect(result).toMatchObject({ success: true, message: `Test Companion howls (+${hp === null ? 0 : 10} HP).` });
+        expect(engine.player.statusManager.hasStatus('haste')).toBe(true);
+      }
+    });
+
     it('refuses a learned skill the pack does not declare', () => {
       const engine = buildEngine();
       const bus = new EngineCommandBus(engine);

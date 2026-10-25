@@ -57,12 +57,6 @@ export interface ReportSummary {
   hero?: { build: string; runestonePolicy: string; level: number; runestones: Record<string, string> };
 }
 
-/** One run's meetings in one line: each NPC with its floor and the option taken, or `left`. */
-function npcsMetLine(s: Pick<ReportSummary, 'npcsMet'>): string {
-  const met = Object.entries(s.npcsMet ?? {}).sort((a, b) => a[1].floor - b[1].floor || a[0].localeCompare(b[0]));
-  return `NPCs met: ${met.length ? met.map(([id, m]) => `${id} (floor ${m.floor}, ${m.option})`).join(', ') : 'none'}`;
-}
-
 /** A line of `runs.jsonl` (`scripts/lib/soak-runs.mjs`): a seed's run, or the runner's stop.
  *  Lines from before 21 Oct 2026 have no `stoppedBy` and no runner line. */
 export interface RunsLine {
@@ -178,6 +172,22 @@ const family = (sig: string): string => {
   const [category, text = ''] = sig.split('|');
   return `${category}: ${(text.startsWith('magic:') ? text : text.split(':')[0]).slice(0, 90)}`;
 };
+
+/** Did the bot reach each hub's NPC (K1)? One line across the finished runs, like "Stones
+ *  answered": each NPC met, in how many runs, and the answers it gave (`left`: Escape). */
+function npcsMetLine(runs: ReportSummary[]): string {
+  const byNpc = new Map<string, { runs: number; answers: Record<string, number> }>();
+  for (const s of runs) {
+    for (const [id, m] of Object.entries(s.npcsMet ?? {})) {
+      const e = byNpc.get(id) ?? { runs: 0, answers: {} };
+      e.runs++;
+      add(e.answers, m.option);
+      byNpc.set(id, e);
+    }
+  }
+  const met = [...byNpc].sort((a, b) => b[1].runs - a[1].runs || a[0].localeCompare(b[0]));
+  return `NPCs met: ${met.length ? met.map(([id, e]) => `${id} in ${e.runs} of ${runs.length} runs (${tally(e.answers)})`).join(', ') : 'none'}.`;
+}
 
 const floorsOf = (s: ReportSummary) => Object.keys(s.pace ?? s.magic?.floors ?? {}).map(Number).sort((a, b) => a - b);
 
@@ -408,6 +418,7 @@ export function soakReport(all: ReportSummary[], opts: ReportOptions): string {
   const answers: Record<string, number> = {};
   for (const s of runs) for (const [id, opt] of Object.entries(s.hero?.runestones ?? {})) add(answers, `${id}=${opt}`);
   out.push(`Stones answered: ${tally(answers)}.`);
+  out.push(npcsMetLine(runs));
 
   // --- 5. Is magic broken? -------------------------------------------------------
   out.push('\n## 5. Is magic broken?');
@@ -455,14 +466,6 @@ export function soakReport(all: ReportSummary[], opts: ReportOptions): string {
   }
   const before = runs.filter((s) => !s.findingTags).length;
   if (before) out.push(`${before} of ${runs.length} runs predate the tag record: their findings all count as untagged.`);
-
-  // --- NPCs met (K1): did the bot reach each hub's NPC? ----------------------------
-  out.push('\n## NPCs met');
-  out.push("Per run, the dungeon NPCs with a choice the bot bumped: floor, and the option it took (`left`: Escape).");
-  for (const s of [...runs].sort((a, b) => (a.folder ?? '').localeCompare(b.folder ?? '') || a.seed - b.seed)) {
-    const folder = s.folder ? `${s.folder.split(/[\\/]/).pop()} ` : '';
-    out.push(`- ${folder}seed ${s.seed}: ${npcsMetLine(s)}`);
-  }
 
   return out.join('\n');
 }

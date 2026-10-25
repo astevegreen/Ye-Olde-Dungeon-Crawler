@@ -241,19 +241,25 @@ describe('soak report', () => {
     });
   });
 
-  it('lists the NPCs each run met in one line, or none (K1)', () => {
+  it('tallies the NPCs met across the finished runs in one line, like Stones answered (K1)', () => {
     const met = soakReport(
       [
-        run(2, 'caster', 'first', { folder: 'C:\\soak\\player-floor13', npcsMet: { hub_two: { floor: 26, option: 'spare' }, ivalda: { floor: 13, option: 'left' } } }),
-        run(1, 'warrior', 'first', { folder: '/soak/player-floor13' }),
-        run(3, 'caster', 'first', { folder: '/soak/player-floor13', partial: true, npcsMet: { ivalda: { floor: 13, option: 'left' } } }),
+        run(1, 'warrior', 'first', { npcsMet: { ivalda: { floor: 13, option: 'left' } } }),
+        run(2, 'caster', 'first', { npcsMet: { hub_two: { floor: 26, option: 'spare' }, ivalda: { floor: 13, option: 'temper' } } }),
+        run(4, 'caster', 'first', { npcsMet: { ivalda: { floor: 13, option: 'left' } } }),
+        run(5, 'hybrid', 'first'),
+        run(3, 'caster', 'first', { partial: true, npcsMet: { hub_two: { floor: 26, option: 'left' } } }),
       ],
       { coldStages: [300] }
     );
-    expect(met).toContain('## NPCs met');
-    expect(met).toContain('- player-floor13 seed 1: NPCs met: none');
-    expect(met).toContain('- player-floor13 seed 2: NPCs met: ivalda (floor 13, left), hub_two (floor 26, spare)');
-    expect(met).not.toContain('seed 3: NPCs met');
+    const lines = met.split('\n').filter((l) => l.startsWith('NPCs met:'));
+    expect(lines).toEqual(['NPCs met: ivalda in 3 of 4 runs (left 2, temper 1), hub_two in 1 of 4 runs (spare 1).']);
+    // Right after "Stones answered", in the Runestones section.
+    expect(met).toMatch(/Stones answered: .*\nNPCs met: ivalda/);
+  });
+
+  it('says none when no finished run met an NPC (K1)', () => {
+    expect(report.split('\n').filter((l) => l.startsWith('NPCs met:'))).toEqual(['NPCs met: none.']);
   });
 
   it('counts the same seed in one folder, or with no folder, once', () => {

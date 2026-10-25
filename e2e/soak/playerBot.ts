@@ -9,7 +9,7 @@ import { healReserve, shouldHeal } from './healPlan';
 import { telegraphChoice, telegraphExit } from './telegraphExit';
 import { quickBarMove } from './quickBarPlan';
 import { controlTarget, shouldReveal } from './oddSpellPlan';
-import { npcToMeet, type NpcMet } from './npcMeet';
+import { isNpcBump, npcChoiceKey, npcToMeet, recordNpcDecision, type NpcMet } from './npcMeet';
 
 /** `lineOfFire` as source text: the page can't import it, so each decision rebuilds it there. */
 const LINE_OF_FIRE_SRC = lineOfFire.toString();
@@ -24,8 +24,10 @@ const QUICK_BAR_MOVE_SRC = quickBarMove.toString();
 /** Control spells' targets, a swap's included, and when to cast an untyped self spell (oddSpellPlan.ts). */
 const CONTROL_TARGET_SRC = controlTarget.toString();
 const SHOULD_REVEAL_SRC = shouldReveal.toString();
-/** The dungeon NPC with a choice to go and bump (npcMeet.ts). */
+/** The dungeon NPC with a choice to go and bump, the bump step, and its answer (npcMeet.ts). */
 const NPC_TO_MEET_SRC = npcToMeet.toString();
+const IS_NPC_BUMP_SRC = isNpcBump.toString();
+const NPC_CHOICE_KEY_SRC = npcChoiceKey.toString();
 
 /**
  * The player bot's builds (P-36), so a soak compares play styles instead of one: the level-up
@@ -430,8 +432,8 @@ interface DecisionResult {
   runestone?: { id: string; option: string };
   /** A step that bumps a dungeon NPC with a choice (npcMeet.ts). */
   npcBump?: { id: string };
-  /** That NPC's choice answered: the option, or `left`. */
-  npcAnswer?: { id: string; option: string };
+  /** A key pressed on that NPC's choice: with the option taken, or `left`, when it answers. */
+  npcKey?: { id: string; option?: string };
 }
 
 export interface PlayerDecisionContext {
@@ -528,6 +530,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       npcsMet: string[];
       npcChoice: { id: string } | null;
       npcToMeetSrc: string;
+      isNpcBumpSrc: string;
+      npcChoiceKeySrc: string;
     }) => {
       const w = window as any;
       const e = w.__cotwEngine;
@@ -812,17 +816,13 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       if (stack.includes('choice')) {
         const choiceOverlay = document.getElementById('choice-modal-overlay');
         const focused = choiceOverlay?.querySelector('.ui-option.is-focused');
-        // A dungeon NPC's choice, opened by the last bump: answered as any choice is (the first
-        // open option), and left with Escape when it offers none, since it never resolves.
+        // A dungeon NPC's choice, opened by the last bump: the first open option, or Escape when
+        // it offers none, since it never resolves (npcMeet.ts npcChoiceKey).
         if (args.npcChoice) {
-          const id = args.npcChoice.id;
-          if (focused) {
-            const option = (focused as HTMLElement).id.replace(/^choice-opt-/, '');
-            return { action: { type: 'key' as const, key: 'Enter' }, curPos, curTurn, curFloor, npcAnswer: { id, option } };
-          }
-          if (!choiceOverlay?.querySelector('.ui-option:not(.is-disabled)')) {
-            return { action: { type: 'key' as const, key: 'Escape' }, curPos, curTurn, curFloor, npcAnswer: { id, option: 'left' } };
-          }
+          const npcChoiceKeyFn = new Function(`return (${args.npcChoiceKeySrc})`)() as typeof npcChoiceKey;
+          const focusedOption = focused ? (focused as HTMLElement).id.replace(/^choice-opt-/, '') : null;
+          const pick = npcChoiceKeyFn(focusedOption, Boolean(choiceOverlay?.querySelector('.ui-option:not(.is-disabled)')));
+          return { action: { type: 'key' as const, key: pick.key }, curPos, curTurn, curFloor, npcKey: { id: args.npcChoice.id, ...(pick.option ? { option: pick.option } : {}) } };
         }
         // A Runestone (opened from the tile the hero stands on): the run's policy says which gift.
         const tileChoice: string | undefined = e.map.getTile(p.x, p.y)?.interactionHandlerId;
@@ -2231,7 +2231,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
           const meet = npcToMeetFn(curFloor, npcs, (x, y) => Boolean(e.fov.isExplored(x, y)), args.npcsMet);
           const step = meet ? bfsStepToGoal(p, meet, true) : null;
           if (meet && step) {
-            const bump = step.x === meet.x && step.y === meet.y;
+            const isNpcBumpFn = new Function(`return (${args.isNpcBumpSrc})`)() as typeof isNpcBump;
+            const bump = isNpcBumpFn(step, meet);
             return {
               action: { type: 'key' as const, key: stepToKey(step.x - p.x, step.y - p.y) },
               curPos,
@@ -2367,6 +2368,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
       npcsMet: Object.keys(state.npcsMet),
       npcChoice: state.npcChoice,
       npcToMeetSrc: NPC_TO_MEET_SRC,
+      isNpcBumpSrc: IS_NPC_BUMP_SRC,
+      npcChoiceKeySrc: NPC_CHOICE_KEY_SRC,
     }
   );
 
@@ -2424,16 +2427,8 @@ export async function decidePlayerAction(ctx: PlayerDecisionContext): Promise<Di
   if (evalResult.stoneFace) tel.stoneFacesRead++;
   if (evalResult.runestone) tel.runestones[evalResult.runestone.id] = evalResult.runestone.option;
   // An NPC counts as met on the bump, so it is never bumped again; its answer comes on a later
-  // decision, while its choice is open. The last answer pressed is the one that took.
-  if (evalResult.npcBump) {
-    state.npcsMet[evalResult.npcBump.id] = { floor: curFloor, option: 'unanswered' };
-    state.npcChoice = { id: evalResult.npcBump.id };
-  } else if (evalResult.npcAnswer) {
-    const met = state.npcsMet[evalResult.npcAnswer.id];
-    if (met) met.option = evalResult.npcAnswer.option;
-  } else {
-    state.npcChoice = null;
-  }
+  // decision, while its choice is open.
+  recordNpcDecision(state, curFloor, evalResult);
   if (evalResult.spellOffer) tel.spellOffers[evalResult.spellOffer] = (tel.spellOffers[evalResult.spellOffer] ?? 0) + 1;
   if (evalResult.forgeOffer) tel.forgeOffers[evalResult.forgeOffer] = (tel.forgeOffers[evalResult.forgeOffer] ?? 0) + 1;
   // An altar answered on its card, or stood on with no card: it waits (altarWaitReason).

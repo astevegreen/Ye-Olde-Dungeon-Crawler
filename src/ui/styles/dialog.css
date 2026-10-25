@@ -303,6 +303,19 @@
 .fh-row:last-child { border-bottom: 0; }
 .fh-key { flex: none; max-width: 55%; font: bold var(--ui-text-sm) var(--ui-font-num); color: var(--ui-title); }
 .fh-label { text-align: right; font-size: var(--ui-text-sm); color: var(--ui-text-muted); }
+/* A short window (1366x768): the card ends above the menus' recent-messages strip (menu.css
+   .cm-recent, about 175px off the bottom). Tighter and a little wider first (wider still would
+   hide the Spellbook's values), so the Spellbook card fits whole; a taller card scrolls its keys, never its tip or pack note, since keys can't scroll
+   a card off the modal stack. Lengths in the zoomed dialog grow with --ui-scale (base.css). */
+@media (max-height: 900px) {
+  .fh-overlay .ui-dialog { width: 440px; max-height: calc((100vh - 48px) / var(--ui-scale) - 180px); }
+  .fh-overlay .ui-dialog-head { padding-block: var(--ui-space-2); }
+  .fh-overlay .ui-dialog-body { gap: var(--ui-space-2); padding-block: var(--ui-space-2); }
+  .fh-overlay .ui-dialog-foot { padding-block: 6px; }
+  .fh-overlay .fh-keys { flex-shrink: 1; min-height: 0; overflow-y: auto; }
+  .fh-overlay .fh-row { padding: 2px 0; }
+  .fh-overlay .ui-fact { padding-block: 6px; line-height: 1.35; }
+}
 
 /* The map viewer: floor buttons over the explored floor, drawn into a canvas, and a legend
    whose swatches are the colors src/rendering/floorMap.ts draws in. */

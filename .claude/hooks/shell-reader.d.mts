@@ -23,7 +23,7 @@ export interface Read {
   words(part: string): string[];
   /** Throws Unreadable when a command can't be read word by word. */
   commandsIn(words: string[]): Run[];
-  /** Why the line runs a command the reader can't see, or null. */
+  /** Why the line runs a command the reader can't see, or can't be sure where its comments and heredocs end, or null. */
   refusal: string | null;
   /** Git's subcommand or checkout is held in a variable or a substitution. */
   gitHidden: boolean;

@@ -420,6 +420,162 @@
     {
       "shell": "bash",
       "command": "$'git' push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "(( y = 1<<2 ))\ngit push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "for ((i=0; i<<1; i++)); do :; done\ngit push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "echo $[1<<2]\ngit push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "x=a; echo ${x/<<a/b}\ngit push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "a[1<<2]=x\ngit push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "a[ 1<<2 ]=x\ngit push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "echo ${a[1<<2]}\ngit push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "a=(1<<2)\ngit push origin HEAD:main\n2)"
+    },
+    {
+      "shell": "bash",
+      "command": "echo ${x:- #}; git push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "echo <(true)#x; git push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "shopt -s extglob\nls @(a)#x; git push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "a=(x)#y; git push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "echo `true #x`; git push origin HEAD:main"
+    },
+    {
+      "shell": "powershell",
+      "command": "hostname.exe --% #x | git push origin HEAD:main"
+    },
+    {
+      "shell": "powershell",
+      "command": "hostname.exe --% <#x | git push origin HEAD:main"
+    },
+    {
+      "shell": "powershell",
+      "command": "Write-Output ${a #b}; git push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "case x in x)#it's\ngit push origin HEAD:main;; esac"
+    },
+    {
+      "shell": "bash",
+      "command": "bash /dev//stdin <<'EOF'\ngit push origin HEAD:main\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "bash ///dev/stdin <<'EOF'\ngit push origin HEAD:main\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "bash /dev/../dev/stdin <<'EOF'\ngit push origin HEAD:main\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "source /dev/./stdin <<'EOF'\ngit push origin HEAD:main\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<'EOF' | bash /dev//stdin\ngit push origin HEAD:main\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "f=/dev/stdin; bash $f <<'EOF'\ngit push origin HEAD:main\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<EOF\n$(( $(git push origin HEAD:main) ))\nEOF"
+    },
+    {
+      "shell": "powershell",
+      "command": "$m = @\"\n$((git push origin HEAD:main))\n\"@"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<$'EOF'\nx\nEOF\ngit push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<'EOF' $(\ngit push origin HEAD:main\n)\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<$'EOF'\na <<'X'\nEOF\ngit push origin HEAD:main\nX"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<'EOF' $(\ngit status\n)\nx <<'Y'\nEOF\ngit push origin HEAD:main\nY"
+    },
+    {
+      "shell": "bash",
+      "command": "echo a[1<<2]\nx <<'Y'\n2]\ngit push origin HEAD:main\nY"
+    },
+    {
+      "shell": "bash",
+      "command": "a=(1 #x <<'Y'\n2)\ngit push origin HEAD:main\nY"
+    },
+    {
+      "shell": "bash",
+      "command": "echo ${x:-$(cat <<'EOF'\nbody\nEOF\n)}; git push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<EOF\n$(echo it's)\nEOF\ngit push origin HEAD:main"
+    },
+    {
+      "shell": "powershell",
+      "command": "$x=@'\nit's\n'@; git push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "!(git push origin HEAD:main)"
+    },
+    {
+      "shell": "bash",
+      "command": "echo $((git push origin HEAD:main) )"
+    },
+    {
+      "shell": "bash",
+      "command": "echo $((cat <<'Y'\nx <<'Z'\nY\n) )\ngit push origin HEAD:main\nZ"
+    },
+    {
+      "shell": "bash",
+      "command": "echo `echo $((1<<2))`; git push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "a[$((1<<2))]=x; git push origin HEAD:main"
     }
   ],
   "refused": [
@@ -828,6 +984,70 @@
     {
       "shell": "powershell",
       "command": "git -C C:\\Antigravity\\lane status"
+    },
+    {
+      "shell": "bash",
+      "command": "echo $[1<<2]"
+    },
+    {
+      "shell": "bash",
+      "command": "x=a; echo ${x/<<a/b}"
+    },
+    {
+      "shell": "bash",
+      "command": "echo ${a[1<<2]}"
+    },
+    {
+      "shell": "bash",
+      "command": "cat<<'EOF'\nit's\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "(( x = 16#ff )); echo ok"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<'EOF' $(echo)\nit's\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "x=ab; echo ${x#a} # it's\necho ok"
+    },
+    {
+      "shell": "bash",
+      "command": "echo <(true)#x"
+    },
+    {
+      "shell": "bash",
+      "command": "echo ${x:- #}"
+    },
+    {
+      "shell": "bash",
+      "command": "case $x in a) echo a ;; *) echo b ;; esac # it's"
+    },
+    {
+      "shell": "bash",
+      "command": "for ((i=0; i<3; i++)); do echo $i; done"
+    },
+    {
+      "shell": "bash",
+      "command": "gh pr create --title x --body \"$(cat <<'EOF'\n## Summary\n- it's [done](x)\nEOF\n)\""
+    },
+    {
+      "shell": "bash",
+      "command": "bash scripts/run.sh --flag"
+    },
+    {
+      "shell": "powershell",
+      "command": "Write-Output ${env:USERNAME} # it's"
+    },
+    {
+      "shell": "powershell",
+      "command": "hostname.exe --% #x"
+    },
+    {
+      "shell": "powershell",
+      "command": "$x = @'\nit's\n'@\ngit status"
     }
   ],
   "reads": [

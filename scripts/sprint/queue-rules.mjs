@@ -114,8 +114,8 @@ export function parseSprintDoc(text) {
 // /sprint-start opens the window when it runs, so starting a sprint needs no push. It, the supervisor and
 // /sprint-stop keep the sprint's state in the git folder every worktree shares (`git rev-parse
 // --git-common-dir`), never committed; every session of the sprint runs on this computer and reads it there:
-//   sprint-window.json     {start, end, environment, supervisor, archiver, stoppedBy}: the window, the ids it
-//                          acts on, and "sprint-stop" when /sprint-stop ended it
+//   sprint-window.json     {start, end, environment, supervisor, archiver, wake, stoppedBy}: the window, the
+//                          ids it acts on, and "sprint-stop" when /sprint-stop ended it
 //   sprint-triggers.json   [{title, id, at}]: every trigger the supervisor created, so it finds a session by
 //                          id: RemoteTrigger's list shows only the account's newest 20, and three sprints share it
 //   sprint-supervisor.lock {at}: one supervisor run at a time, whether the hour or a stopping session fired it
@@ -176,6 +176,7 @@ function windowFacts(doc, w, now) {
     environment: w?.environment ?? null,
     supervisor: w?.supervisor ?? null,
     archiver: w?.archiver ?? null,
+    wake: w?.wake ?? null,
     // "sprint-stop": the owner ended the window early, a pause and not a fault.
     stoppedBy: w?.stoppedBy ?? null,
     logIssue: doc.logIssue,
@@ -189,7 +190,7 @@ function windowFacts(doc, w, now) {
  * last one's archiver is on record, since that sprint's sessions may still run. Returns what to print and
  * the files to write (none in a dry run).
  */
-function windowCommand(doc, w, now, sub, { hours, environment, supervisor, archiver, dryRun = false } = {}) {
+function windowCommand(doc, w, now, sub, { hours, environment, supervisor, archiver, wake, dryRun = false } = {}) {
   const phase = phaseOf(w, now);
   const facts = (next) => windowFacts(doc, next, now);
   if (sub === 'start') {
@@ -204,14 +205,14 @@ function windowCommand(doc, w, now, sub, { hours, environment, supervisor, archi
       );
     }
     const start = minute(now);
-    const next = { start: start.toISOString(), end: new Date(start.getTime() + h * 3_600_000).toISOString(), environment, supervisor: null, archiver: null };
+    const next = { start: start.toISOString(), end: new Date(start.getTime() + h * 3_600_000).toISOString(), environment, supervisor: null, archiver: null, wake: null };
     const parsed = { ...next, start, end: new Date(next.end) };
     return { out: { ...facts(parsed), dryRun }, writes: dryRun ? [] : [[WINDOW_FILE, next], [TRIGGERS_FILE, []]] };
   }
   if (sub === 'ids') {
     if (phase !== 'open') throw refuse('no window is open', 'Run `window start` first.');
     const next = { ...w };
-    for (const [name, id] of [['supervisor', supervisor], ['archiver', archiver]]) {
+    for (const [name, id] of [['supervisor', supervisor], ['archiver', archiver], ['wake', wake]]) {
       if (id === undefined) continue;
       if (!TRIGGER_ID.test(id)) throw refuse(`--${name} "${id}" is not a trigger id`, 'Pass the trig_ id the create returned.');
       next[name] = id;
@@ -230,6 +231,34 @@ function windowCommand(doc, w, now, sub, { hours, environment, supervisor, archi
     return { out: facts(next), writes: [[WINDOW_FILE, { ...next, start: w.start.toISOString(), end: w.end.toISOString() }]] };
   }
   throw refuse(`unknown window command "${sub}"`, 'Use `window`, `window start [hours] --environment <env>`, `window ids`, `window stop` or `window archived`.');
+}
+
+/** The supervisor's cron minute (/sprint-start), the wake's delay after a reset, and the quiet before a run. */
+const SUPERVISOR_MINUTE = 22;
+const WAKE_DELAY = 2 * 60_000;
+const WAKE_QUIET = 15 * 60_000;
+
+/**
+ * `wake --resets-at <epoch s>`: when a usage limit stops every session, no supervisor run can start until
+ * it resets, so a lane taking an issue moves the window's one-shot "wake" supervisor to 2 minutes past the
+ * reset `get_session` names. Not when the supervisor's own :22 run follows within 15 minutes: two
+ * supervisors at once can start a lane twice. Prints {arm, at, wake, reason}; `at` is for `run_once_at`.
+ */
+function wakeCommand(w, now, resetsAt) {
+  const no = (reason) => ({ arm: false, at: null, wake: w?.wake ?? null, reason });
+  if (phaseOf(w, now) !== 'open') return no('no window is open');
+  if (!w.wake) return no('no wake on record; the hourly supervisor covers a usage limit');
+  if (resetsAt === undefined) return no('get_session gave no rate_limit_info.resetsAt; the hourly supervisor covers a usage limit');
+  const seconds = Number(resetsAt);
+  if (!Number.isInteger(seconds) || seconds <= 0) throw refuse(`--resets-at "${resetsAt}" is not epoch seconds`, 'Pass rate_limit_info.resetsAt from get_session as it is.');
+  const at = new Date(Math.ceil((seconds * 1000 + WAKE_DELAY) / 60_000) * 60_000);
+  if (at <= now) return no(`the reset at ${iso(new Date(seconds * 1000))} has passed`);
+  if (at > w.end) return no(`${iso(at)} is after the window ends`);
+  const run = new Date(at);
+  run.setUTCMinutes(SUPERVISOR_MINUTE, 0, 0);
+  if (run < at) run.setUTCHours(run.getUTCHours() + 1);
+  if (run - at <= WAKE_QUIET) return no(`the supervisor's ${iso(run)} run follows ${iso(at)} within 15 minutes`);
+  return { arm: true, at: at.toISOString(), wake: w.wake, reason: `the usage limit resets at ${iso(new Date(seconds * 1000))}` };
 }
 
 /**
@@ -632,7 +661,7 @@ export function statusBlock(world, { also = [], oldBody = '' } = {}) {
 // --- the command line ----------------------------------------------------------------------------------
 
 const USAGE = [
-  'Usage: queue.mjs window [start [hours] --environment <env> [--dry-run] | ids [--supervisor <trig>] [--archiver <trig>] | stop | archived]',
+  'Usage: queue.mjs window [start [hours] --environment <env> [--dry-run] | ids [--supervisor <trig>] [--archiver <trig>] [--wake <trig>] | stop | archived] | wake [--resets-at <epoch s>]',
   'started "<session title>" <trig> | sessions [--all] | lock | unlock | resume --log <file> --last-event <ISO> | identity',
   'has-work "<session title>" [--starting <n>] | next <lane> [--taken <n,n>] | move <n> <state> [--note \'<text>\'] | status [--write] [--also \'<line>\']...',
 ].join(' | ');
@@ -673,9 +702,10 @@ function cueCommand(command, words, f, doc, w, io) {
   if (command === 'window') {
     if (words.length === 0) return done(windowFacts(doc, w, now));
     return apply(windowCommand(doc, w, now, words[0], {
-      hours: words[1], environment: last('environment'), supervisor: last('supervisor'), archiver: last('archiver'), dryRun: Boolean(f['dry-run']),
+      hours: words[1], environment: last('environment'), supervisor: last('supervisor'), archiver: last('archiver'), wake: last('wake'), dryRun: Boolean(f['dry-run']),
     }));
   }
+  if (command === 'wake') return done(wakeCommand(w, now, last('resets-at')));
   if (command === 'started') return apply(recordStart(doc, w, readLedger(io.local), now, words[0], words[1]));
   if (command === 'sessions') return done(sessions(doc, w, readLedger(io.local), { all: Boolean(f.all) }));
   if (command === 'lock') {
@@ -709,7 +739,7 @@ export function run(argv, io) {
     const [command, ...rest] = argv;
     const { words, flags: f } = flags(rest);
     const shapes = {
-      window: words.length <= 2, started: words.length === 2, sessions: words.length === 0, lock: words.length === 0,
+      window: words.length <= 2, wake: words.length === 0, started: words.length === 2, sessions: words.length === 0, lock: words.length === 0,
       unlock: words.length === 0, resume: words.length === 0, identity: words.length === 0,
       'has-work': words.length === 1, next: words.length === 1, move: words.length === 2 && /^\d+$/.test(words[0] ?? ''), status: words.length === 0,
     };

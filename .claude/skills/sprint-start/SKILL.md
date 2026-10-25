@@ -96,8 +96,9 @@ run stops and gives its report (step 6).
 ## 4. The scheduled tasks
 1. **Supervisor:**
    1. `create_trigger` with name `YODC sprint supervisor`, cron_expression `22 * * * *`, prompt
-      `/sprint-supervisor`, create_new_session_on_fire `true`, environment_id from step 1.3, connectors `[]`,
-      notifications `{}` and initiation `human_request`. The cron is minute 22: Terminal Dusk's supervisor
+      `/sprint-supervisor`, create_new_session_on_fire `true`, environment_id from step 1.3, notifications `{}`
+      and initiation `human_request`. Pass no `connectors`: the org refuses the parameter, even `[]` (25 Oct),
+      and without it the trigger stores none. The cron is minute 22: Terminal Dusk's supervisor
       keeps minute 2.
    2. Then `Q window ids --supervisor <its trig_ id>`.
    3. When the create fails: `Q window stop`, and refuse with `could not create the supervisor: <error>`.
@@ -106,11 +107,20 @@ run stops and gives its report (step 6).
       and no prompt. When that fails, the archiver posts into this session instead: `get_session` with no id
       gives its id.
    2. Then `create_trigger` with name `YODC sprint archiver`, cron_expression `50 * * * *`,
-      persistent_session_id that session, prompt `/sprint-archive`, connectors `[]` and initiation
-      `human_request`.
+      persistent_session_id that session, prompt `/sprint-archive` and initiation `human_request`, with no
+      `connectors`.
    3. Then `Q window ids --archiver <its trig_ id>`.
    4. When the trigger create fails, the sprint still starts: "no archiver, so finished sessions pile up;
       archive them by hand".
+3. **Wake:** a usage limit stops every session, and the supervisor's own runs fail until it resets. So each
+   lane, as it takes an issue, moves this one-shot supervisor to 2 minutes past the reset (`Q wake`).
+   1. `create_trigger` with name `YODC sprint supervisor wake`, run_once_at the `end` `Q window start`
+      printed (in RFC3339, seconds and all: at the window's end it starts the drain), prompt
+      `/sprint-supervisor`, create_new_session_on_fire `true`, the same environment_id, notifications `{}`
+      and initiation `human_request`, with no `connectors`.
+   2. Then `Q window ids --wake <its trig_ id>`.
+   3. When the create fails, the sprint still starts: "no wake, so after a usage limit lanes wait for the
+      hourly supervisor".
 
 ## 5. Go
 `fire_trigger` the supervisor, so the lanes start now rather than at minute 22. Then write the step 6 lines
@@ -121,7 +131,7 @@ with the Write tool to `C:/Antigravity/YODC/.prompts/tmp/sprint-start.md` (gitig
 After the first line:
 - the window in Eastern (`window.eastern`);
 - the environment;
-- the supervisor's and the archiver's ids, and the session the archiver posts into ("this session; leave it
+- the supervisor's, the archiver's and the wake's ids, and the session the archiver posts into ("this session; leave it
   open" when it is this one);
 - each item from step 2.
 

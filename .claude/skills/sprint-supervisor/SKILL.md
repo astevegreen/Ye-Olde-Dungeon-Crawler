@@ -1,6 +1,6 @@
 ---
 name: sprint-supervisor
-description: Supervisor of the YODC sprint in docs/sprint.md, run hourly and whenever a sprint session stops. Starts and restarts the lane, plan and integrate sessions. Run only from the "YODC sprint supervisor" scheduled task.
+description: Supervisor of the YODC sprint in docs/sprint.md, run hourly, 2 minutes after a usage limit resets, and whenever a sprint session stops. Starts and restarts the lane, plan and integrate sessions. Run only from the "YODC sprint supervisor" and "YODC sprint supervisor wake" scheduled tasks.
 disable-model-invocation: true
 argument-hint: "[dry-run]"
 model: sonnet
@@ -37,7 +37,7 @@ the branch is `main`, run `git merge --ff-only origin/main`; otherwise leave it 
 Run `git worktree prune`.
 
 ## 2. Window
-`Q window` prints `phase`, the `environment` sessions start in, the `supervisor` and `archiver` trigger ids,
+`Q window` prints `phase`, the `environment` sessions start in, the `supervisor`, `archiver` and `wake` trigger ids,
 and the session `titles`, from this computer's sprint state (/sprint-start writes it); never copy them from an
 earlier run or this file.
 - `none` or `before`: print "no window open" and stop.
@@ -48,7 +48,8 @@ earlier run or this file.
     a pause, not a fault: say "stopped by /sprint-stop at <end>" in step 4, and never ask for a
     `/sprint-start`.
   - When no title's session is running or stuck, and `has-work "YODC integrate"` prints `"start": false`:
-    1. `RemoteTrigger` `update` the trigger `supervisor` names with `{"enabled": false}`;
+    1. `RemoteTrigger` `update` the triggers `supervisor` and `wake` name (each one not null) with
+       `{"enabled": false}`;
     2. comment "Sprint over" on issue #19 "Sprint log" with the lane lines of `Q status`;
     3. stop.
   - When `supervisor` is null or the update is refused, start that comment "@astevegreen" and give the link

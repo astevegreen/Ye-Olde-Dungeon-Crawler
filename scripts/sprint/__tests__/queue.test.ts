@@ -375,7 +375,7 @@ describe('the cue (window, ledger, lock)', () => {
     const { local } = memory({});
     expect(q(['window'], noGh(local))).toEqual({
       code: 0,
-      out: { phase: 'none', environment: null, supervisor: null, archiver: null, stoppedBy: null, logIssue: 19, titles: expect.arrayContaining(['YODC plan: fixes']) },
+      out: { phase: 'none', environment: null, supervisor: null, archiver: null, wake: null, stoppedBy: null, logIssue: 19, titles: expect.arrayContaining(['YODC plan: fixes']) },
     });
   });
   it('window start opens the window from this minute, for the default hours, and clears the last ledger', () => {
@@ -384,7 +384,7 @@ describe('the cue (window, ledger, lock)', () => {
     expect(code).toBe(0);
     expect(out).toMatchObject({ phase: 'open', window: { start: '2026-10-24T22:31Z', end: `2026-10-${24 + Math.floor((22 + DEFAULT_HOURS) / 24)}T${String((22 + DEFAULT_HOURS) % 24).padStart(2, '0')}:31Z` }, environment: 'env_01SNfen', dryRun: false });
     expect(out.window.eastern).toBe('Sat 24 Oct 18:31 to Mon 26 Oct 10:31');
-    expect(file(WINDOW_FILE)).toEqual({ start: '2026-10-24T22:31:00.000Z', end: '2026-10-26T14:31:00.000Z', environment: 'env_01SNfen', supervisor: null, archiver: null });
+    expect(file(WINDOW_FILE)).toEqual({ start: '2026-10-24T22:31:00.000Z', end: '2026-10-26T14:31:00.000Z', environment: 'env_01SNfen', supervisor: null, archiver: null, wake: null });
     expect(file(TRIGGERS_FILE)).toEqual([]);
   });
   it('a dry run checks the same and writes nothing', () => {
@@ -412,6 +412,25 @@ describe('the cue (window, ledger, lock)', () => {
     expect(q(['window'], noGh(local, new Date('2026-10-25T03:01:00Z'))).out.phase).toBe('after');
     expect(q(['window', 'archived'], noGh(local, new Date('2026-10-25T04:00:00Z'))).out).toMatchObject({ phase: 'after', archiver: null });
     expect(file(WINDOW_FILE)).toMatchObject({ supervisor: 'trig_sup', archiver: null, end: '2026-10-25T03:00:00.000Z', stoppedBy: 'sprint-stop' });
+  });
+  it('wake moves the one-shot supervisor to 2 minutes past a usage-limit reset, but not just before the :22 run', () => {
+    const { local } = memory({});
+    q(['window', 'start', '40', '--environment', 'env_01SNfen'], noGh(local));
+    const wake = (at?: string, now = NOW) => q(['wake', ...(at ? ['--resets-at', String(Date.parse(at) / 1000)] : [])], noGh(local, now));
+    expect(wake('2026-10-25T01:30:00Z').out).toMatchObject({ arm: false, reason: expect.stringMatching(/^no wake on record/) });
+    q(['window', 'ids', '--wake', 'trig_wake'], noGh(local));
+    expect(q(['window'], noGh(local)).out.wake).toBe('trig_wake');
+    expect(wake('2026-10-25T01:30:00Z')).toEqual({ code: 0, out: { arm: true, at: '2026-10-25T01:32:00.000Z', wake: 'trig_wake', reason: 'the usage limit resets at 2026-10-25T01:30Z' } });
+    // A reset on a part minute rounds up, and 02:23 is an hour from the next run.
+    expect(wake('2026-10-25T02:20:30Z').out).toMatchObject({ arm: true, at: '2026-10-25T02:23:00.000Z' });
+    expect(wake('2026-10-25T02:05:00Z').out).toMatchObject({ arm: false, reason: expect.stringMatching(/2026-10-25T02:22Z run follows/) });
+    expect(wake('2026-10-25T02:20:00Z').out).toMatchObject({ arm: false });
+    expect(wake('2026-10-24T22:00:00Z').out).toMatchObject({ arm: false, reason: expect.stringMatching(/has passed/) });
+    expect(wake('2026-10-26T15:00:00Z').out).toMatchObject({ arm: false, reason: expect.stringMatching(/after the window ends/) });
+    expect(wake().out).toMatchObject({ arm: false, reason: expect.stringMatching(/no rate_limit_info.resetsAt/) });
+    expect(q(['wake', '--resets-at', 'soon'], noGh(local)).code).toBe(2);
+    q(['window', 'stop'], noGh(local, new Date('2026-10-25T00:00:00Z')));
+    expect(wake('2026-10-25T01:30:00Z', new Date('2026-10-25T00:01:00Z')).out).toMatchObject({ arm: false, reason: 'no window is open' });
   });
   it('an open window with no environment starts and archives nothing', () => {
     const { local } = memory({ [WINDOW_FILE]: { ...OCTOBER_WINDOW, start: '2026-10-24T20:00:00.000Z', end: '2026-10-25T20:00:00.000Z', environment: null } });

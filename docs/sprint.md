@@ -302,7 +302,7 @@ mechanics, renaming spells.
   the owner's pause as a stop, never as a fault.
 - **This computer's state**, never committed, in the git folder every worktree shares
   (`git rev-parse --git-common-dir`), written only by `queue.mjs`:
-  - `sprint-window.json`: the window, the environment and the two scheduled tasks' ids;
+  - `sprint-window.json`: the window, the environment and the three scheduled tasks' ids;
   - `sprint-triggers.json`: every trigger the supervisor started, so it finds a session by id
     (`RemoteTrigger list` shows only the account's newest 20, across every project's sprint);
   - `sprint-supervisor.lock`: one supervisor run at a time.
@@ -316,6 +316,10 @@ mechanics, renaming spells.
   minute 2).
   - It starts `YODC lane: <lane>`, `YODC plan: <lane>` and `YODC integrate` sessions and restarts any that
     stopped. After a usage limit it restarts 2 minutes past the reset the error names (`queue.mjs resume`).
+  - A limit also stops its own runs, which fail in seconds until the reset. So `/sprint-start` makes "YODC
+    sprint supervisor wake", a one-shot of the same skill, and each lane taking an issue reads its session's
+    `rate_limit_info.resetsAt` (`get_session`) and moves the wake to 2 minutes past it (`queue.mjs wake`),
+    unless the :22 run follows within 15 minutes. The window's end and `/sprint-stop` switch it off.
   - Lanes, plan sessions and the integrator fire it when they stop after finishing work, so the next session
     starts within minutes rather than at the next hour.
   - A session idle for under 30 minutes may be waiting on a background push; it is left alone, so no title

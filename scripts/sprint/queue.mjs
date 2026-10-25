@@ -3,9 +3,10 @@
  * The sprint queue (docs/sprint.md, Machinery): the skills ask it instead of applying the queue rules by
  * hand. Prints one line of JSON and exits 0 (done), 2 (refused: act on `do`) or 1 (failed: stop).
  *
- *   window                            {phase, window, environment, supervisor, archiver, logIssue, titles}
+ *   window                            {phase, window, environment, supervisor, archiver, wake, stoppedBy, logIssue, titles}
  *   window start [hours] --environment <env> [--dry-run]   opens the window now (/sprint-start)
- *   window ids [--supervisor <trig>] [--archiver <trig>]   records the scheduled tasks' ids
+ *   window ids [--supervisor <trig>] [--archiver <trig>] [--wake <trig>]   records the scheduled tasks' ids
+ *   wake [--resets-at <epoch s>]      {arm, at, wake, reason}: move the wake supervisor to after a usage limit
  *   window stop | window archived     ends the window now (/sprint-stop); clears the archiver once it is off
  *   started "<title>" <trig>          records a trigger the supervisor created
  *   sessions [--all]                  {title: trigger id or null}; --all lists every one, newest first

@@ -274,6 +274,119 @@ describe('Nornic Reliquaries & Mythic Encounters', () => {
     expect(worldState.flags['bark_companion_f50']).toBe(true);
   });
 
+  describe('Act II companion barks on floors 26, 30 and 34', () => {
+    const COMPANIONS = [
+      { defId: 'hearth_frost_hound', name: 'Frost-Ward Hound', flag: 'frost_hound' },
+      { defId: 'ember_fang_wolf', name: 'Ember-Fang Wolf', flag: 'ember_wolf' },
+    ] as const;
+    const ACT_II_FLOORS = [26, 30, 34] as const;
+
+    /** A hero on `floor`, with the companion beside them (hp 0 for a dead one) or alone. */
+    function barkWorld(companion?: { defId: string; name: string; hp: number }) {
+      const logs: string[] = [];
+      const worldState = createWorldState();
+      const player = new Player({ name: 'Sven', position: { x: 5, y: 5 } });
+      const map = new GameMap(30, 30);
+      if (companion) {
+        map.addEntity(
+          new Companion({
+            id: `companion-${companion.defId}-1`,
+            name: companion.name,
+            position: { x: 5, y: 6 },
+            stats: { hp: companion.hp, maxHp: 50, attack: 10, defense: 5 },
+            speed: 100,
+            companionDefinitionId: companion.defId,
+            packWeightCapacity: 2000,
+            packBulkCapacity: 3000,
+          })
+        );
+      }
+      const state = { floor: 0 };
+      const ctx: EngineContext = {
+        player,
+        map,
+        surfaces: null as any,
+        worldState,
+        rng: () => 0.5,
+        log: (msg) => logs.push(msg),
+        getWorldFlag: (f) => Boolean(worldState.flags[f]),
+        setWorldFlag: (f, v) => setFlag(worldState, f, v),
+        get currentFloor() {
+          return state.floor;
+        },
+        removeEntity: () => true,
+        addEntity: () => true,
+        compendium: null as never,
+      };
+      const act = (floor: number) => {
+        state.floor = floor;
+        COTW_COMPANION_BARKS_HOOK.execute({ action: null as any, actionType: 'wait', actor: player, engine: ctx });
+      };
+      const barkFlags = () => Object.keys(worldState.flags).filter((f) => f.startsWith('bark_'));
+      return { logs, worldState, act, barkFlags };
+    }
+
+    for (const c of COMPANIONS) {
+      it(`the ${c.name} says one line on each of floors 26, 30 and 34, once per run`, () => {
+        const w = barkWorld({ ...c, hp: 50 });
+        for (const floor of ACT_II_FLOORS) {
+          const before = w.logs.length;
+          w.act(floor);
+          expect(w.logs.length, `floor ${floor}`).toBe(before + 1);
+          expect(w.logs.at(-1), `floor ${floor}`).toContain(c.name);
+          expect(w.worldState.flags[`bark_${c.flag}_f${floor}`], `floor ${floor}`).toBe(true);
+
+          w.act(floor);
+          expect(w.logs.length, `floor ${floor}, second action`).toBe(before + 1);
+        }
+      });
+
+      it(`the ${c.name} stays silent on floor 27`, () => {
+        const w = barkWorld({ ...c, hp: 50 });
+        w.act(27);
+        expect(w.logs).toEqual([]);
+        expect(w.barkFlags()).toEqual([]);
+      });
+
+      it(`a dead ${c.name} says nothing on floors 26, 30 and 34`, () => {
+        const w = barkWorld({ ...c, hp: 0 });
+        for (const floor of ACT_II_FLOORS) w.act(floor);
+        expect(w.logs).toEqual([]);
+        expect(w.barkFlags()).toEqual([]);
+      });
+    }
+
+    it('a hero with no companion hears nothing on floors 26, 30 and 34', () => {
+      const w = barkWorld();
+      for (const floor of ACT_II_FLOORS) w.act(floor);
+      expect(w.logs).toEqual([]);
+      expect(w.barkFlags()).toEqual([]);
+    });
+
+    it('the six lines are distinct, new, and name no hub, tally or unmet choice', () => {
+      const actII: string[] = [];
+      const older: string[] = [];
+      for (const c of COMPANIONS) {
+        const w = barkWorld({ ...c, hp: 50 });
+        for (const floor of ACT_II_FLOORS) w.act(floor);
+        actII.push(...w.logs);
+        // Every existing bark, the altar's half and full marks at Náströnd and the Heartwood included.
+        for (const sacrificed of [0, 2, 4]) {
+          const o = barkWorld({ ...c, hp: 50 });
+          o.worldState.counters['hostages_sacrificed'] = sacrificed;
+          for (const floor of [18, 32, 43, 47, 50]) o.act(floor);
+          older.push(...o.logs);
+        }
+      }
+      expect(actII).toHaveLength(6);
+      expect(new Set(actII).size).toBe(6);
+      for (const line of actII) {
+        expect(older, line).not.toContain(line);
+        expect(line).not.toMatch(/rot_tapped|rot_mended|tapper|deserter|warden|elder|Great Tap|flask|oath|sworn|safe-conduct/i);
+      }
+    });
+  });
+
   it('the companion reacts to the altar’s mark at Náströnd and the Heartwood', () => {
     const logs: string[] = [];
     const worldState = createWorldState();

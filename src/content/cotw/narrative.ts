@@ -413,7 +413,7 @@ export const COTW_COMPANION_BARKS_HOOK: ActionHook = {
   execute: ({ actor, engine }) => {
     if (actor !== engine.player) return;
     const floor = engine.currentFloor;
-    if (floor !== 18 && floor !== URDR_POOL_FLOOR && floor !== 43 && floor !== 47 && floor !== 50) return;
+    if (![18, 26, 30, URDR_POOL_FLOOR, 34, 43, 47, 50].includes(floor)) return;
 
     const companion = engine.map.getAllEntities().find((e): e is Companion => e instanceof Companion);
     if (!companion || !companion.isAlive()) return;
@@ -431,6 +431,45 @@ export const COTW_COMPANION_BARKS_HOOK: ActionHook = {
         setFlag(ws, 'bark_ember_wolf_f18', true);
         engine.log(
           'Your Ember-Fang Wolf bares fiery fangs, drinking the volcanic fumes of the Obsidian Siphon with a hungry growl.'
+        );
+      }
+    } else if (floor === 26) {
+      // The Silver Veins open: the companion finds the first spigot and the sap leaking round it.
+      if (compId === 'hearth_frost_hound' && !getFlag(ws, 'bark_frost_hound_f26')) {
+        setFlag(ws, 'bark_frost_hound_f26', true);
+        engine.log(
+          'Your Frost-Ward Hound sniffs at a silver spigot hammered into a root, licks the sap weeping round it, and spits it out.'
+        );
+      } else if (compId === 'ember_fang_wolf' && !getFlag(ws, 'bark_ember_wolf_f26')) {
+        setFlag(ws, 'bark_ember_wolf_f26', true);
+        engine.log(
+          'Your Ember-Fang Wolf follows a trickle of sap down the silver seams to the root it bleeds from, and will not drink.'
+        );
+      }
+    } else if (floor === 30) {
+      // Gloom-Tarr's Bile-Sump: dark, and sour with what the roots have leaked.
+      if (compId === 'hearth_frost_hound' && !getFlag(ws, 'bark_frost_hound_f30')) {
+        setFlag(ws, 'bark_frost_hound_f30', true);
+        engine.log(
+          'In the dark of the Bile-Sump your Frost-Ward Hound presses close against your leg, rime gathering on its muzzle against the sour reek.'
+        );
+      } else if (compId === 'ember_fang_wolf' && !getFlag(ws, 'bark_ember_wolf_f30')) {
+        setFlag(ws, 'bark_ember_wolf_f30', true);
+        engine.log(
+          'Your Ember-Fang Wolf’s embers are the only light in the Bile-Sump. It sneezes at the sour reek and growls into the dark.'
+        );
+      }
+    } else if (floor === 34) {
+      // The World-Bark Descent: the great root itself is wounded.
+      if (compId === 'hearth_frost_hound' && !getFlag(ws, 'bark_frost_hound_f34')) {
+        setFlag(ws, 'bark_frost_hound_f34', true);
+        engine.log(
+          'Your Frost-Ward Hound puts its nose to the World-Bark and whines. The great root is wet where it should be dry, and the sap smells of rot.'
+        );
+      } else if (compId === 'ember_fang_wolf' && !getFlag(ws, 'bark_ember_wolf_f34')) {
+        setFlag(ws, 'bark_ember_wolf_f34', true);
+        engine.log(
+          'Your Ember-Fang Wolf circles a split in the World-Bark where the sap runs black, and its embers gutter as if the wood were bleeding.'
         );
       }
     } else if (floor === URDR_POOL_FLOOR) {

@@ -139,6 +139,7 @@ test('the F1 card ends above the recent messages at 1366x768, and a tall one kee
         width: Math.round(box.width),
         bottom: box.bottom,
         stripTop: strip?.top ?? null,
+        logTop: document.getElementById('game-full-width-log')!.getBoundingClientRect().top,
         bodyScrolls: body.scrollHeight > body.clientHeight + 1,
         keysScroll: keys.scrollHeight > keys.clientHeight + 1,
         tipInView: tip.top >= box.top && tip.bottom <= body.getBoundingClientRect().bottom + 1,
@@ -169,8 +170,30 @@ test('the F1 card ends above the recent messages at 1366x768, and a tall one kee
   await page.keyboard.press('F1');
   await expect(help).toBeHidden();
 
-  // 1920x1080 keeps the card as it was: 420px wide at the 1.25 scale.
+  // In play the HUD log is the one below: the targeting card, and the tall exploration card
+  // on a dungeon floor, end above it, the latter scrolling its keys with its tip in view.
+  const aboveLog = async (title: string) => {
+    await page.keyboard.press('F1');
+    await expect(help).toContainText(title);
+    const card = await fit();
+    expect(card.bottom, `the ${title} card ends above the HUD log`).toBeLessThanOrEqual(card.logTop);
+    await page.keyboard.press('F1');
+    await expect(help).toBeHidden();
+    return card;
+  };
+  await page.keyboard.press('Enter');
+  await expect.poll(() => page.evaluate(() => window.__cotwRenderer!.targetingOverlay.isOpen)).toBe(true);
+  expect(await aboveLog('Spell Casting'), 'the targeting card fits whole').toMatchObject({ bodyScrolls: false, keysScroll: false });
+  await page.keyboard.press('Escape');
+  await expect.poll(() => page.evaluate(() => window.__cotwRenderer!.targetingOverlay.isOpen)).toBe(false);
+  await page.evaluate(() => window.__cotwEngine!.diagnostics.jumpToFloor(2));
+  await page.keyboard.press('Space');
+  expect(await aboveLog('Dungeon Exploration'), 'the exploration card scrolls its keys, not its tip').toMatchObject({ keysScroll: true, bodyScrolls: false, tipInView: true });
+
+  // 1920x1080 keeps the Spellbook card as it was: 420px wide at the 1.25 scale.
   await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.keyboard.press('KeyZ');
+  await expect(page.locator('.cm-recent .recent-messages')).toBeVisible();
   await page.keyboard.press('F1');
   await expect(help).toContainText('Spellbook');
   await expect.poll(async () => (await fit()).width).toBe(525);

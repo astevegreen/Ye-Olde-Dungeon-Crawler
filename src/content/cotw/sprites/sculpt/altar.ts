@@ -164,7 +164,7 @@ const ALTARS: Record<AltarKind, (f: number) => PrimTree> = { tyr, odin, hel, lok
 /**
  * The altars, four idle frames. Each god gets a silhouette, not a letter: a sword on Tyr's slab,
  * Odin's ravens, Hel's half-skull, Loki's serpent stone, Urðr's starlit pool; and the shrines of
- * altar2.ts: Verðandi's loom, Skuld's mirror, Ratatoskr's roost, a duergar barrow. The rune is the
+ * altar2.ts: Verðandi's loom, Skuld's mirror, Ratatoskr's roost, a duergar barrow, a sap-shrine. The rune is the
  * one light. An unknown kind draws Tyr's.
  */
 export function altarModel(f: number, v: Variant & { kind: AltarKind }): PrimTree {

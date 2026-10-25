@@ -1,10 +1,10 @@
-import { E, K, P, X, Lt, Sh, T, arc, breath, sway, type Prim, type PrimTree } from './kit';
+import { E, K, P, X, Lt, Sh, T, arc, breath, drip, sway, type Prim, type PrimTree } from './kit';
 import { block, ell, glint, rune } from './fixture';
 import './materials';
 
 /*
  * The shrines altarModel draws beside the gods' altars: two of the Norns' three places (Urðr's
- * Pool is in altar.ts), Ratatoskr's roost and the duergar barrows. Same light, plinth and rune
+ * Pool is in altar.ts), Ratatoskr's roost, the duergar barrows and Act II's sap-shrines. Same light, plinth and rune
  * treatment as the altars; each reads as its own place from across the room.
  */
 
@@ -246,5 +246,43 @@ function barrow(f: number): PrimTree {
   return out;
 }
 
+/**
+ * A Sap-Shrine: a knot of living root arched over a low root-altar, a skald's verse cut in its
+ * face, a tapper's silver spigot driven into the arch and the Rot dripping black from it.
+ * ᛇ in blight-green.
+ */
+function sapShrine(f: number): PrimTree {
+  const p = breath(f);
+  const r = 'alt_shrineRoot';
+  const out: Out = [
+    Sh(16, 28.6, 13.4, 2.4, 0.5),
+    // root flares gripping the floor
+    K(8.4, 26.4, 3.2, 28.8, 1.5, 0.5, r), K(23.6, 26.4, 28.8, 28.8, 1.5, 0.5, r), K(11, 27.6, 8.6, 29.2, 0.9, 0.35, r),
+    // the arch: two roots rising and knotting overhead
+    K(7.6, 27, 6.8, 15, 1.9, 1.5, r), K(6.8, 15, 9.6, 7.2, 1.5, 1.3, r), K(9.6, 7.2, 16, 4.6, 1.3, 1.2, r),
+    K(24.4, 27, 25.2, 15, 1.9, 1.5, r), K(25.2, 15, 22.4, 7.2, 1.5, 1.3, r), K(22.4, 7.2, 16, 4.6, 1.3, 1.2, r),
+    E(16, 4.8, 2.4, 1.8, r), // the knot
+    // the altar: a low knot of root between the arch's feet, its face cut flat for the verse
+    P([9.4, 28.4, 9.8, 21.6, 12, 19.2, 20, 19.2, 22.2, 21.6, 22.6, 28.4], r, { bv: 1.4 }),
+    P([11.2, 21.4, 20.8, 21.4, 20.8, 27.4, 11.2, 27.4], r, { bv: 0.3, ink: -0.1 }),
+  ];
+  // four cut lines of verse
+  [22.4, 23.9, 25.4, 26.8].forEach((y, i) => out.push(X(12, y, 8 - (i % 2) * 1.6, 0.45, 'woodDark:2')));
+  out.push(
+    // the spigot, driven into the right root, and the grey rot spreading beneath it
+    E(24.4, 15.6, 1.5, 3.2, 'alt_greyRoot'),
+    K(21.2, 12.2, 24.6, 12.8, 0.55, 0.7, 'fix_silver'),
+    X(21.4, 10.8, 0.5, 1.4, 'fix_silver:4'), // its tap
+    E(21.1, 12.4, 0.55, 0.65, 'alt_blackSap'), // the black at its mouth
+    drip(21.1, 13, 13.4, f, 0, 'alt_blackSap', 0.55),
+    E(21.4, 27.9, 2.4, 0.7, 'alt_blackSap', { ol: false }), // the pool it leaves
+    E(8.2, 19.4, 0.9, 1.6, 'alt_greyRoot'), // the blight on the far root too
+    f % 2 === 0 && glint(23.8, 12.4, 0.7, 'fix_silver'),
+    rune('eihwaz', 16, 12.4, 6, 'alt_blight', { ink: p * 0.1, r: 0.55 }),
+    Lt(16, 12.4, 8, '#9ad86a', 0.45 + 0.2 * p),
+  );
+  return out;
+}
+
 /** altar.ts merges these into altarModel's kinds. */
-export const SHRINES = { verdandi, skuld, ratatoskr, barrow };
+export const SHRINES = { verdandi, skuld, ratatoskr, barrow, sapShrine };

@@ -78,6 +78,7 @@ import {
 } from './firstSpell';
 import { IRON_CLANS_BARROW_PLACEMENTS, IRON_CLANS_HOOKS, IVALDA } from './ironClans';
 import { SKALDIC_RUNESTONE_LORE } from './runestones';
+import { SAP_SHRINE_LORE, SAP_SHRINE_PLACEMENTS } from './sapShrines';
 import {
   VIDNIR_DEFEATED_TRIGGER,
   COTW_ZONE_VIGNETTES_HOOK,
@@ -194,7 +195,7 @@ export const cotwManifest: GameContentManifest = {
     { flag: 'skuld_mirror_resolved', label: "Skuld's Portent", description: 'Gazed upon the final hour in Skuld’s Mirror.', icon: '🪞', riddle: 'Before the heartwood, a dark glass shows what shall be when dragon meets blade.' },
   ],
   // The runestones' verses and rune-lore, kept in the Story's Carved Verses once read.
-  loreEntries: SKALDIC_RUNESTONE_LORE,
+  loreEntries: [...SKALDIC_RUNESTONE_LORE, ...SAP_SHRINE_LORE],
   renownMilestones: COTW_RENOWN_MILESTONES,
   renownTitles: COTW_RENOWN_TITLES,
   objectives: COTW_OBJECTIVES,
@@ -345,6 +346,7 @@ export const cotwManifest: GameContentManifest = {
       requiresChoiceId: 'altar_tyr',
     },
     ...IRON_CLANS_BARROW_PLACEMENTS,
+    ...SAP_SHRINE_PLACEMENTS,
     // Runic spell altars (COTW_MAGIC.altars): one every few floors; four are Hel's, one per sealed corner
     { floor: 4, tileId: 'galdr_altar_tyr', placement: 'middle_room_center' },
     { floor: 7, tileId: 'galdr_altar_hel', placement: 'middle_room_center' },

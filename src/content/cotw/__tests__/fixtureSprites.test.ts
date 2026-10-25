@@ -46,10 +46,12 @@ describe('the cotw fixture sprites draw their own pixels', () => {
     // Re-rendering every fixture took 0.6 s alone and 6.2–6.5 s under the full suite, past the 5 s default.
   }, 30_000);
 
-  it('give every place, chest state and heap size its own look; the two Tyr altars share one, as do the barrows', () => {
+  it('give every place, chest state and heap size its own look; the two Tyr altars share one, as do the barrows and the sap-shrines', () => {
     expect(drawnTiles.altar_tyr).toBe(drawnTiles.galdr_altar_tyr);
     expect(drawnTiles.duergar_barrow_1).toBe(drawnTiles.duergar_barrow_2);
     expect(drawnTiles.duergar_barrow_1).toBe(drawnTiles.duergar_barrow_3);
+    expect(drawnTiles.sap_shrine_1).toBeDefined();
+    for (const n of [2, 3, 4]) expect(drawnTiles[`sap_shrine_${n}`]).toBe(drawnTiles.sap_shrine_1);
     // A sprite shared between tiles is one look: compare each drawing once.
     const names = Object.keys(sprites).filter((name, i, all) => all.findIndex((n) => sprites[n] === sprites[name]) === i);
     for (let i = 0; i < names.length; i++) {

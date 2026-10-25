@@ -1,6 +1,7 @@
 import type { TileDefinition } from '../../engine';
 import { SKALDIC_RUNESTONE_TILES } from './runestones';
 import { IRON_CLANS_BARROW_TILES } from './ironClans';
+import { SAP_SHRINE_TILES } from './sapShrines';
 import { SIPHON_CORE_TILE_DEFINITION } from './siphonPylon';
 
 /** Bjarnarhaven's lanes and street furniture (townLayout.ts). */
@@ -195,6 +196,7 @@ export const COTW_TILES: TileDefinition[] = [
   },
   ...SKALDIC_RUNESTONE_TILES,
   ...IRON_CLANS_BARROW_TILES,
+  ...SAP_SHRINE_TILES,
 
   // --- Act 1 Campfire Grotto: The Dwarven Hearth Grotto (Floor 13) ---
   {

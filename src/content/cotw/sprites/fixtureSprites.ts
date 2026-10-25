@@ -18,6 +18,7 @@ const sculpted = <V extends Variant>(model: Model<V>, variant?: V, frames = FIXT
 
 const tyrAltar = sculpted(altarModel, { kind: 'tyr' });
 const barrow = sculpted(altarModel, { kind: 'barrow' });
+const sapShrine = sculpted(altarModel, { kind: 'sapShrine' });
 const closedChest = sculpted(chestModel, { state: 'closed' }, 1);
 
 /** The six Skaldic Runestones, one per chapter of the saga, in tile order. */
@@ -25,7 +26,7 @@ const RUNESTONES = ['frost', 'smithy', 'dawn', 'lament', 'norns', 'twilight'] as
 
 /**
  * The fixtures from the style bible (`FixtureArt`). Altars are keyed by tile type, each god's
- * by its own look (both Tyr altars share one, as do the three barrows); the Siphon Altar and its
+ * by its own look (both Tyr altars share one, as do the three barrows and the four sap-shrines); the Siphon Altar and its
  * core had no mark at all.
  */
 export const COTW_FIXTURE_ART: FixtureArt = {
@@ -42,6 +43,7 @@ export const COTW_FIXTURE_ART: FixtureArt = {
     duergar_barrow_1: barrow,
     duergar_barrow_2: barrow,
     duergar_barrow_3: barrow,
+    ...Object.fromEntries([1, 2, 3, 4].map((n) => [`sap_shrine_${n}`, sapShrine])),
     broken_runestone: sculpted(runestoneModel, { kind: 'broken' }),
     ...Object.fromEntries(RUNESTONES.map((kind, i) => [`skaldic_runestone_${i + 1}`, sculpted(runestoneModel, { kind })])),
     gateway_valhalla: sculpted(portalModel, { kind: 'root' }),

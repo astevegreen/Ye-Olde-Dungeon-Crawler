@@ -79,12 +79,15 @@ describe('CotW Narrative Progression & Skaldic Runestones', () => {
     expect(defyOpt?.consequences.some((c) => c.type === 'setFlag' && c.flag === 'vidnir_warning_defied')).toBe(true);
   });
 
-  it('tracks vidnir_slain as a milestone, each with a riddle, and all six runestones as lore', () => {
+  it('tracks vidnir_slain as a milestone, each with a riddle, and all six runestones and four sap-shrines as lore', () => {
     const milestones = cotwManifest.trackedMilestones ?? [];
     expect(milestones.some((m) => m.flag === 'vidnir_slain')).toBe(true);
     expect(milestones.every((m) => Boolean(m.riddle))).toBe(true);
     const lore = cotwManifest.loreEntries ?? [];
-    expect(lore.map((l) => l.flag)).toEqual([1, 2, 3, 4, 5, 6].map((n) => `skaldic_runestone_${n}_resolved`));
+    expect(lore.map((l) => l.flag)).toEqual([
+      ...[1, 2, 3, 4, 5, 6].map((n) => `skaldic_runestone_${n}_resolved`),
+      ...[1, 2, 3, 4].map((n) => `sap_shrine_${n}_read`),
+    ]);
     expect(lore.every((l) => l.verse.length > 0 && l.lore.length > 0)).toBe(true);
   });
 

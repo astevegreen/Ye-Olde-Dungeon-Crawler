@@ -465,6 +465,11 @@ mat('alt_barrowStone', '#78726a', { tex: 'stone', hs: 10 }); // dressed stone
 mat('alt_sealStone', '#5c5852', { tex: 'stone', hs: 10 });
 mat('alt_wight', '#b4f0d0', { em: true, hs: 0 }); // the barrow's rune: wight-light, a warning
 mat('alt_ember', '#ff7a36', { em: true, hs: 0 }); // the Smithy's Accord stone's rune
+// the sap-shrines of Act II: a knot of living root, a tapper's spigot, the Rot weeping from it
+mat('alt_shrineRoot', '#7a6244', { tex: 'bark', hs: 12 }); // living root, warm under the bark
+mat('alt_greyRoot', '#6a6a60', { tex: 'rot', hs: 8 }); // root gone soft and grey under the spigot
+mat('alt_blackSap', '#1c2218', { shiny: true, hs: 6 }); // the Rot: black sap with a green sheen
+mat('alt_blight', '#9ad86a', { em: true, hs: 0 }); // the shrine's rune: blight-light
 // the skaldic runestones: each chapter's stone, and the paint in its carved band
 mat('alt_rimeStone', '#7e8b99', { tex: 'stone', hs: 8 });
 mat('alt_sootStone', '#3c3838', { tex: 'stone', hs: 8 });

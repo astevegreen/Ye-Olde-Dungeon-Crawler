@@ -250,7 +250,7 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     essenceElement: 'shadow',
     requiredDamageElement: 'fire',
     requiredVictimStatus: 'slow',
-    hintVerse: 'Slow the wraith in its roots, then set them alight.',
+    hintVerse: 'Root-kin the Rot has hollowed into a wraith.\nSlow it in its blighted roots, then burn them.',
   },
   dark_sorcerer: {
     essenceElement: 'arcane',
@@ -273,14 +273,14 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     essenceElement: 'physical',
     requiredDamageElement: 'fire',
     requiredVictimStatus: 'paralysis',
-    hintVerse: 'Hold the husk rigid and still, then burn the bark from its bones.',
+    hintVerse: "The blight left only bark on this miner's bones.\nHold the husk rigid and still, then burn the bark away.",
   },
 
   // ─── World Bark Descent (34-42) ────────────────────────────────────────
   amber_sap_weeper: {
     essenceElement: 'healing',
     requiredDamageElement: 'fire',
-    hintVerse: 'Warm the weeping amber with fire until its healing sap runs free.',
+    hintVerse: 'It weeps the Rot through its amber.\nWarm it with fire until its healing sap runs clean.',
   },
   yggdrasil_parasite: {
     essenceElement: 'healing',
@@ -297,7 +297,7 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     essenceElement: 'physical',
     requiredDamageElement: 'physical',
     maxCasterHpPercent: 50,
-    hintVerse: 'Nothing binds a berserker; only rage answers rage.\nFell it with iron while your own life runs below half.',
+    hintVerse: 'The Rot binds what rage once drove; only rage answers it.\nFell the berserker with iron while your own life runs below half.',
   },
   miniboss_rot_matriarch: {
     essenceElement: 'shadow',
@@ -308,7 +308,7 @@ export const COTW_KILL_RITES: Record<string, KillRiteDefinition> = {
     essenceElement: 'healing',
     requiredDamageElement: 'fire',
     requiredVictimStatus: 'slow',
-    hintVerse: 'Slow the crawler in the rotwood, then burn it.',
+    hintVerse: 'Blighted kin crawl where the Rot has softened the wood.\nSlow the crawler, then burn it.',
   },
   ividja: {
     essenceElement: 'shadow',

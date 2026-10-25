@@ -11,7 +11,7 @@ export const COTW_MONSTER_CATEGORIES: MonsterCategoryDefinition[] = [
     id: 'cotw_undead',
     name: 'The Restless Dead',
     icon: '💀',
-    description: 'Draugr, wights, haugbui and every corpse that will not stay in its barrow.',
+    description: 'Draugr, wights, haugbui and every corpse that will not stay in its barrow, and now the dead the root-blight raises.',
     masteryKills: 75,
     members: [
       'skeleton',
@@ -37,7 +37,7 @@ export const COTW_MONSTER_CATEGORIES: MonsterCategoryDefinition[] = [
     id: 'cotw_beasts',
     name: 'Beasts & Vermin',
     icon: '🐺',
-    description: 'Wolves, rats, burrowers, leeches and the crawling things of the roots.',
+    description: 'Wolves, rats, burrowers, leeches and the crawling things of the roots, many of them kin the blight has turned.',
     masteryKills: 75,
     members: [
       'giant_rat',
@@ -111,7 +111,7 @@ export const COTW_MONSTER_CATEGORIES: MonsterCategoryDefinition[] = [
     id: 'cotw_constructs',
     name: 'Forged & Formless',
     icon: '⚙️',
-    description: 'Automatons, bark-husks, mirror-things and living slag — made, not born.',
+    description: 'Automatons, bark-husks, mirror-things and living slag — made, not born, the bark-husks by the root-blight.',
     masteryKills: 50,
     members: [
       'bark_husk_miner',

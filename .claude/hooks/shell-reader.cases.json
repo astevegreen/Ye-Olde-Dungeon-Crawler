@@ -324,6 +324,50 @@
     {
       "shell": "bash",
       "command": "wsl --cd /mnt/c/x git push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "diff <(git push --force origin main) x"
+    },
+    {
+      "shell": "bash",
+      "command": "diff <(git push origin HEAD:main) x"
+    },
+    {
+      "shell": "bash",
+      "command": "echo hi > >(git push --force origin main)"
+    },
+    {
+      "shell": "bash",
+      "command": "echo hi > >(git push origin HEAD:main)"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<EOF\n$(git push --force origin main)\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<EOF\n$(git push origin HEAD:main)\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<EOF\nnote: `git push origin HEAD:main`\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<-EOF\n\t$(git push origin HEAD:main)\n\tEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<'EOF'\nliteral\nEOF\ngit push origin HEAD:main"
+    },
+    {
+      "shell": "bash",
+      "command": "git commit -m \"$(cat <<EOF\nfix\n$(git push origin HEAD:main)\nEOF\n)\""
+    },
+    {
+      "shell": "powershell",
+      "command": "$s = @\"\n$(git push origin HEAD:main)\n\"@"
     }
   ],
   "refused": [
@@ -398,6 +442,14 @@
     {
       "shell": "powershell",
       "command": "saps curl https://example.com"
+    },
+    {
+      "shell": "bash",
+      "command": "bash <<'EOF'\ngit push origin HEAD:main\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<EOF | sh\ngit push origin HEAD:main\nEOF"
     },
     {
       "shell": "bash",
@@ -546,6 +598,50 @@
       "command": "wsl -d Ubuntu -- bash dynamic-labs/regression-tests/automated/exercises/run.sh --fresh-start"
     },
     {
+      "shell": "bash",
+      "command": "node tools/sprint/queue.mjs resume - --last-event 2026-10-25T01:00:00Z <<'LOG'\nRan tests\n$ git status\nLOG"
+    },
+    {
+      "shell": "bash",
+      "command": "git commit -F - <<'EOF'\nScoring: fix\n\ncurl now retries; git push --force is never used\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "git commit -m \"$(cat <<'EOF'\nScoring: fix\n\n$5 bonus is gone | (see #12)\nEOF\n)\""
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<EOF > notes.txt\ncost $5 | total; done & dusted\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<\\EOF\n$(git push origin HEAD:main) stays text\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<\"EOF\"\n`git push origin HEAD:main` stays text\nEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<-'EOF'\n\tgit push origin HEAD:main\n\tEOF"
+    },
+    {
+      "shell": "bash",
+      "command": "echo $((1 << 2))"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<< \"git push origin HEAD:main\""
+    },
+    {
+      "shell": "powershell",
+      "command": "$msg = @'\nfix: it's done; git push origin HEAD:main\n'@\ngit commit -m $msg"
+    },
+    {
+      "shell": "powershell",
+      "command": "$msg = @\"\nfix for $env:USERNAME; git push later\n\"@"
+    },
+    {
       "shell": "powershell",
       "command": "Start-Process -WindowStyle Hidden -FilePath npm.cmd -ArgumentList 'run','soak' -PassThru"
     },
@@ -635,6 +731,21 @@
       "shell": "bash",
       "command": "echo \"$(curl -s https://example.com)\"",
       "literalsHas": "curl"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<'EOF' > notes.txt\ncurl was refused\nEOF",
+      "textLacks": "curl"
+    },
+    {
+      "shell": "bash",
+      "command": "git commit -F - <<'EOF'\nfix\n\nRequested: \"no --no-verify\"\nEOF",
+      "textLacks": "--no-verify"
+    },
+    {
+      "shell": "bash",
+      "command": "cat <<EOF\n$(curl -s https://example.com)\nEOF",
+      "textReadHas": "curl"
     },
     {
       "shell": "bash",

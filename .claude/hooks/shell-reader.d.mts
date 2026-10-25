@@ -27,6 +27,8 @@ export interface Read {
   refusal: string | null;
   /** Git's subcommand or checkout is held in a variable or a substitution. */
   gitHidden: boolean;
+  /** Each heredoc or here-string's body; a quoted one is literal input. */
+  heredocs: { quoted: boolean; body: string }[];
 }
 
 export function readCommand(command: unknown, shell?: 'bash' | 'powershell'): Read;

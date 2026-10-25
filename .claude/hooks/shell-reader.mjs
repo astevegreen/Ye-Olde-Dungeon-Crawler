@@ -70,14 +70,18 @@ export const gitSub = (w) => {
  * - commandsIn(words): the commands one simple command runs (itself, and what a wrapper runs), each
  *   { w, at, fromArgs, repl } (`at`: its first word as written); throws Unreadable when one can't be read;
  * - refusal: why the line runs a command the reader can't see (`& $g`, `$(which git) push`), or null;
- * - gitHidden: git's subcommand or checkout is held in a variable or a substitution.
+ * - gitHidden: git's subcommand or checkout is held in a variable or a substitution;
+ * - heredocs: each heredoc or here-string's body, { quoted, body }; `quoted` bodies are literal input.
  */
 export function readCommand(command, shell = 'bash') {
   const PS = shell === 'powershell';
   // The escape character: bash's backslash, PowerShell's backtick (in bash a backtick runs a command).
   const ESC = PS ? '`' : '\\';
+  const heredocs = [];
+  const raw = String(command ?? '');
   // An escape before a newline joins the two lines into one command: `git \⏎push` pushes, in PowerShell `git `⏎push`.
-  const line = String(command ?? '').replace(PS ? /`\r?\n/g : /\\\r?\n/g, ' ');
+  // A heredoc's body is input, not commands, so it is folded first (its own escapes are literal).
+  const line = (PS ? foldHereStrings(raw) : foldHeredocs(raw)).replace(PS ? /`\r?\n/g : /\\\r?\n/g, ' ');
 
   // Where a run that starts at i ends, as the shell finds it. `$(…)` holds a command of its own, whose quotes
   // and parentheses nest (`"$(echo "a"; git push)"` is one string); a bash backtick run ends at the next
@@ -107,6 +111,119 @@ export function readCommand(command, shell = 'bash') {
       else if (c === ')' && depth-- === 0) return i;
     }
     return s.length;
+  }
+  // The runs in a heredoc body or an expandable here-string: `$(…)` and, in bash, backticks; `$((…))` is arithmetic.
+  function runsIn(body) {
+    const runs = [];
+    for (let k = 0; k < body.length; k++) {
+      if (body[k] === ESC) k++;
+      else if (body.startsWith('$((', k)) k = parenEnd(body, k + 2);
+      else if (body.startsWith('$(', k)) {
+        const end = parenEnd(body, k + 2);
+        runs.push(body.slice(k, end + 1));
+        k = end;
+      } else if (body[k] === '`' && !PS) {
+        const end = tickEnd(body, k + 1);
+        runs.push(body.slice(k, end + 1));
+        k = end;
+      }
+    }
+    return runs;
+  }
+  // Bash heredocs (`cat <<'EOF'` … `EOF`), wherever a command can stand, a `$(…)` inside double quotes included (the
+  // usual `git commit -m "$(cat <<'EOF' … EOF)"`). A quoted delimiter (<<'X', <<"X", <<\X) keeps the body literal, so
+  // the body is cut out; an unquoted body runs only its `$(…)` and backticks, which stay, one to a line. `<<-` strips
+  // leading tabs before the delimiter is matched; `<<<` is a here-string and `$((a<<2))` arithmetic.
+  function foldHeredocs(s) {
+    let out = '';
+    let pending = [];
+    // The contexts the scan is in: cmd (a command line, a `$(…)` or a `(…)`), dq (double quotes) and ` (backticks).
+    const stack = ['cmd'];
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i];
+      const ctx = stack[stack.length - 1];
+      if (c === '\\') {
+        out += c + (s[i + 1] ?? '');
+        i++;
+        continue;
+      }
+      if (ctx === 'dq') {
+        if (c === '"') stack.pop();
+        else if (s.startsWith('$((', i)) {
+          const end = parenEnd(s, i + 2);
+          out += s.slice(i, end + 1);
+          i = end;
+          continue;
+        } else if (s.startsWith('$(', i)) {
+          stack.push('(');
+          out += '$(';
+          i++;
+          continue;
+        } else if (c === '`') stack.push('`');
+        out += c;
+        continue;
+      }
+      if (c === "'") {
+        const end = s.indexOf("'", i + 1) < 0 ? s.length : s.indexOf("'", i + 1);
+        out += s.slice(i, end + 1);
+        i = end;
+        continue;
+      }
+      if (s.startsWith('$((', i)) {
+        const end = parenEnd(s, i + 2);
+        out += s.slice(i, end + 1);
+        i = end;
+        continue;
+      }
+      if (c === '"') stack.push('dq');
+      else if (c === '(') stack.push('(');
+      else if (c === ')' && ctx === '(') stack.pop();
+      else if (c === '`') {
+        if (ctx === '`') stack.pop();
+        else stack.push('`');
+      } else if (c === '<' && s[i + 1] === '<' && s[i + 2] !== '<' && s[i - 1] !== '<') {
+        const op = /^<<(-?)[ \t]*((?:[^\s;|&<>()'"\\]|\\.|'[^']*'|"[^"]*")+)/.exec(s.slice(i));
+        if (op) {
+          pending.push({ strip: op[1] === '-', delimiter: op[2].replace(/\\(.)|['"]/g, '$1'), quoted: /['"\\]/.test(op[2]) });
+          out += op[0];
+          i += op[0].length - 1;
+          continue;
+        }
+      } else if (c === '\n' && pending.length) {
+        out += c;
+        let p = i + 1;
+        for (const doc of pending) {
+          let body = '';
+          while (p < s.length) {
+            const nl = s.indexOf('\n', p);
+            const end = nl < 0 ? s.length : nl;
+            const text = s.slice(p, end).replace(/\r$/, '');
+            p = end + 1;
+            if ((doc.strip ? text.replace(/^\t+/, '') : text) === doc.delimiter) break;
+            body += `${text}\n`;
+          }
+          heredocs.push({ quoted: doc.quoted, body });
+          if (!doc.quoted) out += runsIn(body).map((r) => `${r}\n`).join('');
+        }
+        pending = [];
+        i = p - 1;
+        continue;
+      }
+      out += c;
+    }
+    return out;
+  }
+  // PowerShell's here-strings: @'…'@ is literal text, and @"…"@ runs only its `$(…)`.
+  function foldHereStrings(s) {
+    return s
+      .replace(/@'[ \t]*\r?\n([\s\S]*?)\r?\n'@/g, (_, body) => {
+        heredocs.push({ quoted: true, body });
+        return "''";
+      })
+      .replace(/@"[ \t]*\r?\n([\s\S]*?)\r?\n"@/g, (_, body) => {
+        heredocs.push({ quoted: false, body });
+        return `"${runsIn(body).join(' ')}"`;
+      });
   }
   // In double quotes that run a command, only `$(…)` and bash's backticks hold commands, each read as a
   // command of its own; an operator elsewhere in them is text (`--body "Done; $n left"`).
@@ -164,9 +281,9 @@ export function readCommand(command, shell = 'bash') {
     refusal = 'a command named by `$(…)` or backticks runs what it prints, which the guard can\'t read; run it by name';
   }
   // A lone & ends a command (bash's background) or starts one (PowerShell's call operator); `2>&1` and `&>`
-  // are redirects.
+  // are redirects. Bash's process substitutions `<(…)` and `>(…)` run a command like `$(…)`.
   const parts = masked
-    .split(PS ? /&&|\|\||(?<!>)&(?!>)|[;|\n]|\$\(|\)/ : /&&|\|\||(?<!>)&(?!>)|[;|\n`]|\$\(|\)/)
+    .split(PS ? /&&|\|\||(?<!>)&(?!>)|[;|\n]|\$\(|\)/ : /&&|\|\||(?<!>)&(?!>)|[;|\n`]|[$<>]\(|\)/)
     .map((p) => unmask(p).trim())
     .filter(Boolean);
 
@@ -297,5 +414,6 @@ export function readCommand(command, shell = 'bash') {
     commandsIn: (raw) => commandsIn(raw),
     refusal,
     gitHidden: GIT_HIDDEN.test(masked),
+    heredocs,
   };
 }

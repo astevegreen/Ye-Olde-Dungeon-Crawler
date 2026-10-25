@@ -8,6 +8,7 @@ import { SoakPrng } from './soak/prng';
 import { decideChaosAction, decidePlayerAction, type DispatchedAction } from './soak/policies';
 import { BUILDS, buildFor, classifyDeath, isRunestoneChoice, runestonePolicyFor } from './soak/playerBot';
 import { drainMagicAnomalies, readMagic, tapMagic } from './soak/magicTap';
+import { formatSoakFlags, parseSoakFlags } from './soak/soakFlags';
 import {
   createInitialOracleState,
   openModes,
@@ -156,6 +157,9 @@ test.describe('soak @soak', () => {
     const opening: SoakOpening = startFloor > 0
       ? 'skip'
       : (process.env.SOAK_OPENING as SoakOpening | undefined) ?? (policy === 'chaos' && seed % 2 === 1 ? 'skip' : 'play');
+    // World flags set before the run starts (SOAK_FLAGS=a,b,c=false): an Act II deep start as
+    // if an earlier hub's choice were made. A malformed list fails the run here, before any play.
+    const worldFlags = parseSoakFlags(process.env.SOAK_FLAGS);
 
     // About 0.2 s an action, plus round trips; a run that hits this still writes its summary.
     test.setTimeout(120_000 + maxActions * 500);
@@ -237,6 +241,15 @@ test.describe('soak @soak', () => {
       await expect(page.locator('#controls-primer')).toBeHidden();
     } else {
       await pastTheOpening(page);
+    }
+
+    // Before the deep-start jump, so the floor it builds sees them; on a run from town, before
+    // the first action.
+    if (worldFlags.length > 0) {
+      await page.evaluate((flags) => {
+        for (const { flag, value } of flags) window.__cotwEngine!.setWorldFlag(flag, value);
+      }, worldFlags);
+      console.log(`[soak] World flags set: ${worldFlags.map((f) => `${f.flag}=${f.value}`).join(', ')}`);
     }
 
     const runestonesGranted: Record<string, string> = {};
@@ -332,11 +345,12 @@ test.describe('soak @soak', () => {
       paceAt = Date.now();
     };
 
-    // A deep start replays only with its floor (and level) named.
+    // A deep start replays only with its floor (and level) named; a run with flags, with them.
     const startLevel = parseInt(process.env.SOAK_START_LEVEL ?? '0', 10) || 0;
     const deepRepro = startFloor > 0 ? ` SOAK_START_FLOOR=${startFloor}${startLevel ? ` SOAK_START_LEVEL=${startLevel}` : ''}` : '';
+    const flagsRepro = worldFlags.length > 0 ? ` SOAK_FLAGS=${formatSoakFlags(worldFlags)}` : '';
     const repro = (i: number) =>
-      `SOAK=1 SOAK_SEED=${seed} SOAK_POLICY=${policy} SOAK_OPENING=${opening}${deepRepro} SOAK_ACTIONS=${i + 1} npx playwright test e2e/soak.spec.ts --project=chromium --workers=1`;
+      `SOAK=1 SOAK_SEED=${seed} SOAK_POLICY=${policy} SOAK_OPENING=${opening}${deepRepro}${flagsRepro} SOAK_ACTIONS=${i + 1} npx playwright test e2e/soak.spec.ts --project=chromium --workers=1`;
     const harnessFinding = (i: number, turn: number, floor: number, category: FindingCategory, severity: FindingSeverity, detail: string, frame?: string, tag?: FindingTag): Finding => ({
       sig: normalizeSignature(category, detail, frame),
       category,
@@ -457,6 +471,7 @@ test.describe('soak @soak', () => {
         ...(magic ? { magic } : {}),
         pace,
         ...(state.belowTurns !== null ? { belowTurns: state.belowTurns } : {}),
+        ...(policy === 'player' ? { npcsMet: { ...((page as any).__playerNpcsMet ?? {}) } } : {}),
         hero: {
           build,
           runestonePolicy,

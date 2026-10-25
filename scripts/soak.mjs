@@ -22,6 +22,8 @@ Options:
   --start-level <n>    The level that outfit aims at (default: 1 + 0.7 x floor)
   --build <name>       player: warrior | caster | hybrid for every seed (default: by seed, n % 3)
   --runestones <p>     player: first | second | leave for every seed (default: by seed, floor(n / 3) % 3)
+  --flags <list>       World flags set before the run starts, as a, b or c=false (e.g. an Act II
+                       deep start as if an earlier hub's choice were made; default: none)
   --help               Show this help message
 `);
 }
@@ -39,6 +41,7 @@ let startFloor = 0;
 let startLevel = 0;
 let build = null;
 let runestones = null;
+let flags = null;
 
 for (let i = 0; i < args.length; i++) {
   const arg = args[i];
@@ -69,6 +72,8 @@ for (let i = 0; i < args.length; i++) {
     build = args[++i];
   } else if (arg === '--runestones' && i + 1 < args.length) {
     runestones = args[++i];
+  } else if (arg === '--flags' && i + 1 < args.length) {
+    flags = args[++i];
   }
 }
 
@@ -140,6 +145,7 @@ function runSeed(seed) {
     SOAK_START_LEVEL: String(startLevel),
     ...(build ? { SOAK_BUILD: build } : {}),
     ...(runestones ? { SOAK_RUNESTONES: runestones } : {}),
+    ...(flags ? { SOAK_FLAGS: flags } : {}),
     // playwright.config.ts defines Firefox and WebKit only when this is set.
     PW_ALL_BROWSERS: '1',
   };

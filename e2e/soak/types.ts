@@ -1,4 +1,5 @@
 import type { BotTelemetry } from './playerBot';
+import type { NpcMet } from './npcMeet';
 
 export type FindingCategory = 'bug' | 'softlock' | 'text' | 'ux';
 export type FindingSeverity = 'S1' | 'S2' | 'S3' | 'S4';
@@ -96,6 +97,9 @@ export interface SoakSummary {
   pace?: Record<string, FloorPace>;
   /** Turns spent below town, as the Hearth-Tear cold counts them (`hearthCold.ts`). */
   belowTurns?: number;
+  /** The player bot's dungeon NPCs with a choice it bumped (Act II's hubs; Ivalda on floor 13),
+   *  by NPC id: the floor, and the option taken, `left` (Escape) or `unanswered` (no choice opened). */
+  npcsMet?: Record<string, NpcMet>;
   hero?: HeroOutcome;
 }
 

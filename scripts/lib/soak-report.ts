@@ -52,7 +52,15 @@ export interface ReportSummary {
   };
   pace?: Record<string, { turns: number; actions: number; wallMs: number; visits: number; firstTurn: number; spellsOnEntry: number }>;
   belowTurns?: number;
+  /** Dungeon NPCs with a choice the player bot bumped, by id; absent before K1 (25 Oct 2026). */
+  npcsMet?: Record<string, { floor: number; option: string }>;
   hero?: { build: string; runestonePolicy: string; level: number; runestones: Record<string, string> };
+}
+
+/** One run's meetings in one line: each NPC with its floor and the option taken, or `left`. */
+function npcsMetLine(s: Pick<ReportSummary, 'npcsMet'>): string {
+  const met = Object.entries(s.npcsMet ?? {}).sort((a, b) => a[1].floor - b[1].floor || a[0].localeCompare(b[0]));
+  return `NPCs met: ${met.length ? met.map(([id, m]) => `${id} (floor ${m.floor}, ${m.option})`).join(', ') : 'none'}`;
 }
 
 /** A line of `runs.jsonl` (`scripts/lib/soak-runs.mjs`): a seed's run, or the runner's stop.
@@ -447,6 +455,14 @@ export function soakReport(all: ReportSummary[], opts: ReportOptions): string {
   }
   const before = runs.filter((s) => !s.findingTags).length;
   if (before) out.push(`${before} of ${runs.length} runs predate the tag record: their findings all count as untagged.`);
+
+  // --- NPCs met (K1): did the bot reach each hub's NPC? ----------------------------
+  out.push('\n## NPCs met');
+  out.push("Per run, the dungeon NPCs with a choice the bot bumped: floor, and the option it took (`left`: Escape).");
+  for (const s of [...runs].sort((a, b) => (a.folder ?? '').localeCompare(b.folder ?? '') || a.seed - b.seed)) {
+    const folder = s.folder ? `${s.folder.split(/[\\/]/).pop()} ` : '';
+    out.push(`- ${folder}seed ${s.seed}: ${npcsMetLine(s)}`);
+  }
 
   return out.join('\n');
 }

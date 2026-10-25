@@ -241,6 +241,21 @@ describe('soak report', () => {
     });
   });
 
+  it('lists the NPCs each run met in one line, or none (K1)', () => {
+    const met = soakReport(
+      [
+        run(2, 'caster', 'first', { folder: 'C:\\soak\\player-floor13', npcsMet: { hub_two: { floor: 26, option: 'spare' }, ivalda: { floor: 13, option: 'left' } } }),
+        run(1, 'warrior', 'first', { folder: '/soak/player-floor13' }),
+        run(3, 'caster', 'first', { folder: '/soak/player-floor13', partial: true, npcsMet: { ivalda: { floor: 13, option: 'left' } } }),
+      ],
+      { coldStages: [300] }
+    );
+    expect(met).toContain('## NPCs met');
+    expect(met).toContain('- player-floor13 seed 1: NPCs met: none');
+    expect(met).toContain('- player-floor13 seed 2: NPCs met: ivalda (floor 13, left), hub_two (floor 26, spare)');
+    expect(met).not.toContain('seed 3: NPCs met');
+  });
+
   it('counts the same seed in one folder, or with no folder, once', () => {
     const oneFolder = soakReport([run(3, 'caster', 'first', { folder: 'player' }), run(3, 'caster', 'first', { folder: 'player' })], {
       coldStages: [300],

@@ -63,8 +63,8 @@ const NO_KEYS: KeyFor = () => undefined;
 /**
  * The most useful single thing to do right here, in priority order: fight an
  * adjacent monster (the weakest), take what's underfoot, use the stairs, talk to
- * someone beside you, open a door, disarm a known trap, rest when hurt with nothing
- * in sight, close a door behind you. `none` when nothing applies. `keyFor` names the
+ * someone beside you, open a door, disarm a known trap, rest when a rest can start
+ * with nothing in sight, close a door behind you. `none` when nothing applies. `keyFor` names the
  * keys the player has bound (a literal went stale after a rebind, R-ui-16).
  */
 export function resolveContextAction(engine: GameEngine, keyFor: KeyFor = NO_KEYS): ContextAction {
@@ -107,8 +107,8 @@ export function resolveContextAction(engine: GameEngine, keyFor: KeyFor = NO_KEY
     }
   }
 
-  const hurt = p.hp < p.maxHp || p.mana < p.maxMana;
-  if (hurt && getNearbyThreats(engine).length === 0 && !AutoRestManager.restRefusal(engine)) {
+  // The engine says whether a rest can start (hurt, or debt to settle; no refusal, no hostile).
+  if (getNearbyThreats(engine).length === 0 && AutoRestManager.startRefusal(engine) === null) {
     return { kind: 'rest', verb: 'Rest', target: 'until recovered', icon: 'rest', nativeKey: keyFor('rest') };
   }
 

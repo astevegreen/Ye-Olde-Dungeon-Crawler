@@ -65,6 +65,37 @@ describe('resolveContextAction', () => {
     expect(resolveContextAction(engine).kind).toBe('none');
   });
 
+  describe('at full HP and Seiðr (X6)', () => {
+    const LINGERING = 5;
+    const debtPack = () =>
+      buildEngine({ id: 'test_pack', name: 'Test', magic: { overflow: { debtName: 'Void Debt', lingeringDebt: LINGERING, tiers: [] } } }, 3);
+
+    it('rests while Void Debt above what lingers until town is left to settle', () => {
+      const engine = debtPack();
+      engine.player.voidDebt = LINGERING + 4;
+      expect(engine.player.hp).toBe(engine.player.maxHp);
+      expect(engine.player.mana).toBe(engine.player.maxMana);
+      expect(resolveContextAction(engine)).toMatchObject({ kind: 'rest', target: 'until recovered' });
+    });
+
+    it('has nothing to do with no debt, or only the debt that lingers until town', () => {
+      const engine = debtPack();
+      expect(resolveContextAction(engine).kind).toBe('none');
+      engine.player.voidDebt = LINGERING;
+      expect(resolveContextAction(engine).kind).toBe('none');
+      engine.map.setTile(9, 10, TILES.DOOR_OPEN);
+      expect(resolveContextAction(engine).kind).toBe('close_door');
+    });
+
+    it('does not rest off debt with a hostile in sight', () => {
+      const engine = debtPack();
+      engine.player.voidDebt = LINGERING + 4;
+      engine.map.addEntity(new Monster({ id: 'far', name: 'Wolf', position: { x: 14, y: 10 }, stats: { hp: 5, maxHp: 5, attack: 1, defense: 0 } }));
+      engine.fov.update(engine.map, 10, 10, 8);
+      expect(resolveContextAction(engine).kind).toBe('none');
+    });
+  });
+
   it('names the keys the player has bound, not the default letters (R-ui-16)', () => {
     const keys: Record<string, string> = { rest: 'N', pickup: ';', quick_loot: '⇧L', stairs: 'Y', disarm_trap: '⇧X', close_door: 'K' };
     const keyFor = (actionId: string) => keys[actionId];

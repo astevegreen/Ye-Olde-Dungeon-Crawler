@@ -16,6 +16,7 @@ import type { SagaShareModal } from './sagaShareModal';
 import { defaultPlatformAdapter, getBrowserStorage } from './platform';
 import { floorTag, resolveBranding } from './branding';
 import { formatWeight } from './units';
+import { fillFirstStatRow } from './firstStatRow';
 import type { AutosaveManager } from '../engine';
 
 export interface TitleScreenOptions {
@@ -377,29 +378,12 @@ export class TitleScreen {
     });
   }
 
-  /**
-   * The first-stat row exists only for a pack with the three-grimoire model: the stat that
-   * grows the first grimoire's first axis, the power stat preselected so "Create & Embark"
-   * works unchanged.
-   */
+  /** The first-stat row exists only for a pack with the three-grimoire model (`fillFirstStatRow`). */
   private setupFirstStat(): void {
     const row = document.getElementById('first-stat-row');
     const select = document.getElementById('first-stat-select') as HTMLSelectElement | null;
-    const config = this.profileManager.manifest?.magic?.grimoires;
     if (!row || !select) return;
-    row.hidden = !config;
-    if (!config) return;
-    this.firstStatSelect = select;
-    select.innerHTML = '';
-    const preselected = config.stats.find((s) => s.kind === 'power') ?? config.stats[0];
-    for (const stat of config.stats) {
-      const option = document.createElement('option');
-      option.value = stat.id;
-      option.textContent = stat.name;
-      option.title = stat.description;
-      option.selected = stat === preselected;
-      select.appendChild(option);
-    }
+    this.firstStatSelect = fillFirstStatRow(row, select, this.profileManager.manifest?.magic?.grimoires);
   }
 
   public setGender(gender: Gender): void {

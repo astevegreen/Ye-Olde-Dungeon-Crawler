@@ -53,6 +53,8 @@ export class CombatSidebar {
     this.mapCanvas.height = 150;
     this.mapCanvas.title = 'Open the full map (M)';
     this.mapCanvas.addEventListener('click', () => this.options.onOpenMap());
+    // Drawn on demand: a canvas the browser restores after a GPU reset stays blank until redrawn.
+    this.mapCanvas.addEventListener('contextrestored', () => this.options.drawMinimap(this.mapCanvas));
     mapSec.appendChild(this.mapCanvas);
 
     const threatSec = this.section('sb-threats');

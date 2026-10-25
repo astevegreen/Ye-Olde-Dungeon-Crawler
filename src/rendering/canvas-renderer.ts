@@ -111,6 +111,7 @@ export class CanvasRenderer {
   private boundDoubleClickHandler?: (e: MouseEvent) => void;
   private boundMouseMoveHandler?: (e: MouseEvent) => void;
   private boundMouseLeaveHandler?: () => void;
+  private readonly boundContextRestored = (): void => this.redrawAfterGpuReset();
   private cachedChasmGradVisible?: CanvasGradient;
   private cachedChasmGradDim?: CanvasGradient;
   private cachedChasmCs = 0;
@@ -198,6 +199,8 @@ export class CanvasRenderer {
     this.tacticalTargetOverlay = new TacticalTargetOverlay();
     this.cards = typeof document !== 'undefined' && canvas.parentElement ? new MapCardLayer(canvas) : null;
     this.hookEngineEvents();
+    // The map draws on demand, so a canvas the browser restores after a GPU reset stays blank until redrawn.
+    canvas.addEventListener('contextrestored', this.boundContextRestored);
 
     // Register click event on canvas using ViewportManager coordinate transform
     this.boundClickHandler = (e: MouseEvent) => {
@@ -432,6 +435,7 @@ export class CanvasRenderer {
     if (this.canvas && this.boundMouseLeaveHandler) {
       this.canvas.removeEventListener('mouseleave', this.boundMouseLeaveHandler);
     }
+    this.canvas?.removeEventListener('contextrestored', this.boundContextRestored);
     this.viewport.destroy();
     if (this.engine) {
       this.engine.onNpcInteract = undefined;
@@ -452,6 +456,13 @@ export class CanvasRenderer {
 
   public cleanup(): void {
     this.destroy();
+  }
+
+  /** A GPU reset blanks the offscreen art too: bake it again, then draw the map once. */
+  private redrawAfterGpuReset(): void {
+    this.contactShadowCells = undefined;
+    this.atlas.rebake();
+    this.render();
   }
 
   public resize(): void {

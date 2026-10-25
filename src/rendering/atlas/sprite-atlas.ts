@@ -281,6 +281,28 @@ export class SpriteAtlas {
   }
 
   /**
+   * Paints every baked canvas again, after a GPU reset (`contextrestored`) left them blank:
+   * the two atlas sheets in place, so whoever holds them keeps a good reference; each
+   * figure, cached sprite and aura afresh on its next draw.
+   */
+  public rebake(): void {
+    for (const sheet of [this.atlasCanvas, this.dimmedAtlasCanvas]) {
+      const ctx = sheet.getContext('2d');
+      ctx?.setTransform(1, 0, 0, 1, 0, 0);
+      ctx?.clearRect(0, 0, sheet.width, sheet.height);
+    }
+    this.spriteCache.clear();
+    for (const fig of this.figures.values()) {
+      fig.strip = null;
+      fig.baked = [];
+      fig.dimmed = null;
+    }
+    this.auras?.reset();
+    this.buildAtlas();
+    this.buildDimmedAtlas();
+  }
+
+  /**
    * Bakes every recipe onto a supersampled scratch canvas (recipes see the exact same
    * `(ctx, ox, oy, SPRITE_SIZE)` call shape they always have — the extra resolution is
    * applied purely via `scratchCtx.scale(BAKE_SCALE, ...)`, invisible to recipe code),

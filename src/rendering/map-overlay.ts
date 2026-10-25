@@ -170,6 +170,8 @@ export class MapOverlay {
     this.resizeWatch = undefined;
     if (!canvas) return;
     this.drawFloor(canvas);
+    // A GPU reset blanks it; the listener goes with the canvas when the next sync replaces it.
+    canvas.addEventListener('contextrestored', () => this.drawFloor(canvas));
     // The canvas's CSS box follows the window (dialog.css); redraw when it changes, or the
     // floor stays squashed until the map is reopened. Its CSS sets its width and a zero flex
     // basis, so the backing store this writes can't resize the box and loop.

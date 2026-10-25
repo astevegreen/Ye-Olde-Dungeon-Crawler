@@ -38,6 +38,11 @@ export class ItemAuraStrips {
     return !!tone && this.tones.has(tone);
   }
 
+  /** Forgets every baked strip (a GPU reset blanked them); the item pixels read are kept. */
+  public reset(): void {
+    this.strips.clear();
+  }
+
   /** Draws `key` in `tone`'s aura at `frame` (wrapped); false when it could not be baked. */
   public draw(ctx: CanvasRenderingContext2D, key: string, tone: string, dx: number, dy: number, dSize: number, frame: number): boolean {
     const f = ((Math.floor(frame) % this.frames) + this.frames) % this.frames;

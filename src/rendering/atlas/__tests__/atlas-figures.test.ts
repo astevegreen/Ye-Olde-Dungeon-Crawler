@@ -87,6 +87,26 @@ describe('SpriteAtlas figures: sprites that draw their own pixels', () => {
     expect(atlas.hasFigure('hero:12')).toBe(true);
     expect(atlas.hasFigure('ghost')).toBe(true);
   });
+
+  it('rebakes every canvas after a GPU reset: the atlas in place, each figure and cached sprite afresh', () => {
+    const recipe = vi.fn();
+    const ghost = figure(2);
+    const atlas = new SpriteAtlas({ altar: recipe }, { pixelSprites: { ghost } });
+    const sheet = atlas.atlasCanvas;
+    const { ctx } = target();
+    atlas.drawSprite(ctx, 'ghost', 0, 0, 32, Visibility.Visible, 1);
+    atlas.drawSprite(ctx, 'ghost', 0, 0, 32, Visibility.Explored);
+    const icon = atlas.getSpriteCanvas('altar');
+    expect([recipe.mock.calls.length, ghost.render.mock.calls.length]).toEqual([1, 2]);
+
+    atlas.rebake();
+    expect(recipe).toHaveBeenCalledTimes(2);
+    expect(atlas.atlasCanvas).toBe(sheet);
+    atlas.drawSprite(ctx, 'ghost', 0, 0, 32, Visibility.Visible, 1);
+    atlas.drawSprite(ctx, 'ghost', 0, 0, 32, Visibility.Explored);
+    expect(ghost.render.mock.calls.map((c) => c[0])).toEqual([1, 0, 1, 0]);
+    expect(atlas.getSpriteCanvas('altar')).not.toBe(icon);
+  });
 });
 
 describe('SpriteAtlas item auras: an identified item drawn in its family’s aura', () => {
@@ -148,6 +168,16 @@ describe('SpriteAtlas item auras: an identified item drawn in its family’s aur
     const atlas = new SpriteAtlas({ relic: vi.fn() }, { itemAuras: art });
     atlas.drawItem(target().ctx, 'relic', 'blessed', 0, 0, 32, 0);
     expect(art.render.mock.calls[0][0]).toHaveLength(ATLAS_TILE_SIZE * ATLAS_TILE_SIZE * 4);
+  });
+
+  it('bakes an aura again after a GPU reset clears its strip', () => {
+    const art = auras();
+    const atlas = new SpriteAtlas({}, { pixelSprites: { blade: figure() }, itemAuras: art });
+    const { ctx } = target();
+    atlas.drawItem(ctx, 'blade', 'cursed', 0, 0, 32, 0);
+    atlas.rebake();
+    atlas.drawItem(ctx, 'blade', 'cursed', 0, 0, 32, 0);
+    expect(art.render).toHaveBeenCalledTimes(2);
   });
 
   it('draws every item plain when the pack has no auras', () => {

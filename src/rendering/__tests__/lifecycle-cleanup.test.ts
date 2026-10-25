@@ -167,6 +167,28 @@ describe('Scene & Listener Lifecycle Cleanup', () => {
     expect(engine.onFloorChanged).toBeUndefined();
   });
 
+  it('CanvasRenderer redraws the map, its cached art rebaked, when the browser restores the canvas, and lets go on destroy', () => {
+    const map = new GameMap(10, 10, TILES.FLOOR);
+    const player = new Player({ id: 'p', name: 'Hero', position: { x: 1, y: 1 }, stats: { hp: 10, maxHp: 10, attack: 1, defense: 1 } });
+    const engine = new GameEngine({ map, player });
+    const canvasTarget = new MockEventTarget();
+    const renderer = new CanvasRenderer(createMockCanvas(canvasTarget), engine);
+    const render = vi.spyOn(renderer, 'render').mockImplementation(() => {});
+    const rebake = vi.spyOn(renderer.atlas, 'rebake');
+    const cached = renderer as unknown as { contactShadowCells?: unknown };
+    cached.contactShadowCells = { n: {}, w: {}, e: {} };
+    expect(canvasTarget.getListenerCount('contextrestored')).toBe(1);
+
+    canvasTarget.dispatchEvent({ type: 'contextrestored' });
+    expect(render).toHaveBeenCalledTimes(1);
+    expect(rebake).toHaveBeenCalledTimes(1);
+    expect(rebake.mock.invocationCallOrder[0]).toBeLessThan(render.mock.invocationCallOrder[0]);
+    expect(cached.contactShadowCells).toBeUndefined();
+
+    renderer.destroy();
+    expect(canvasTarget.getListenerCount('contextrestored')).toBe(0);
+  });
+
   it('InputHandler modalStack pauses the engine while the menu is open on the inventory', () => {
     const map = new GameMap(10, 10, TILES.FLOOR);
     const player = new Player({ id: 'p1', name: 'Freya', position: { x: 3, y: 3 }, stats: { hp: 50, maxHp: 50, attack: 10, defense: 5 } });

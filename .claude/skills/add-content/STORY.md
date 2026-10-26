@@ -34,4 +34,4 @@ Story content is data the engine interprets: choices, progress triggers, timed e
 - **Sprite:** a beat's tile follows `VAULT.md`'s sprite line.
 - **Creep:** collected are every `choices` key, the ids of timed events, story triggers, attribute and renown milestones, and every string under a key ending in `flag`. They live in `src/content/cotw/` only and need no allowlist entry; the allowlist holds names the engine itself owns.
 - **E2E:** `gameplay.spec.ts` offers `oath_hearth` and `altar_tyr`, `prologue.spec.ts` plays the raid's countdown and choice, `whole-run.spec.ts` both endings: renaming one of those means `npm run gates`.
-- **Gates:** `npx vitest run <file>` and `npm run check:engine-creep` while iterating, then `npm run gate-stamp -- run lint test`; `npm run validate:schema` when the save changes shape.
+- **Gates:** `npx vitest run <file>` and `npm run check:engine-creep` while iterating, then `npm run gate-stamp -- run lint test tooling`; `npm run validate:schema` when the save changes shape.

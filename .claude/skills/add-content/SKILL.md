@@ -28,4 +28,4 @@ A piece often spans kinds (a miniboss needs its vault, an altar its choice): fin
 - **A change to what floors draw** (monsters, loot, vaults) is bracketed by balance runs, both quoted in the commit: `npm run balance -- --out .prompts/balance/before.json` before, `npm run balance -- --baseline .prompts/balance/before.json` after.
 
 ## Done
-Done when every step and Finish line of the branch holds and `npm run gate-stamp -- run lint test` is green, its output pasted. Where a branch was wrong (a step the code no longer matches, a test it didn't name), correct the branch file in the same commit.
+Done when every step and Finish line of the branch holds and `npm run gate-stamp -- run lint test tooling` is green, its output pasted. Where a branch was wrong (a step the code no longer matches, a test it didn't name), correct the branch file in the same commit.

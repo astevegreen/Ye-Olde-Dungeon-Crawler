@@ -316,6 +316,12 @@ mechanics, renaming spells.
   `<host>:C:\Antigravity\YODC:<four characters>` from `list_environments`. A new one appears whenever
   `claude rc` restarts in this folder, so nothing writes it down before the cue. Nobody restarts `claude rc`,
   reboots or signs out during the window: the sessions' environment would go.
+- **Bridge.** `claude rc --name YODC --capacity <N>`, run in this folder. Before the cue, the root
+  `/sprint-cue` brings it up with `node C:/Antigravity/sprints/free-bridge-slots.mjs up yodc <hours>`, which sizes
+  `--capacity` to the window (32 to 48 slots). It restarts a smaller bridge only when every child is shown idle;
+  a restart makes a new environment, which `/sprint-start` picks up. A session keeps its slot until its process
+  ends, and scheduled sessions can't archive, so the supervisor ends finished and stuck sessions' processes every
+  run (its step 2b; after-sprint fix 13, 26 Oct 2026).
 - **Supervisor.** "YODC sprint supervisor", made by `/sprint-start` with the remote `create_trigger` tool,
   runs `.claude/skills/sprint-supervisor` in a fresh session at minute 22 of every hour (Terminal Dusk's keeps
   minute 2).

@@ -202,6 +202,27 @@ describe('taking everything out of a worn container', () => {
       expect(item.quantity).toBe(quantity);
     }
   });
+
+  it('from the worn pack itself, refuses at no cost and moves nothing', () => {
+    const engine = newHero();
+    const pack = engine.player.inventory.primaryPack;
+    pack.addItem(make('essence_isa'));
+    const held = pack.getItems().map((i) => [i, i.quantity] as const);
+    const energy = engine.player.energy;
+
+    const result = takeAll(engine, pack);
+
+    expect(result).toMatchObject({ success: false, cost: 0 });
+    expect(result.message).toMatch(/already in your pack/);
+    expect(result.message).not.toContain('Looted');
+    expect(engine.messages.at(-1)).toBe(result.message);
+    expect(engine.player.energy).toBe(energy);
+    expect(pack.getItems()).toHaveLength(held.length);
+    for (const [item, quantity] of held) {
+      expect(pack.getItem(item.id)).toBe(item);
+      expect(item.quantity).toBe(quantity);
+    }
+  });
 });
 
 describe('taking an item out of a chest on the ground', () => {

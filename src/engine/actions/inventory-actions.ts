@@ -399,6 +399,13 @@ export class LootAllFromContainerAction implements Action {
       return { success: false, cost: 0, message: 'You cannot loot items while dead.' };
     }
 
+    // Everything in the pack would be stored straight back into it.
+    if (this.container === this.player.inventory.primaryPack) {
+      const msg = `Everything in ${this.container.displayName} is already in your pack.`;
+      engine.log(msg);
+      return { success: false, cost: 0, message: msg };
+    }
+
     this.container.markOpened();
     const items = [...this.container.getItems()];
     if (items.length === 0) {

@@ -153,7 +153,8 @@ export class InventoryManager {
       }
     }
 
-    // 3. Store in primary pack
+    // 3. Store in primary pack, unless it is being taken out of the pack
+    if (this.primaryPack === except) return { success: false, destination: 'none', reason: 'Only the pack has room for it.' };
     const packCheck = this.primaryPack.canContain(item);
     if (packCheck.allowed) {
       this.primaryPack.addItem(item);
@@ -436,6 +437,10 @@ export class InventoryManager {
     const purse = this.purse === except ? null : this.purse;
     const toPurse = purse ? Math.min(coins.count, coinRoom(purse, coins.denomination)) : 0;
     const rest = coins.count - toPurse;
+    // Out of the pack, coins go where the purse has room; what it hasn't stays in the pack.
+    if (except === this.primaryPack && toPurse === 0) {
+      return { success: false, destination: 'none', reason: 'Your purse has no room for them.' };
+    }
     if (rest > 0 && rest > coinRoom(this.primaryPack, coins.denomination)) {
       const where = purse ? 'Your purse and pack have' : 'Your pack has';
       return { success: false, destination: 'none', reason: `${where} no room for that many coins.` };

@@ -230,10 +230,12 @@ export class Container extends Item {
   /**
    * Puts an item in with no capacity check and no merging. A load uses it, since the save
    * already held the item and a capacity that shrank since must not lose it; so do coins
-   * paid to a hero with no room left, since money is never destroyed.
+   * paid to a hero with no room left, since money is never destroyed. `index` puts an item
+   * just taken out back in its old place.
    */
-  public placeItem(item: Item): void {
-    this.items.push(item);
+  public placeItem(item: Item, index?: number): void {
+    if (index === undefined) this.items.push(item);
+    else this.items.splice(index, 0, item);
     item.parentId = this.id;
     itemIndex.register(item, { kind: 'container', containerId: this.id });
     if (this.ownerId) {

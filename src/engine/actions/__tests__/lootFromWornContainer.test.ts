@@ -95,6 +95,61 @@ describe('taking an item out of a worn container', () => {
     expect(inv.primaryPack.getItem(essence.id)).toBe(essence);
   });
 
+  it('from the worn pack, refuses at no cost an item only the pack would take, and leaves it in its place', () => {
+    const engine = newHero();
+    const pack = engine.player.inventory.primaryPack;
+    const rock = new Item({ id: 'rock-b1', name: 'Rock', category: 'misc', weight: 1, bulk: 1 });
+    pack.addItem(rock);
+    pack.addItem(new Item({ id: 'pebble-b1', name: 'Pebble', category: 'misc', weight: 1, bulk: 1 }));
+    const order = pack.getItems().map((i) => i.id);
+    const energy = engine.player.energy;
+
+    const result = take(engine, pack, rock);
+
+    expect(result).toMatchObject({ success: false, cost: 0 });
+    expect(result.message).toBe('Rock is already in your pack.');
+    expect(engine.messages.at(-1)).toBe(result.message);
+    expect(engine.player.energy).toBe(energy);
+    expect(pack.getItems().map((i) => i.id)).toEqual(order);
+    expect(pack.getItem(rock.id)).toBe(rock);
+  });
+
+  it('from the worn pack, still moves an essence into the worn rune pouch', () => {
+    const engine = newHero();
+    const inv = engine.player.inventory;
+    const pouch = inv.paperdoll.getItem('runes') as Container;
+    const essence = make('essence_isa');
+    inv.primaryPack.addItem(essence);
+
+    const result = take(engine, inv.primaryPack, essence);
+
+    expect(result.success).toBe(true);
+    expect(result.cost).toBeGreaterThan(0);
+    expect(result.message).toContain('(stored in runes)');
+    expect(inv.primaryPack.getItem(essence.id)).toBeNull();
+    expect(pouch.getItem(essence.id)).toBe(essence);
+  });
+
+  it('from the worn pack, refuses at no cost coins the purse has no room for', () => {
+    const engine = newHero();
+    const inv = engine.player.inventory;
+    const purse = inv.purse!;
+    while (purse.addItem(new CoinItem({ id: `fill-${purse.getItems().length}`, denomination: 'copper', count: 1 }), false)) {
+      /* fill the purse to its last coin */
+    }
+    const coins = new CoinItem({ id: 'coins-b1', denomination: 'gold', count: 5 });
+    inv.primaryPack.addItem(coins);
+    const inPack = coinsIn(inv.primaryPack);
+    const energy = engine.player.energy;
+
+    const result = take(engine, inv.primaryPack, coins);
+
+    expect(result).toMatchObject({ success: false, cost: 0 });
+    expect(result.message).toMatch(/already in your pack/);
+    expect(engine.player.energy).toBe(energy);
+    expect(coinsIn(inv.primaryPack)).toBe(inPack);
+  });
+
   it('with no room in the pack, fails at no cost and leaves the item where it was', () => {
     const engine = newHero();
     const inv = engine.player.inventory;

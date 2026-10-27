@@ -296,10 +296,13 @@ export class QuickLootAction implements Action {
   }
 }
 
-/** Out of a worn belt, purse or rune pouch, items go to the pack, never straight back: the container to skip. */
+/**
+ * Out of a worn belt, purse or rune pouch, items go to the pack, and out of the pack to the
+ * belt, purse or pouch, never straight back: the container to skip.
+ */
 function wornSource(player: Player, container: Container): Container | undefined {
   const inv = player.inventory;
-  const worn = container !== inv.primaryPack && inv.paperdoll.getAllEquipped().some((eq) => eq.item === container);
+  const worn = container === inv.primaryPack || inv.paperdoll.getAllEquipped().some((eq) => eq.item === container);
   return worn ? container : undefined;
 }
 
@@ -320,6 +323,7 @@ export class LootFromContainerAction implements Action {
     }
 
     this.container.markOpened();
+    const index = this.container.getItems().findIndex((i) => i.id === this.item.id);
     const removed = this.container.removeItem(this.item.id);
     if (!removed) {
       return { success: false, cost: 0, message: 'Item is no longer inside the container.' };
@@ -328,8 +332,11 @@ export class LootFromContainerAction implements Action {
     const takenName = removed.displayName;
     const storeResult = this.player.inventory.storeItem(removed, wornSource(this.player, this.container));
     if (!storeResult.success) {
-      this.container.addItem(removed);
-      const msg = `Cannot loot ${this.item.displayName}: ${storeResult.reason}`;
+      this.container.placeItem(removed, index);
+      const msg =
+        this.container === this.player.inventory.primaryPack
+          ? `${takenName} is already in your pack.`
+          : `Cannot loot ${this.item.displayName}: ${storeResult.reason}`;
       engine.log(msg);
       return { success: false, cost: 0, message: msg };
     }

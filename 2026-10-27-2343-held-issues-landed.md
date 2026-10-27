@@ -1,11 +1,10 @@
 # Handoff: held sprint issues landed by hand
-2026-10-27 23:43 UTC · branch main · HEAD eae27e12 · tree clean · folder C:/Antigravity/YODC
+2026-10-27 23:44 UTC · branch main · HEAD eae27e12 · tree clean · folder C:/Antigravity/YODC
 
 ## Goal
-The owner answered the held questions on #75, #82 and #88 and asked: "Build the #75, #82 and #88 answers here in this session instead of waiting for the lanes." Then: "Make taking a single item out of the worn pack refuse at no cost when it would land straight back in the pack, the same as Take all." Both are pushed and deployed green; only GitHub housekeeping is left.
+The owner answered the held questions on #75, #82 and #88 and asked: "Build the #75, #82 and #88 answers here in this session instead of waiting for the lanes." Then: "Make taking a single item out of the worn pack refuse at no cost when it would land straight back in the pack, the same as Take all." Both are pushed and deployed green, #75, #82, #88 and #70 are closed, and the pushes are logged on #19.
 
 ## Decide first
-- Close #75, #82, #88 and the bug #70 with a "landed" comment each, and log the push on the sprint log #19? The auto-mode check refused it without your say-so. — recommend: yes, because the work is live and the held label on #75/#82/#88 would make a restarted lane retry them.
 - The sprint supervisor last wrote #19's status block on 25 Oct 21:41Z: look into why it stopped? — recommend: yes, next, because #80, #84, #85 (gate timeouts) and #92 (rebase) retry only while lanes run, and #94/#102 sit "in-progress" since 25 Oct.
 
 ## Done
@@ -16,14 +15,14 @@ The owner answered the held questions on #75, #82 and #88 and asked: "Build the 
 - Uncommitted: none
 
 ## Next
-1. On the owner's yes: `gh issue close 75|82|88|70 --comment "..."` naming the shas above and the owner's answer ("Refuse, no turn", "Ship as is", "Loosen it with no menu"); then one comment on #19 in the integrator's format (see its newest "Integrator (by hand…)" comment).
-2. Then the supervisor: `.claude/skills/sprint-supervisor/SKILL.md` and `scripts/sprint/queue.mjs` (Machinery in `docs/sprint.md`).
+1. On the owner's yes, find why the supervisor stopped: `.claude/skills/sprint-supervisor/SKILL.md` and `scripts/sprint/queue.mjs` (Machinery in `docs/sprint.md`); report what a restart would take before changing anything.
 
 ## Model
-Sonnet 5.5 at medium thinking — issue housekeeping; switch to Opus for the supervisor diagnosis.
+Opus at high thinking — tracing why a scheduled supervisor stopped, across the skill, the queue and the schedules.
 
 ## Decisions
 - #75: "Refuse, no turn"; #82: "Ship as is"; #88: "Loosen it with no menu" — owner, in chat on 27 Oct.
+- Close the four issues and log on #19 — owner: "Yes, close #75, #82, #88 and #70 with a landed comment each, and log the push on the sprint log #19." Done.
 - Review notes left as they are: coins refused from the pack say "already in your pack" (not "purse full"); Take all still appends a refused item; #82 soak notes (non-cancelable choice Escape loop, no in-page NPC-walk test) — owner chose ship as is.
 
 ## Read first

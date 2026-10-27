@@ -612,9 +612,13 @@ export class InputHandler {
     }
 
     // 0.05. An open map owns the keyboard (§6): it closes on M/Esc/Space, pages floors,
-    // and absorbs everything else, so no key reaches the simulation underneath it.
+    // and absorbs everything else, so no key reaches the simulation underneath it. Rest,
+    // absorbed like the rest, says why nothing happened (X5) rather than doing nothing.
     if (this.mapOverlay?.isOpen) {
       this.mapOverlay.handleKeyDown(e, this.engine);
+      const bound =
+        (e.shiftKey ? this.settingsManager.getActionForCode(`Shift+${code}`) : undefined) ?? this.settingsManager.getActionForCode(code);
+      if (this.mapOverlay.isOpen && bound === 'rest') this.engine.log('Close the map to rest.');
       this.onActionProcessed();
       return true;
     }

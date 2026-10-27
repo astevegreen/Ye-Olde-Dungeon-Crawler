@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { InputHandler } from '../input-handler';
 import { MapOverlay } from '../map-overlay';
-import { GameEngine, GameMap, Player, TILES } from '../../engine';
+import { AutoRestManager, GameEngine, GameMap, MemoryStorage, Player, TILES } from '../../engine';
+import { SettingsManager } from '../../ui/settings/settingsManager';
 
 function key(code: string, keyName = code): KeyboardEvent {
   return { code, key: keyName, repeat: false, preventDefault: vi.fn(), stopPropagation: vi.fn() } as unknown as KeyboardEvent;
@@ -52,5 +53,86 @@ describe('InputHandler routes keys to an open map overlay', () => {
   it('closes the map on M', () => {
     inputHandler.handleKeyDown(key('KeyM', 'm'));
     expect(mapOverlay.isOpen).toBe(false);
+  });
+});
+
+// Rest pressed over the open map (X5, #102): the map keeps the key, but says why nothing
+// happened instead of swallowing it silently. The line follows the `rest` binding.
+describe('InputHandler: rest with the map open', () => {
+  let engine: GameEngine;
+  let mapOverlay: MapOverlay;
+  let settingsManager: SettingsManager;
+  let inputHandler: InputHandler;
+  let log: ReturnType<typeof vi.spyOn>;
+  let start: ReturnType<typeof vi.fn>;
+  let fullRest: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    engine = new GameEngine({ map: new GameMap(10, 10, TILES.FLOOR), player: new Player({ position: { x: 5, y: 5 } }) });
+    mapOverlay = new MapOverlay();
+    settingsManager = new SettingsManager(new MemoryStorage());
+    inputHandler = new InputHandler(
+      engine, vi.fn(), vi.fn(), undefined, undefined, undefined,
+      undefined, undefined, undefined, mapOverlay, settingsManager
+    );
+    inputHandler.enabled = true;
+    start = vi.fn();
+    inputHandler.autoRestRunner = { active: false, start, cancel: vi.fn() } as never;
+    fullRest = vi.spyOn(AutoRestManager, 'executeFullRest');
+    mapOverlay.open(engine);
+    log = vi.spyOn(engine, 'log');
+  });
+
+  afterEach(() => {
+    inputHandler.destroy();
+    vi.restoreAllMocks();
+  });
+
+  it('logs "Close the map to rest." once, keeps the map open and passes no turn', () => {
+    const turn = engine.turnCount;
+    expect(inputHandler.handleKeyDown(key('KeyR', 'r'))).toBe(true);
+
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(log).toHaveBeenCalledWith('Close the map to rest.');
+    expect(mapOverlay.isOpen).toBe(true);
+    expect(engine.turnCount).toBe(turn);
+    expect(start).not.toHaveBeenCalled();
+    expect(fullRest).not.toHaveBeenCalled();
+  });
+
+  it('logs the line again on a second press', () => {
+    inputHandler.handleKeyDown(key('KeyR', 'r'));
+    inputHandler.handleKeyDown(key('KeyR', 'r'));
+
+    expect(log.mock.calls).toEqual([['Close the map to rest.'], ['Close the map to rest.']]);
+  });
+
+  it('follows the rest binding, not the physical R key', () => {
+    settingsManager.unbindKey('KeyR');
+    settingsManager.bindKey('rest', 'KeyK');
+
+    inputHandler.handleKeyDown(key('KeyR', 'r'));
+    expect(log).not.toHaveBeenCalled();
+
+    inputHandler.handleKeyDown(key('KeyK', 'k'));
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(log).toHaveBeenCalledWith('Close the map to rest.');
+    expect(mapOverlay.isOpen).toBe(true);
+    expect(start).not.toHaveBeenCalled();
+  });
+
+  it('logs nothing for a key that is not rest', () => {
+    inputHandler.handleKeyDown(key('KeyZ', 'z'));
+
+    expect(log).not.toHaveBeenCalled();
+    expect(mapOverlay.isOpen).toBe(true);
+  });
+
+  it('starts a rest as before once the map is closed', () => {
+    mapOverlay.close();
+    inputHandler.handleKeyDown(key('KeyR', 'r'));
+
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(log).not.toHaveBeenCalledWith('Close the map to rest.');
   });
 });

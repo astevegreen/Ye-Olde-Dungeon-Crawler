@@ -130,6 +130,42 @@ describe('taking an item out of a worn container', () => {
     expect(pouch.getItem(essence.id)).toBe(essence);
   });
 
+  it('from the worn pack, still moves a potion onto the worn belt', () => {
+    const engine = newHero();
+    const inv = engine.player.inventory;
+    const belt = inv.belt!;
+    const potion = belt.getItems().find((i) => i instanceof PotionItem)!;
+    belt.removeItem(potion.id);
+    inv.primaryPack.placeItem(potion);
+
+    const result = take(engine, inv.primaryPack, potion);
+
+    expect(result.success).toBe(true);
+    expect(result.cost).toBeGreaterThan(0);
+    expect(result.message).toContain('(stored in belt)');
+    expect(inv.primaryPack.getItem(potion.id)).toBeNull();
+    expect(countOf(belt, potion.definitionId)).toBe(potion.quantity ?? 1);
+  });
+
+  it('from the worn pack, still moves coins into the worn purse, all of them', () => {
+    const engine = newHero();
+    const inv = engine.player.inventory;
+    const purse = inv.purse!;
+    const pile = purse.getItems().find((i): i is CoinItem => i instanceof CoinItem)!;
+    const count = pile.count;
+    purse.removeItem(pile.id);
+    inv.primaryPack.placeItem(pile);
+    const inPurse = coinsIn(purse);
+    const inPack = coinsIn(inv.primaryPack);
+
+    const result = take(engine, inv.primaryPack, pile);
+
+    expect(result.success).toBe(true);
+    expect(result.message).toContain('(stored in purse)');
+    expect(coinsIn(purse)).toBe(inPurse + count);
+    expect(coinsIn(inv.primaryPack)).toBe(inPack - count);
+  });
+
   it('from the worn pack, refuses at no cost coins the purse has no room for', () => {
     const engine = newHero();
     const inv = engine.player.inventory;

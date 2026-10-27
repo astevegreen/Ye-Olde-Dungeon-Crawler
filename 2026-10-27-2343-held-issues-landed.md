@@ -32,3 +32,4 @@ Opus at high thinking — tracing why a scheduled supervisor stopped, across the
 - gate-stamp lint/test/tooling: green on eae27e12 (4136 unit)
 - npm run gates incl. Chromium: green on d48e4d9f; pre-push (3 browsers, 110): green on eae27e12
 - ci:watch: deploy.yml success on d48e4d9f and eae27e12
+Resumed: 2026-10-27 23:59 UTC

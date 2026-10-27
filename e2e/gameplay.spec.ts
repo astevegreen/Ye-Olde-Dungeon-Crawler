@@ -124,9 +124,9 @@ test('every belt slot holds what it shows, at 1366 and 1920 wide', async ({ page
 });
 
 // The F1 card over the Spellbook covered the right end of its recent-messages strip at
-// 1366x768 (X7, #88). It fits above the strip whole; a card too tall for the window scrolls
-// its keys and keeps its tip in view, since keys can't scroll a card off the modal stack.
-test('the F1 card ends above the recent messages at 1366x768, and a tall one keeps its tip', async ({ page }) => {
+// 1366x768 (X7, #88). It fits above the strip whole. With no menu open the card runs full
+// height (the owner, #88: "Loosen it with no menu"), so the tall exploration card shows every key.
+test('the F1 card ends above the recent messages at 1366x768, and shows every key with no menu open', async ({ page }) => {
   const fit = () =>
     page.evaluate(() => {
       const card = document.querySelector<HTMLElement>('#context-help-overlay .ui-dialog')!;
@@ -152,7 +152,7 @@ test('the F1 card ends above the recent messages at 1366x768, and a tall one kee
   await page.locator('#btn-menu-help').click();
   await expect(help).toBeVisible();
   const guide = await fit();
-  expect(guide, 'the exploration guide scrolls its keys, not its tip').toMatchObject({ keysScroll: true, bodyScrolls: false, tipInView: true });
+  expect(guide, 'the exploration guide fits whole').toMatchObject({ keysScroll: false, bodyScrolls: false, tipInView: true });
   await page.keyboard.press('Escape');
   await expect(help).toBeHidden();
 
@@ -170,25 +170,28 @@ test('the F1 card ends above the recent messages at 1366x768, and a tall one kee
   await page.keyboard.press('F1');
   await expect(help).toBeHidden();
 
-  // In play the HUD log is the one below: the targeting card, and the tall exploration card
-  // on a dungeon floor, end above it, the latter scrolling its keys with its tip in view.
-  const aboveLog = async (title: string) => {
+  // In play no strip shows: the targeting card ends above the HUD log, and the tall
+  // exploration card on a dungeon floor runs over the log's end with every key in view.
+  const inPlay = async (title: string) => {
     await page.keyboard.press('F1');
     await expect(help).toContainText(title);
     const card = await fit();
-    expect(card.bottom, `the ${title} card ends above the HUD log`).toBeLessThanOrEqual(card.logTop);
     await page.keyboard.press('F1');
     await expect(help).toBeHidden();
     return card;
   };
   await page.keyboard.press('Enter');
   await expect.poll(() => page.evaluate(() => window.__cotwRenderer!.targetingOverlay.isOpen)).toBe(true);
-  expect(await aboveLog('Spell Casting'), 'the targeting card fits whole').toMatchObject({ bodyScrolls: false, keysScroll: false });
+  const targeting = await inPlay('Spell Casting');
+  expect(targeting.bottom, 'the targeting card ends above the HUD log').toBeLessThanOrEqual(targeting.logTop);
+  expect(targeting, 'the targeting card fits whole').toMatchObject({ bodyScrolls: false, keysScroll: false });
   await page.keyboard.press('Escape');
   await expect.poll(() => page.evaluate(() => window.__cotwRenderer!.targetingOverlay.isOpen)).toBe(false);
   await page.evaluate(() => window.__cotwEngine!.diagnostics.jumpToFloor(2));
   await page.keyboard.press('Space');
-  expect(await aboveLog('Dungeon Exploration'), 'the exploration card scrolls its keys, not its tip').toMatchObject({ keysScroll: true, bodyScrolls: false, tipInView: true });
+  const exploring = await inPlay('Dungeon Exploration');
+  expect(exploring.bottom, 'the exploration card stays inside the window').toBeLessThanOrEqual(768);
+  expect(exploring, 'the exploration card fits whole').toMatchObject({ keysScroll: false, bodyScrolls: false, tipInView: true });
 
   // 1920x1080 keeps the Spellbook card as it was: 420px wide at the 1.25 scale.
   await page.setViewportSize({ width: 1920, height: 1080 });

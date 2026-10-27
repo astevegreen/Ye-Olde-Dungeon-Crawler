@@ -303,17 +303,20 @@
 .fh-row:last-child { border-bottom: 0; }
 .fh-key { flex: none; max-width: 55%; font: bold var(--ui-text-sm) var(--ui-font-num); color: var(--ui-title); }
 .fh-label { text-align: right; font-size: var(--ui-text-sm); color: var(--ui-text-muted); }
-/* A short window (1366x768): the card ends above the menus' recent-messages strip (menu.css
-   .cm-recent, about 175px off the bottom). Tighter and a little wider first (wider still would
-   hide the Spellbook's values), so the Spellbook card fits whole; a taller card scrolls its keys, never its tip or pack note, since keys can't scroll
-   a card off the modal stack. Lengths in the zoomed dialog grow with --ui-scale (base.css). */
+/* A short window (1366x768): tighter and a little wider (wider still would hide the Spellbook's
+   values). While a menu shows its recent-messages strip (menu.css .cm-recent, about 175px off
+   the bottom), the card ends above it, so the Spellbook card fits whole; in play it runs full
+   height, over the HUD log's end, so no key is cut off. A card still too tall scrolls its keys,
+   never its tip or pack note, since keys can't scroll a card off the modal stack. Lengths in
+   the zoomed dialog grow with --ui-scale (base.css). */
 @media (max-height: 900px) {
-  .fh-overlay .ui-dialog { width: 440px; max-height: calc((100vh - 48px) / var(--ui-scale) - 180px); }
+  .fh-overlay .ui-dialog { width: 440px; max-height: calc((100vh - 64px) / var(--ui-scale)); }
+  #app:has(.cm-overlay.is-open .cm-recent:not(:empty)) .fh-overlay .ui-dialog { max-height: calc((100vh - 48px) / var(--ui-scale) - 180px); }
   .fh-overlay .ui-dialog-head { padding-block: var(--ui-space-2); }
   .fh-overlay .ui-dialog-body { gap: var(--ui-space-2); padding-block: var(--ui-space-2); }
   .fh-overlay .ui-dialog-foot { padding-block: 6px; }
   .fh-overlay .fh-keys { flex-shrink: 1; min-height: 0; overflow-y: auto; }
-  .fh-overlay .fh-row { padding: 2px 0; }
+  .fh-overlay .fh-row { padding: 1px 0; }
   .fh-overlay .ui-fact { padding-block: 6px; line-height: 1.35; }
 }
 

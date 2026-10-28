@@ -4,9 +4,6 @@
 ## Goal
 The owner answered the held questions on #75, #82 and #88 and asked: "Build the #75, #82 and #88 answers here in this session instead of waiting for the lanes." Then: "Make taking a single item out of the worn pack refuse at no cost when it would land straight back in the pack, the same as Take all." Both are pushed and deployed green, #75, #82, #88 and #70 are closed, and the pushes are logged on #19.
 
-## Decide first
-- The sprint supervisor last wrote #19's status block on 25 Oct 21:41Z: look into why it stopped? — recommend: yes, next, because #80, #84, #85 (gate timeouts) and #92 (rebase) retry only while lanes run, and #94/#102 sit "in-progress" since 25 Oct.
-
 ## Done
 - 742f1b04, 4af817ff K1 #82 soak flags and NPCs met (cherry-picked from sprint/82, as is)
 - 58e6e172 F1 #75 belt/purse/pouch Take all; d3864047 Take all on the worn pack refuses at cost 0
@@ -15,10 +12,7 @@ The owner answered the held questions on #75, #82 and #88 and asked: "Build the 
 - Uncommitted: none
 
 ## Next
-1. On the owner's yes, find why the supervisor stopped: `.claude/skills/sprint-supervisor/SKILL.md` and `scripts/sprint/queue.mjs` (Machinery in `docs/sprint.md`); report what a restart would take before changing anything.
-
-## Model
-Opus at high thinking — tracing why a scheduled supervisor stopped, across the skill, the queue and the schedules.
+Complete. #80, #84, #85, #92, #94 and #102 keep their sprint labels as the next sprint's queue, unless the owner works them by hand.
 
 ## Decisions
 - #75: "Refuse, no turn"; #82: "Ship as is"; #88: "Loosen it with no menu" — owner, in chat on 27 Oct.

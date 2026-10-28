@@ -6,8 +6,9 @@ it names.
 The rails: Claude Code hooks and the sprint guard (`.claude/hooks/`), `.claude/settings*.json` (permissions and the
 hooks they wire), the sprint skills and agents that wire the guard, git hooks (`.githooks/`), CI workflows
 (`.github/`), the gates (lint, tests, sim, schema, build, Playwright, the `scripts/check-*` scripts and their
-allowlists and baselines, and the configs and `package.json` scripts that run them), the reviewer and the second
-look, the deploy's scope, and the sprint's queue rules and push lock (`scripts/sprint/`).
+allowlists and baselines, and the configs and `package.json` scripts that run them, such as the sim and the schema
+check), the reviewer and the second look with the rules they review against (`.agents/rules/`), the CI watch, the
+deploy's scope, and the sprint's queue rules and push lock (`scripts/sprint/`).
 
 Answer one question: does this change loosen, bypass or disable any check, guard, gate, hook or required review?
 Loosening includes a check that runs less often, on fewer files, browsers or pushes; a wider allowlist, pattern or

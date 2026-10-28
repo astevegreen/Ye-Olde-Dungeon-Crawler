@@ -26,10 +26,10 @@
 ## Pushing
 - Before pushing a change players will see, or any change under `src/engine/`: run the `reviewer` agent with "Request: <the owner's words>. Range: origin/main..HEAD". Fix its blockers once and run it again; list any minor concerns left in the summary. Docs, tooling and test-only changes skip it.
 - With the reviewer's first run, start `node scripts/second-look.mjs "<the owner's words>"` in the background: another model reviews the same change through agy, picked by what the change touches. A change that touches a rail (hooks, guards, gates, git hooks, CI, `.claude/settings*.json`, the push lock; the script lists them) runs it even when the reviewer is skipped, with `--rails-only` for a tooling change; the rail audit, a deep review, asks whether the change loosens a check. The script ends `Verdict: <v>: <why>`:
-  - `ship`: push. Notes never hold it, nor does a skipped second look on a change that touches no rail.
+  - `ship`: push. Notes never hold it.
   - `fix`: a `[blocker]` holds the push like a reviewer blocker. Check it against the code, fix it with the reviewer's, and run the script again. A blocker you judge wrong goes to the reviewer with your reason; only its agreement, named in the summary, lets the push go.
   - `owner`: the change loosens a rail. Push only after the owner says yes to that loosening, quoting the audit's reason; a loosening the owner asked for in their own words is that yes.
-  - `retry`: no audit answered, a machine failure. Run it again later; a rail change is never pushed unaudited, and the owner is not asked.
+  - `retry`: a review did not run (no model answered, git failed, or a rail audit came from neither Argon nor Opus), a machine failure. Run it again later; nothing is pushed on a review that did not run, and the owner is not asked.
 - Push each finished task without asking, once all its commits are in: `git push`, run in the background (the pre-push hook runs the sim, the build and Playwright in three browsers).
 - A push deploys the Pages site, which other people play, unless it changes only docs, tooling or tests (`scripts/lib/deploy-scope.mjs`; the gates still run). The task's summary lists, one line each, what players will see change, or says "nothing player-visible".
 - Pre-push red: rerun once, since flakes are known. Red again on time-outs alone, a loaded host: push again once the host is quiet (no soak or sprint gate running), without asking. Red again otherwise: leave the commits unpushed and report the failure.

@@ -67,7 +67,8 @@ issue, `B` is `sprint/<n>`.
       - `Verdict: ship`: go on.
       - `Verdict: owner`: send it back (step 3) with "[blocker] the rail audit says it loosens a rail: <the
         audit's lines>"; it waits for the owner.
-      - `Verdict: retry` (no model answered): leave it `to-integrate`, out of this batch; the next push tries it.
+      - `Verdict: retry` (the audit did not run: neither Argon nor Opus answered, or git failed): leave it
+        `to-integrate`, out of this batch; the next push tries it.
    4. Note `git -C I rev-parse HEAD` as `p`, then `git -C I cherry-pick <base>..B`. A conflict:
       `git -C I cherry-pick --abort`, then send it back with "conflicts with main in <files>; rebase B with
       `git rebase --reapply-cherry-picks origin/main`". After the pick, `git -C I rev-parse HEAD` must differ

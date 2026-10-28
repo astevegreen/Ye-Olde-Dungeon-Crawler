@@ -1,7 +1,7 @@
 /** Types for `second-look.mjs`, which `scripts/second-look.mjs` runs under plain node. */
 
 export const RAILS: readonly string[];
-/** The models a rail audit may come from: Argon, then Opus. */
+/** The models a rail audit may come from: Argon, then Opus, then Flash; never Sonnet. */
 export const RAIL_MODELS: readonly string[];
 export function railFiles(files: readonly string[]): string[];
 export function blockers(answer: string): number;

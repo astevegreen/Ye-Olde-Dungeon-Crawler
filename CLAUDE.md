@@ -29,7 +29,7 @@
   - `ship`: push. Notes never hold it.
   - `fix`: a `[blocker]` holds the push like a reviewer blocker. Check it against the code, fix it with the reviewer's, and run the script again. A blocker you judge wrong goes to the reviewer with your reason; only its agreement, named in the summary, lets the push go.
   - `owner`: the change loosens a rail. Push only after the owner says yes to that loosening, quoting the audit's reason; a loosening the owner asked for in their own words is that yes.
-  - `retry`: a review did not run (no model answered, git failed, or a rail audit came from neither Argon nor Opus), a machine failure. Run it again later; nothing is pushed on a review that did not run, and the owner is not asked.
+  - `retry`: a review did not run (no model answered, git failed, or a rail audit came from a model other than Argon, Opus or Flash), a machine failure. Run it again later; nothing is pushed on a review that did not run, and the owner is not asked.
 - Push each finished task without asking, once all its commits are in: `git push`, run in the background (the pre-push hook runs the sim, the build and Playwright in three browsers).
 - A push deploys the Pages site, which other people play, unless it changes only docs, tooling or tests (`scripts/lib/deploy-scope.mjs`; the gates still run). The task's summary lists, one line each, what players will see change, or says "nothing player-visible".
 - Pre-push red: rerun once, since flakes are known. Red again on time-outs alone, a loaded host: push again once the host is quiet (no soak or sprint gate running), without asking. Red again otherwise: leave the commits unpushed and report the failure.

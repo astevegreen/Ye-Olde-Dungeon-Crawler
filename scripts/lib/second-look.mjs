@@ -3,7 +3,7 @@
 // holds the push like a reviewer blocker, notes never do; a change touching a rail gets a deep rail audit, and
 // only its "yes, this loosens" holds the change for the owner. A review that did not run never ships: it is run
 // again. Types: second-look.d.mts.
-import { ARGON, OPUS, modelName } from './agy.mjs';
+import { ARGON, FLASH, OPUS, modelName } from './agy.mjs';
 
 // The rails: what a change could loosen to hide its own failure. Hooks and guards, the sprint skills and agents
 // that wire them, git hooks, CI, the gates with their allowlists and configs and the scripts package.json runs
@@ -46,10 +46,11 @@ export const RAILS = [
 
 export const railFiles = (files) => files.filter((f) => RAILS.some((r) => f.startsWith(r)));
 
-// The models a rail audit may come from, deepest first. A loosened rail hides its own failure, so only Argon or Opus
-// may say "no"; when neither answers, the audit is run again later, never answered by Flash or Sonnet. This is
-// YODC's own order: agy.mjs's ORDER is shared word for word with the other repos and stays as it is.
-export const RAIL_MODELS = [ARGON, OPUS];
+// The models a rail audit may come from, deepest first: Argon, then Opus, then Flash, so a rail change never waits
+// for the deep models' usage. Never Sonnet: the Claude reviewer already covers that family. When none of the three
+// answers, the audit is run again later. This is YODC's own order: agy.mjs's ORDER is shared word for word with the
+// other repos and stays as it is.
+export const RAIL_MODELS = [ARGON, OPUS, FLASH];
 
 // The second look's findings start "[blocker]" or "[note]" (scripts/second-look.md), at most one per line. Only
 // markup, numbering or punctuation may come before the tag (`**1. [blocker]**`, ``- `[blocker]` ``, a table cell),
@@ -66,8 +67,8 @@ export function loosens(answer) {
 // The decision, from what ran: `rail` and `look` are each null (not run), { answer, model } or { error }. `look`
 // is null only for --rails-only, which asks for the rail audit alone.
 // - owner: the rail audit says the change loosens a rail; it waits for the owner, with the audit's reason.
-// - retry: a review did not run (no model answered, git failed) or a rail audit came from a model other than Argon
-//   or Opus; a machine failure, so run it again later, never push unreviewed and never ask the owner.
+// - retry: a review did not run (no model answered, git failed) or a rail audit came from a model outside
+//   RAIL_MODELS; a machine failure, so run it again later, never push unreviewed and never ask the owner.
 // - fix: the second look found a [blocker]; fix it and run it again, as with a reviewer blocker.
 // - ship: nothing holds it.
 export function verdict({ rails = [], rail = null, look = null }) {
@@ -85,7 +86,7 @@ export function verdict({ rails = [], rail = null, look = null }) {
         (!rail?.answer
           ? 'the rail audit did not run'
           : !deep
-            ? `the rail audit came from ${rail.model ? modelName(rail.model) : 'no named model'}, and only Argon or Opus may give it`
+            ? `the rail audit came from ${rail.model ? modelName(rail.model) : 'no named model'}, and only Argon, Opus or Flash may give it`
             : 'the rail audit gave no "LOOSENS: yes|no" line');
       return { verdict: 'retry', why: `${why}; a change to ${rails.join(', ')} is never pushed unaudited` };
     }

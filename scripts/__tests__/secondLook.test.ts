@@ -103,14 +103,20 @@ describe('the verdict', () => {
     expect(verdict({ rails, rail: { answer: 'Looks fine to me.', model: ARGON } }).verdict).toBe('retry');
     expect(verdict({ rails }).verdict).toBe('retry');
   });
-  it('takes a rail audit only from Argon or Opus: a Flash or Sonnet "no" is run again (TD review, 28 Oct)', () => {
-    expect(RAIL_MODELS).toEqual([ARGON, OPUS]);
-    for (const model of [FLASH, SONNET]) {
+  it('takes a rail audit from Argon, Opus or Flash, in that order, and never from Sonnet (owner, 28 Oct)', () => {
+    // Flash answers when the deep models are out of usage, so a rail change never waits for them.
+    expect(RAIL_MODELS).toEqual([ARGON, OPUS, FLASH]);
+    for (const model of RAIL_MODELS) {
       expect(verdict({ rails, rail: { answer: 'LOOSENS: no\nIt adds a step.', model }, look: { answer: 'No findings.' } }), model).toEqual({
-        verdict: 'retry',
-        why: expect.stringMatching(/^the rail audit came from .+, and only Argon or Opus may give it; a change to \.githooks\/pre-push is never pushed unaudited$/),
+        verdict: 'ship',
+        why: 'the rail audit says it loosens nothing',
       });
     }
+    // The Claude reviewer already covers Sonnet's family: its "no" is run again.
+    expect(verdict({ rails, rail: { answer: 'LOOSENS: no\nIt adds a step.', model: SONNET }, look: { answer: 'No findings.' } })).toEqual({
+      verdict: 'retry',
+      why: 'the rail audit came from Claude Sonnet 5.5 (high), and only Argon, Opus or Flash may give it; a change to .githooks/pre-push is never pushed unaudited',
+    });
     expect(verdict({ rails, rail: { answer: 'LOOSENS: no' } }).verdict).toBe('retry');
   });
 });

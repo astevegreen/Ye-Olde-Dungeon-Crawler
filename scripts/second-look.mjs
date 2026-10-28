@@ -1,8 +1,8 @@
 // `node scripts/second-look.mjs [--rails-only] [--range <base>..<head>] "<the owner's words>"`: a second review of
 // the change about to be pushed, by another model through agy (headless and read-only), run beside the reviewer
 // agent. It reviews origin/main..HEAD, the commits the push sends, or the range given. A change touching a rail
-// (scripts/lib/second-look.mjs) also gets a deep rail audit first, by Argon or Opus only, asking whether it loosens
-// a check; --rails-only runs that audit alone. It prints the findings, then one line,
+// (scripts/lib/second-look.mjs) also gets a deep rail audit first, by Argon, Opus or Flash (never Sonnet), asking
+// whether it loosens a check; --rails-only runs that audit alone. It prints the findings, then one line,
 // `Verdict: <ship|fix|owner|retry>: <why>`, and exits 0 only for ship: a [blocker] holds the push like a reviewer
 // blocker, a loosened rail holds it for the owner, and a review that did not run (no model answered, git failed)
 // waits to be run again.
@@ -87,7 +87,7 @@ function secondLook(request, { railsOnly, range }, tmp) {
   const out = [];
   let rail = null;
   if (rails.length) {
-    // Every rail change gets the deep review, whatever its size, and only from Argon or Opus.
+    // Every rail change gets the deep review, whatever its size, from Argon, Opus or Flash, never Sonnet.
     const pick = pickDepth({ kind: 'change', ...stats }, RAILS);
     rail = ask(
       'rail-audit.md',

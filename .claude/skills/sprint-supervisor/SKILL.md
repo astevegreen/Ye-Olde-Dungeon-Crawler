@@ -30,7 +30,7 @@ created, your lock), and prints one line of JSON. When it prints `error`, do wha
 fails any other way, `Q unlock`, then stop and report its output on issue #19. Never work its rules out by hand.
 
 `$ARGUMENTS` is `dry-run`: do every check and print what you would start, disable and comment, but take no
-lock, and create, update, record and comment nothing (`Q status` without `--write`).
+lock, and create, update, record and comment nothing (`Q status` and `Q decisions` without `--write`).
 
 ## 0. Lock
 `Q lock`. Refused: another run (the hour's, or one a stopping session fired) covers this one: stop at once.
@@ -129,7 +129,12 @@ Archiving is the sprint archiver's job; don't try it here.
 **Status block.** Every run, `Q status --write`, with one `--also '<line>'` for each stuck session, each
 session that failed to start, and each usage-limit wait (its title, what is wrong or its `restartAt`, its url).
 It rewrites the body of issue #19 "Sprint log" (the lane counts, the last deploy, free memory and "Needs you")
-and prints `body`, `needsYou`, and `new`: the "Needs you" items the old body didn't have.
+and prints `body`, `needsYou`, and `new`: the "Needs you" items the old body didn't have, design questions
+left out.
+
+**Decisions.** Every run, `Q decisions --write`. At most once a day, while a design question waits, it posts
+the digest on the Decisions issue: every open question with its recommendation, and the one @-mention the owner
+gets for them. It prints `due`, `questions` and `written`; never comment about questions yourself.
 
 **Comment** on issue #19, under 15 lines, when either holds:
 - `new` is not empty: start "@astevegreen", so GitHub notifies the owner, and list those items first;

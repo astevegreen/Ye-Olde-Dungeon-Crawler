@@ -114,8 +114,8 @@ Every change passes the gates, with real output reported: `npm run lint` (`tsc`,
 1. **Confirmed bug fix:** a reproducible defect, shown by a failing test or a documented reproduction.
 2. **Additive schema migration:** a new forward-only step plus a `CURRENT_SCHEMA_VERSION` increment (§5).
 3. **Requested planned item:** a §9 item the task explicitly requests.
-4. **Owner-authorized change:** the owner authorizes a named, narrowly scoped change in the task itself, and the commit quotes it. An agent never infers this.
-5. **Stated reason (`engine.ts`, `actionPipeline.ts` only):** `§8.1 exception 5: <why it can't live outside the file>`. Never `migrator.ts`: a save-format change is the owner's product decision.
+4. **Authorized change:** a named, narrowly scoped change, stated on the exception's line. On `migrator.ts` the owner authorizes it in the task itself and the commit quotes them; an agent never infers this. On `engine.ts` and `actionPipeline.ts`, the reviewer's PASS and a second-look `ship` on the change stand in for the owner's words, and the push waits for both.
+5. **Stated reason (`engine.ts`, `actionPipeline.ts` only):** `§8.1 exception 5: <why it can't live outside the file>`, pushed only after the reviewer's PASS and a second-look `ship`. Never `migrator.ts`: a save-format change is the owner's product decision, and player saves don't revert.
 
 ### 8.2 Documentation Synchronization
 - This file changes with the invariant it states, in the same commit.

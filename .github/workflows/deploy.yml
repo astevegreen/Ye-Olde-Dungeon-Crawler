@@ -1,7 +1,8 @@
 name: Deploy to GitHub Pages
 
 # The deploy waits for the browser tests, so players only get a build that passed in all three
-# browsers on Linux (docs/architecture/quality-gates.md, CI).
+# browsers on Linux (docs/architecture/quality-gates.md, CI). Every push runs the gates; a push that
+# ships nothing (docs, tooling, tests only: scripts/lib/deploy-scope.mjs) skips the browsers and the deploy.
 on:
   push:
     branches: [main]
@@ -14,7 +15,23 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      ships: ${{ steps.scope.outputs.ships }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Decide whether this push ships
+        id: scope
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: node scripts/deploy-scope.mjs
+
   browsers:
+    needs: scope
+    if: needs.scope.outputs.ships == 'true'
     uses: ./.github/workflows/playwright.yml
 
   build:
@@ -67,7 +84,8 @@ jobs:
           path: './dist'
 
   deploy:
-    needs: [browsers, build]
+    needs: [scope, browsers, build]
+    if: needs.scope.outputs.ships == 'true'
     permissions:
       contents: read
       pages: write
@@ -80,8 +98,12 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       # Browser runs finish out of order, so an older push could finish its tests last and
-      # deploy over a newer one. Only the branch tip deploys; a newer push deploys itself.
+      # deploy over a newer one. Only the branch tip deploys; a newer push deploys itself,
+      # unless nothing after this commit ships, and then the newer run deploys nothing.
       - name: Check this commit is still the tip of the branch
         id: tip
         env:
@@ -89,6 +111,9 @@ jobs:
         run: |
           tip=$(gh api "repos/${{ github.repository }}/commits/${{ github.ref_name }}" --jq .sha)
           if [ "$tip" = "${{ github.sha }}" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          elif BEFORE="${{ github.sha }}" GITHUB_SHA="$tip" GITHUB_OUTPUT=/dev/null node scripts/deploy-scope.mjs | grep -q '^ships=false'; then
+            echo "::notice::Deployed: ${{ github.ref_name }} has moved on to ${tip}, but nothing after this commit ships."
             echo "current=true" >> "$GITHUB_OUTPUT"
           else
             echo "::notice::Not deployed: ${{ github.ref_name }} has moved on to ${tip}, whose run deploys it."

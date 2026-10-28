@@ -40,7 +40,8 @@ An optional "Base: <sha>" replaces `<base>`.
    - sprint form only:
      - `docs/sprint.md` holds: no product decision invented (balance, scope, save format, a new mechanic, a
        name or placement the design leaves open), no locked path touched, lanes `story` and `lore` follow
-       the approved Act II design
+       the approved Act II design. An issue's `Decision (architect)` settles a technical question; one that
+       settles a design question instead is a `blocker`
      - every commit carries the spec's `Requested:` trailer; one request per commit
      - PLAYER-VISIBLE describes what players will actually see
 3. Read surrounding code only where the diff is unclear, and read it at `<head>`: `git show <head>:<path>`

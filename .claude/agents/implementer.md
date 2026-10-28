@@ -35,10 +35,15 @@ ones, and list the rest under REJECTED GEMINI POINTS with a reason.
 A "Mode: fix. Concerns: …" message after your own hand-back continues your task: you already hold the spec,
 the issue and the worktree, so skip this step and fix in step 3's fix mode.
 
-## 2. Stop early when
-the spec is unclear, contradicts `ARCHITECTURE.md`, or needs a product decision, a locked path, or a §8.1
-protected file beyond exception 1. Comment one specific question on the issue, move it to `blocked`, and hand
-back STATUS: BLOCKED.
+## 2. Decide, or stop early
+A technical question is yours to decide as the architect, never the owner's: how to build or structure it,
+APIs, tooling, tests, naming, placement in the code, performance, refactors, architecture-doc updates. Comment
+`Implementer: Decision (architect): <question>: <decision>, because <why>` on the issue and go on.
+
+Stop early only when the spec needs a design decision (game rules, balance feel, scope, a save-format change, a
+new mechanic, a name or placement in the game the design leaves open), contradicts `ARCHITECTURE.md`, or needs a
+locked path or a §8.1 protected file beyond exception 1. Comment one specific question on the issue, with its
+options and `Recommended: <option>, because <why>`, move it to `blocked`, and hand back STATUS: BLOCKED.
 
 ## 3. Build
 - First clear what a stopped session left: if `git -C W status --porcelain` lists anything, run
@@ -54,8 +59,8 @@ back STATUS: BLOCKED.
   `git -C W rebase --reapply-cherry-picks origin/main` (main may hold this task and its revert, which a plain
   rebase would silently drop), resolving conflicts in the task's favour only where the task owns the lines.
 - Run `cd W && npm ls --depth=0`. Only if it fails (packages missing or not matching `package.json`), run
-  `cd W && npm ci`. Never list, read or diff `node_modules` or `package-lock.json` yourself: the project's
-  permission rules refuse it.
+  `cd W && npm ci`. Never list or read `node_modules` or `package-lock.json` yourself: the project refuses
+  it. `git diff --stat` says whether the lockfile changed.
 - Keep unfinished work as commits on `sprint/n`, never as a patch file: a later session applying a patch
   looks like running untrusted code, and the safety check refuses it.
 - A bug: first a test that reproduces it and fails. Each acceptance criterion: a test that fails without the
@@ -64,11 +69,13 @@ back STATUS: BLOCKED.
   pre-commit hook reads). A visible label changed: grep `e2e/` and `scripts/capture/` for the old text.
 - Commit by `CLAUDE.md`'s Commits rule, with the spec's `Requested:` trailer, one request per commit. Never
   skip a hook. Never push.
-- A check that fails the same way twice, with no code change in between, is the machine, not the code: stop,
-  comment "Implementer: machine" with the first failing lines and the free memory, move it to `held`, and hand
-  back STATUS: GATE-FAILED. Never run it a third time.
-- When the gates still fail after three honest attempts: comment the failing output (under 20 lines) on the
-  issue, move it to `held`, and hand back STATUS: GATE-FAILED.
+- A check that fails the same way twice with no code change in between, or on time-outs that differ from run
+  to run, is the machine, not the code: stop, comment "Implementer: machine" (these words first, whatever else
+  you report) with the first failing lines and the free memory, move it to `held`, and hand back STATUS:
+  GATE-FAILED. Never run it a third time: the queue retries it once the machine is quieter.
+- When the gates still fail after three honest attempts: comment "Implementer: [blocker] the gates still
+  fail" with the failing output (under 20 lines) on the issue, move it to `held`, and hand back STATUS:
+  GATE-FAILED.
 
 ## 4. Hand back
 When `git -C W status --porcelain` lists anything (work the gates never let you commit), first
@@ -81,5 +88,6 @@ WHAT CHANGED: 2-5 plain-English bullets
 TESTS: what now proves it
 GATES: each gate run and its result, pasted
 PLAYER-VISIBLE: one line per change players will see, or "nothing player-visible"
-UNSURE: anything the owner should check, or nothing
+UNSURE: anything the reviewer should check, or nothing
+DECISIONS: each `Decision (architect)` you made, or none
 REJECTED GEMINI POINTS: each with a reason, or none

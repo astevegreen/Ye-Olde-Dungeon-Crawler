@@ -1,0 +1,122 @@
+{
+  "note": "#80, #84 and #85 as they stood on 28 Oct 2026: held since 25 Oct on machine failures (time-outs under load); bodies left out.",
+  "issues": [
+    {
+      "number": 80,
+      "title": "[task] L6: four sap-shrines with Rot verses on floors 28, 33, 38 and 41",
+      "body": "",
+      "state": "OPEN",
+      "createdAt": "2026-10-24T23:26:58Z",
+      "closedAt": null,
+      "labels": [
+        {
+          "name": "held"
+        },
+        {
+          "name": "lane:lore"
+        }
+      ],
+      "comments": [
+        {
+          "author": {
+            "login": "greenbeanbot"
+          },
+          "createdAt": "2026-10-25T19:36:13Z",
+          "body": "<!-- gemini-audit -->\n**Gemini audit: spec**\n_Gemini 4 Argon (high), a deep review because it is a spec, where a gap is cheapest to fix._\n\n## #80\n\n- [blocker] `src/content/cotw/index.ts:396-403` (and \"Read first\", `Floors`): The spec cites `src/content/cotw/index.ts:375-392` to claim no scripted vault sits on floors 28, 33, 38 or 41, stopping before lines 396–403 where `WORLD_BARK_FLOOR`, `URDR_POOL_FLOOR`, `VERDANDI_LOOM_FLOOR`, `RATATOSKR_ROOST_FLOOR` and `SKULD_MIRROR_FLOOR` are registered in `scriptedVaultPlacements`. In World-Bark Descent (floors 34–42), floors 34 (threshold), 35 (`galdr_altar_loki`), 36 (`floor36_matriarch_hollow`), 37 (`WORLD_BARK_FLOOR`), 39 (`galdr_altar_tyr`) and 40 (runestone 5 / Great Tap) are already occupied, leaving only 38, 41 and 42 for `VERDANDI_LOOM_FLOOR` and `RATATOSKR_ROOST_FLOOR` (`src/content/cotw/index.ts:400-401`, plus `URDR_POOL_FLOOR` in Silver Veins at `:399`). At least one of floors 28, 33, 38 and 41 already holds a Nornic reliquary scripted vault, contradicting `docs/sprint.md:207` (\"no galdr or scripted floor\") and the spec's placement premise.\n- [blocker] `src/content/cotw/__tests__/spriteRecipes.test.ts:24-30` (and Acceptance criterion 5 / \"Read first\"): The spec dismisses `src/content/cotw/sprites/tiles.ts` (\"that file holds terrain only\") and places the shrine art only in `src/content/cotw/sprites/fixtureSprites.ts:31-51`, yet AC 5 requires that \"every recipe key sits in one group (`spriteRecipes.test.ts`)\". `src/content/cotw/__tests__/spriteRecipes.test.ts:24-30` checks `COTW_TILE_SPRITES` (`sprites/tiles.ts`) and `COTW_TERRAIN_SPRITES` (`sprites/terrain.ts`), not `COTW_FIXTURE_ART` (`sprites/fixtureSprites.ts`). If nothing is added to `src/content/cotw/sprites/tiles.ts` (`docs/sprint.md:209`), the `spriteRecipes.test.ts` clause in AC 5 passes vacuously without testing the shrine sprites.\n- [note] `src/content/cotw/runestones.ts:90-96` (and Acceptance criteria 1, 3): Every `LoreEntryDefinition` in `SKALDIC_RUNESTONE_LORE` populates `flag`, `title`, `verse`, and `lore`. AC 1 and AC 3 specify `flag`, `title`, and `verse` for `SAP_SHRINE_LORE`, but do not specify what `lore` should hold (or whether `lore` is required by the schema/UI in the Story tab's Carved Verses when there is no runic spell hint).\n- [note] Acceptance criterion 6 (and `src/content/cotw/index.ts:197`, `src/content/cotw/ironClans.ts:211-214`): AC 6 checks `cotwManifest` placements, tiles, and choices, and that choosing the option sets `sap_shrine_<n>_read` and logs the verse, but does not assert that `cotwManifest.loreEntries` includes the four `SAP_SHRINE_LORE` entries keyed by `sap_shrine_<n>_read` (AC 3) or that stepping on a shrine after reading it resolves via `resolvedStates` (AC 2).\n- [note] Acceptance criterion 7 (and `docs/sprint.md:68`): AC 7 states \"Only one line changes at each join point (`tiles.ts`, `choices.ts`, `index.ts` placements), plus the `loreEntries` line\", omitting the required `import` lines in `src/content/cotw/tiles.ts`, `src/content/cotw/choices.ts`, and `src/content/cotw/index.ts` (and the four entries in `src/content/cotw/sprites/fixtureSprites.ts:42-44`). In `src/content/cotw/index.ts`, the import from `./sapShrines` should be placed adjacent to `./ironClans` rather than at the bottom of the import block so it does not conflict with lane `story`'s cherry-picks (`docs/sprint.md:68`).\n\n\n"
+        },
+        {
+          "author": {
+            "login": "greenbeanbot"
+          },
+          "createdAt": "2026-10-25T19:37:32Z",
+          "body": "Plan: Gemini point 1 (blocker) not applied: it is wrong. The scripted vaults sit on floors 13, 21, 22, 25, 30, 32 (Urdr), 36, 37, 39 (Verdandi), 42 (Ratatoskr), 45, 47 and 49 (`vaults.ts:7-30`, `index.ts:375-403`), and the galdr altars on 27, 31, 35, 39 and 43. None is on 28, 33, 38 or 41, so the placement holds.\n\nPlan: Gemini point 2 (blocker) applied as a correction, not a block. `spriteRecipes.test.ts` doesn't read `COTW_FIXTURE_ART`, so AC 5 no longer leans on it; `fixtureSprites.test.ts` carries the check.\n\nPlan: Gemini points 3-5 applied: each lore entry fills `lore` (required by `LoreEntryDefinition`). AC 6 now also checks `loreEntries` and `resolvedStates`. AC 7 allows the import lines, with `index.ts`'s next to `./ironClans`, and the fixture-art entries.\n"
+        },
+        {
+          "author": {
+            "login": "greenbeanbot"
+          },
+          "createdAt": "2026-10-25T20:49:16Z",
+          "body": "Lane: re-queued, the previous lane session stopped."
+        },
+        {
+          "author": {
+            "login": "greenbeanbot"
+          },
+          "createdAt": "2026-10-25T21:08:20Z",
+          "body": "Implementer: machine. `npm run gate-stamp -- run lint test tooling` failed twice with no code change between: lint passed both times, and every unit failure was a timeout, on different tests each run.\n\nRun 1 (7 failed / 4041):\n```\nFAIL scripts/__tests__/docReferences.test.ts > every cited §section exists in ARCHITECTURE.md   Test timed out in 30000ms.\nFAIL scripts/__tests__/sprintGuard.test.ts > --file-lock > keeps git writes out of the main checkout   Test timed out in 30000ms.\nFAIL scripts/__tests__/uiPalette.test.ts > --ui-* variables > are all defined   Test timed out in 5000ms.\nFAIL src/engine/__tests__/campaignSeparation.test.ts > ... no tyr|valhalla|hrungnir ...   Test timed out in 5000ms.\n```\nRun 2 (4 failed / 4041):\n```\nFAIL scripts/__tests__/docReferences.test.ts > every [Planned: P-NN] tag has a §9 entry   Test timed out in 30000ms.\nFAIL src/rendering/__tests__/entityIconSprite.test.ts > drawEntityIcon > (2 tests)   Test timed out in 30000ms.\nFAIL src/engine/dungeon/__tests__/layoutStrategies.test.ts > rift (floor 18, threshold): playable on every seed   Test timed out in 15000ms.\n```\nFree memory at the first failure: about 19.9 GB. Run alone, the three files from run 2 pass (44/44, 18 s), as do the six content suites the task touches (37/37).\n\nThe work is complete but uncommitted (the hook needs the stamp): it is stashed on `sprint/80` as \"unfinished\", and the next build restores it and only needs the gates rerun on a quieter machine.\n"
+        }
+      ]
+    },
+    {
+      "number": 84,
+      "title": "[task] X2: Hero-creation stat buttons get accessible names",
+      "body": "",
+      "state": "OPEN",
+      "createdAt": "2026-10-24T23:28:53Z",
+      "closedAt": null,
+      "labels": [
+        {
+          "name": "lane:ux"
+        },
+        {
+          "name": "held"
+        }
+      ],
+      "comments": [
+        {
+          "author": {
+            "login": "greenbeanbot"
+          },
+          "createdAt": "2026-10-25T13:36:50Z",
+          "body": "Implementer: work committed on `sprint/84` (310e9a0b), but `npm run gates` never went green in one run. Each run failed on a different time-out, so it looks like load. 22.6 GB of 65 GB memory was free.\n\n- Run 1: lint and unit (4030) passed. Tooling timed out: `pushLock.test.ts` (30 s) and `handoffNotes.test.ts` (60 s).\n- Run 2: the unit test `flight-recorder.test.ts > is not kept alive by the recorder once nothing else holds it` timed out at 5 s.\n- Run 3: lint, unit (4030), tooling (52) and the sim passed. Playwright Chromium had 4 failures and 37 passes, all in `e2e/gameplay.spec.ts`:\n```\ngameplay.spec.ts:361 the interface grows with a large window...  Timeout 5000ms waiting on predicate (zoomOf('#sel-ui-scale'))\ngameplay.spec.ts:509 an open dialog holds keyboard focus...        locator.isVisible: Test timeout of 30000ms exceeded\ngameplay.spec.ts:573 windows opened from save & quit...            page.evaluate: Test timeout of 30000ms exceeded\ngameplay.spec.ts:628 the other-pack save warning holds the keys... keyboard.press: Test timeout of 30000ms exceeded\n```\n- Diagnostic: right after run 3, `npx playwright test e2e/gameplay.spec.ts --project=chromium` passed all 31 tests, these 4 included.\n\nThe change itself adds an `aria-label` and a `title` to 8 buttons in `index.html`. None of the failing tests touch the stat buttons. Rerunning `npm run gates` on a quieter machine should clear this.\n"
+        }
+      ]
+    },
+    {
+      "number": 85,
+      "title": "[task] X3: An overburdened hero is told once to drop something",
+      "body": "",
+      "state": "OPEN",
+      "createdAt": "2026-10-24T23:28:54Z",
+      "closedAt": null,
+      "labels": [
+        {
+          "name": "lane:ux"
+        },
+        {
+          "name": "held"
+        }
+      ],
+      "comments": [
+        {
+          "author": {
+            "login": "greenbeanbot"
+          },
+          "createdAt": "2026-10-25T19:47:06Z",
+          "body": "<!-- gemini-audit -->\n**Gemini audit: spec**\n_Gemini 4 Argon (high), a deep review because it is a spec, where a gap is cheapest to fix._\n\n## #85\n\n- [note] `src/engine/actions/movement.ts:52-60`, `src/engine/entities/player.ts:622-625` (Acceptance criterion 3): AC 3 states that the hint resets when \"`canMove()` [is] true at the next movement attempt\". If the transient \"once\" flag is only cleared inside `MovementAction.perform()` when `this.entity.canMove()` is true, a hero who drops items to clear `EncumbranceLevel.Immobilized` and then becomes immobilized again before taking a step (e.g., picking up another item, buying from a merchant, or taking from a container on the same tile) will never clear the flag and will not receive the hint on the next blocked step. Conversely, clearing the flag inside `Player.canMove()` would put a state mutation inside a query method. The flag should reset when encumbrance drops below `EncumbranceLevel.Immobilized` (or on weight-changing inventory actions) rather than waiting for a movement action.\n- [note] `src/engine/entities/player.ts:622-625`, `src/engine/actions/movement.ts:52-59` (Acceptance criterion 1): `Player.canMove()` returns `false` both when `super.canMove()` is `false` (`src/engine/entities/player.ts:623`) and when `this.inventory.getEncumbrance(this.carryStrength) === EncumbranceLevel.Immobilized` (`src/engine/entities/player.ts:624`). If `MovementAction.perform()` checks only `!this.entity.canMove()` before logging the new drop-something hint, any non-encumbrance movement block from `super.canMove()` on the player would falsely tell the player their pack is overburdened.\n\n\n"
+        },
+        {
+          "author": {
+            "login": "greenbeanbot"
+          },
+          "createdAt": "2026-10-25T19:48:02Z",
+          "body": "Plan: Gemini point 2 applied: new AC 3a. The hint and the once-rule apply only when the block is the burden (`Immobilized`), never for another `canMove()` block.\n\nPlan: Gemini point 1 not applied: if the hero clears the burden and is weighed down again before taking a step, they saw the hint a moment ago, so missing it once is harmless. Resetting on every inventory change spreads the transient state into pickup, shop and container code for no player gain.\n"
+        },
+        {
+          "author": {
+            "login": "greenbeanbot"
+          },
+          "createdAt": "2026-10-25T20:49:01Z",
+          "body": "Lane: re-queued, the previous lane session stopped."
+        },
+        {
+          "author": {
+            "login": "greenbeanbot"
+          },
+          "createdAt": "2026-10-25T21:07:50Z",
+          "body": "Implementer: machine\n\n`npm run gate-stamp -- run lint test tooling` failed twice with no code change in between, both times on timeouts only (lint passed; no assertion failed). The same test timed out both runs:\n\n```\n FAIL  |unit| src/engine/__tests__/chaosSimulation.test.ts > Headless Chaos / Monkey Simulation (5,000 Actions) > executes 5,000 chaotic actions without invariant violations, deadlocks, or NaN values\nError: Test timed out in 120000ms.\n FAIL  |unit| src/content/cotw/__tests__/bossSprites.test.ts > the cotw boss sprites draw their own pixels > bake four idle frames ...\nError: Test timed out in 5000ms.\n Test Files  2 failed | 472 passed (474)\n```\n\nRun 1 had 6 timeouts in 5 other files (sprintGuard, campaignSeparation, chaosSimulation, entityIconSprite, portraitsAndScreens). Run alone, `chaosSimulation.test.ts` passes in 20.75 s, so this is load under the full suite. Free memory: 18877 MB, then 19458 MB, of 65160 MB.\n\nThe work is complete and its tests pass (`npx vitest run src/engine/__tests__/encumbrance.test.ts`: 11 passed; 5 of the new tests fail on today's code). It is stashed on `sprint/85` as \"unfinished\" because the pre-commit gates could not be stamped. Next run: pop the stash, run the gates, then commit.\n"
+        }
+      ]
+    }
+  ]
+}

@@ -58,19 +58,34 @@ issue, `B` is `sprint/<n>`.
       if it is 0, send it back (step 3) with "branch B has no commits ahead of main".
    2. Check what it brings: `git -C I diff --name-only <base>..B` must not match a locked path from
       `docs/sprint.md` ("What still stops a task"), and every commit in `git -C I log --format=%B <base>..B`
-      must carry a `Requested: ` line. Either fails: send it back with `blocked` instead of `held`.
-   3. Note `git -C I rev-parse HEAD` as `p`, then `git -C I cherry-pick <base>..B`. A conflict:
+      must carry a `Requested: ` line. Either fails: send it back (step 3) with "[blocker]" before the why, so
+      it waits for the owner.
+   3. The rail audit: run `node C:/Antigravity/YODC-integrate/scripts/second-look.mjs --rails-only --range <base>..B "<B's Requested: line>"`
+      on a line of its own with `run_in_background: true`, and wait for its notification. A branch that touches
+      no rail (`RAILS` in `scripts/lib/second-look.mjs`: gates, their allowlists and configs, `package.json`)
+      ends at once; one that does gets a deep agy review asking whether it loosens a check. Its last line:
+      - `Verdict: ship`: go on.
+      - `Verdict: owner`: send it back (step 3) with "[blocker] the rail audit says it loosens a rail: <the
+        audit's lines>"; it waits for the owner.
+      - `Verdict: retry` (no model answered): leave it `to-integrate`, out of this batch; the next push tries it.
+   4. Note `git -C I rev-parse HEAD` as `p`, then `git -C I cherry-pick <base>..B`. A conflict:
       `git -C I cherry-pick --abort`, then send it back with "conflicts with main in <files>; rebase B with
       `git rebase --reapply-cherry-picks origin/main`". After the pick, `git -C I rev-parse HEAD` must differ
       from `p`; if not, send it back as above.
 3. `cd I && npm run gate-stamp -- run lint test tooling`. Red only by a timeout ("Test timed out", "Hook timed
-   out"): run it once more, since a soak may be loading the computer. Red otherwise, or red again: with one
-   issue in the batch, send it back with the first failing lines; with more,
-   `git -C I switch --detach --discard-changes origin/main` and land them one at a time from 1.1.
+   out"): run it once more, since a soak may be loading the computer.
+   - Red again only by time-outs: the machine, not the code, and never the owner's. Comment
+     "Integrator: machine: <first failing lines>; <free MB> MB free" on each issue of the batch, leave them
+     `to-integrate`, `git -C I switch --detach --discard-changes origin/main`, and stop: the supervisor starts
+     the integrator again once free memory is over its floor. An issue that already has three
+     "Integrator: machine:" comments goes back instead (step 3), with "[blocker] timed out on four runs".
+   - Red otherwise: with one issue in the batch, send it back with the first failing lines; with more,
+     `git -C I switch --detach --discard-changes origin/main` and land them one at a time from 1.1.
 4. Push with `run_in_background: true`: `git -C C:/Antigravity/YODC-integrate push origin HEAD:main`, and wait
    for its notification. The pre-push hook runs the sim, the build and Playwright in three browsers; with the
    lanes running it can take over ten minutes. Rejected because `origin/main` moved: go back to 1.1, once.
-   Red: push once more (flakes are known). Red again: as a red gate in 1.3, with the failing test names.
+   Red: push once more (flakes are known). Red again: as a red gate in 1.3, time-outs alone as the machine,
+   with the failing test names.
 5. Start `cd I && npm run ci:watch -- <pushed sha>` (timeout 600000) with `run_in_background: true`. While it
    runs, you may prepare the next batch (1.1 to 1.3), but push nothing until this watch ends green. When it
    ends, read its output, not only its exit code:
@@ -93,10 +108,11 @@ time (its branches are unchanged, so each picks cleanly onto main); the one whos
 back that way.
 
 ## 3. Send it back
-Comment first: "Integrator: <why, one or two lines>". Then, if an earlier comment on this issue
-(`gh issue view <n> --json comments`) already starts "Integrator:" and sent it back, this is the second time:
-`gh issue edit <n> --add-label blocked --remove-label to-integrate` (the owner looks at it). Otherwise `gh issue edit <n> --add-label held
---remove-label to-integrate`; the lane's next session fixes it on `B`.
+Comment first: "Integrator: <why, one or two lines>". If an earlier comment on this issue
+(`gh issue view <n> --json comments`) already starts "Integrator:" and sent it back for a reason other than the
+machine, this is the second time: write "Integrator: [blocker] sent back twice: <why>" instead, so it waits for
+the owner. Then `gh issue edit <n> --add-label held --remove-label to-integrate`; the lane's next session fixes it
+on `B` unless a `[blocker]` holds it. `blocked` is for design questions only, never here.
 
 ## 4. Done
 For each issue of the batch: `gh issue close <n> --comment "Integrator: landed <sha>. Players will see: <the PLAYER-VISIBLE lines of the lane's ready-to-integrate comment>."`

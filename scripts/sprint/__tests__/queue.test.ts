@@ -3,11 +3,14 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
   DEFAULT_HOURS,
+  MACHINE_RETRIES,
   MEMORY_FLOOR_MB,
   SESSION_MB,
   TRIGGERS_FILE,
   WINDOW_FILE,
+  answerTo,
   bodyRefs,
+  decisionsDigest,
   hasWork,
   heldRetry,
   laneQueue,
@@ -93,6 +96,7 @@ describe('docs/sprint.md, read once', () => {
     const current = parseSprintDoc(fs.readFileSync(path.join(__dirname, '../../../docs/sprint.md'), 'utf-8'));
     expect(current.lanes.length).toBeGreaterThan(0);
     expect(sessionTitles(current)).toContain('YODC integrate');
+    expect(current.decisionsIssue).toBe(72);
     // Every lane the table names has a backlog list, and every item has an ID the queue can match.
     for (const lane of current.lanes) expect(current.backlog[lane.name]?.length, lane.name).toBeGreaterThan(0);
   });
@@ -139,18 +143,24 @@ describe('October failures', () => {
     expect(nextJob(w, 'tooling')).toBeNull();
     expect(() => planMove(w, 49, 'in-progress')).toThrow('#49 waits for #48 T4a');
   });
-  it('T5a held with the lane\'s own comment newest waits for the owner, and says so', () => {
+  it('T5a, held over one minor concern, is retried: a minor concern never waits for the owner (28 Oct)', () => {
+    // October held it from 23:40Z on 21 Oct until the owner's relayed "I accept the rule" at 04:20Z.
     const w = at('2026-10-22T03:05:00Z', { 58: ['lane:tooling', 'held'], 59: ['lane:tooling', 'sprint-ready'] });
-    expect(hasWork(w, 'YODC lane: tooling').start).toBe(false);
-    expect(statusBlock(w).needsYou).toEqual([expect.stringMatching(/^#58 \[held\] T5a: waits for the owner/)]);
+    expect(nextJob(w, 'tooling')).toMatchObject({ mode: 'fix', issue: 58, reason: expect.stringContaining('only minor concerns are left') });
+    expect(statusBlock(w).needsYou).toEqual([]);
   });
   it('an answer relayed by the bot account does not count as the owner\'s', () => {
-    const t5a = at('2026-10-22T04:25:00Z', { 58: ['lane:tooling', 'held'], 59: ['lane:tooling', 'sprint-ready'] });
-    expect(nextJob(t5a, 'tooling')).toBeNull();
+    const [held] = normalizeIssues([
+      issue(5, '[task] B1: x', ['lane:fixes', 'held'], '', [
+        ['greenbeanbot', '2026-10-21T10:00:00Z', 'Lane: held. 1. [blocker] save.ts:12 loses the flag on reload'],
+        ['greenbeanbot', '2026-10-21T11:00:00Z', 'Owner (relayed from chat): "ship it"'],
+      ]),
+    ]);
+    expect(heldRetry(held!, 8000)).toMatchObject({ retry: false, owner: true, why: expect.stringContaining('[blocker]') });
     // U3 at 23:19Z on 21 Oct: the relay came after the owner's last comment.
     const u3 = at('2026-10-21T23:19:50Z', { 37: ['lane:ux', 'blocked'] });
-    expect(laneQueue(u3, 'ux').waiting).toContain('#37 U3 is blocked: no owner reply yet');
-    expect(statusBlock(u3).needsYou).toContain('#37 [blocked] U3: waiting for your answer');
+    expect(laneQueue(u3, 'ux').waiting).toContain('#37 U3 is blocked on a design question: no owner answer yet');
+    expect(statusBlock(u3).needsYou).toContain('#37 [blocked] U3: a design question waits for your answer');
   });
   it('no research session while a soak runs; reading it once it has ended', () => {
     // R5's soak, pid 31660, started 05:13Z on 22 Oct and was read at 12:28Z.
@@ -195,14 +205,78 @@ describe('held work', () => {
     const w = at('2026-10-22T04:20:00Z', { 57: ['lane:ux', 'held'] });
     expect(nextJob(w, 'ux')).toEqual({ mode: 'fix', issue: 57, concerns: 'retry the gate', reason: '#57 U7 is held and the owner replied' });
   });
-  it('is retried when the integrator sent it back, not after the builder\'s own report', () => {
+  it('is retried when the integrator sent it back, and when the builder\'s report is a time-out on a loaded host', () => {
     expect(nextJob(at('2026-10-22T06:45:00Z', { 57: ['lane:ux', 'held'] }), 'ux')).toMatchObject({ mode: 'fix', issue: 57 });
-    expect(nextJob(at('2026-10-22T07:50:00Z', { 57: ['lane:ux', 'held'] }), 'ux')).toBeNull();
+    // 07:47Z: "failed three runs in a row, each on a different timeout". October parked it for the owner until 11:53Z.
+    expect(nextJob(at('2026-10-22T07:50:00Z', { 57: ['lane:ux', 'held'] }), 'ux')).toMatchObject({
+      mode: 'fix',
+      issue: 57,
+      reason: expect.stringContaining('the machine failed it'),
+    });
+  });
+  it('waits for the owner after the builder\'s own report of a real failure', () => {
+    const [i] = normalizeIssues([
+      issue(5, '[task] B1: x', ['lane:fixes', 'held'], '', [['greenbeanbot', '2026-10-21T10:00:00Z', 'Implementer: the gates still fail after three attempts:\nexpected 3 to be 4']]),
+    ]);
+    expect(heldRetry(i!, 8000)).toMatchObject({ retry: false, owner: true, why: expect.stringContaining('waits for the owner') });
+    // An architect's decision about time-outs is not a machine failure.
+    const [d] = normalizeIssues([
+      issue(5, '[task] B1: x', ['lane:fixes', 'held'], '', [['greenbeanbot', '2026-10-21T10:00:00Z', 'Implementer: Decision (architect): the countdown time-out lives in rot.ts']]),
+    ]);
+    expect(heldRetry(d!, 8000)).toMatchObject({ retry: false, owner: true });
   });
   it('a machine failure is retried only over the memory floor', () => {
     const [i] = normalizeIssues([issue(5, '[task] B1: x', ['lane:fixes', 'held'], '', [['greenbeanbot', '2026-10-21T10:00:00Z', 'Implementer: machine. knip ran out of memory']])]);
     expect(heldRetry(i!, 8000)).toMatchObject({ retry: true });
-    expect(heldRetry(i!, 3000)).toMatchObject({ retry: false });
+    // Under the floor it waits for the machine, never for the owner.
+    expect(heldRetry(i!, 3000)).toMatchObject({ retry: false, owner: false });
+  });
+  it('#80, #84 and #85, held on time-outs on 25 Oct, are retried next sprint whatever their comments start with', () => {
+    const held: RawIssue[] = JSON.parse(fs.readFileSync(path.join(FIXTURES, 'held-2026-10-25.json'), 'utf-8')).issues;
+    const w: World = { ...at('2026-10-28T12:00:00Z'), issues: normalizeIssues(held) };
+    for (const i of w.issues) expect(heldRetry(i, 20_000), `#${i.number}`).toMatchObject({ retry: true, why: 'the machine failed it and 20000 MB is free now' });
+    // #84's only comment begins "Implementer: work committed": it waited 59 hours for the owner under the old rule.
+    expect(w.issues.find((i) => i.number === 84)!.comments[0]!.body).toMatch(/^Implementer: work committed/);
+    expect(nextJob(w, 'ux')).toMatchObject({ mode: 'fix', issue: 84 });
+    expect(nextJob(w, 'ux', [84])).toMatchObject({ mode: 'fix', issue: 85 });
+    expect(laneQueue(w, 'lore').job).toMatchObject({ mode: 'fix', issue: 80 });
+    // On a loaded machine they wait for memory, and the owner is not asked.
+    expect(statusBlock({ ...w, freeMb: 3000 }).needsYou).toEqual([]);
+  });
+  it('reads only the hold since the lane last took the work back', () => {
+    const comments: [string, string, string][] = [
+      ['greenbeanbot', '2026-10-21T10:00:00Z', 'Integrator: conflicts with main in a.ts'],
+      ['greenbeanbot', '2026-10-21T10:05:00Z', 'Lane: retrying held work: the integrator sent it back.'],
+    ];
+    const blocker = normalizeIssues([
+      issue(5, '[task] B1: x', ['lane:fixes', 'held'], '', [...comments, ['greenbeanbot', '2026-10-21T11:00:00Z', 'Lane: held. 1. [blocker] a.ts:3 drops the save flag']]),
+    ])[0]!;
+    expect(heldRetry(blocker, 8000)).toMatchObject({ retry: false, owner: true });
+    // A machine failure after a blocker's retry is read on its own, and a blocker after a machine failure wins.
+    const machine = normalizeIssues([
+      issue(5, '[task] B1: x', ['lane:fixes', 'held'], '', [
+        ['greenbeanbot', '2026-10-21T09:00:00Z', 'Lane: held. 1. [blocker] old'],
+        ['astevegreen', '2026-10-21T09:30:00Z', 'Try the other way.'],
+        ['greenbeanbot', '2026-10-21T09:40:00Z', 'Lane: retrying held work: the owner replied.'],
+        ['greenbeanbot', '2026-10-21T11:00:00Z', 'Implementer: machine. The unit tests timed out twice.'],
+      ]),
+    ])[0]!;
+    expect(heldRetry(machine, 8000)).toMatchObject({ retry: true, owner: false });
+    const later = {
+      ...machine,
+      comments: [...machine.comments, { author: 'greenbeanbot', body: 'Lane: held. 1. [blocker] b.ts:9 wrong total', at: new Date('2026-10-21T12:00:00Z') }],
+    };
+    expect(heldRetry(later, 8000)).toMatchObject({ retry: false, owner: true });
+  });
+  it(`a time-out that comes back after ${MACHINE_RETRIES} retries is the code's, and waits for the owner`, () => {
+    const comments: [string, string, string][] = [];
+    for (let k = 0; k < MACHINE_RETRIES; k++) {
+      comments.push(['greenbeanbot', `2026-10-21T1${k}:00:00Z`, 'Implementer: machine. Test timed out in 5000ms.']);
+      comments.push(['greenbeanbot', `2026-10-21T1${k}:30:00Z`, 'Lane: retrying held work: the machine failed it and 9000 MB is free now.']);
+    }
+    comments.push(['greenbeanbot', '2026-10-21T19:00:00Z', 'Implementer: machine. Test timed out in 5000ms.']);
+    const [i] = normalizeIssues([issue(5, '[task] B1: x', ['lane:fixes', 'held'], '', comments)]);
+    expect(heldRetry(i!, 9000)).toMatchObject({ retry: false, owner: true, why: expect.stringContaining(`after ${MACHINE_RETRIES} retries`) });
   });
   it('a Gemini audit posted after the owner\'s answer never hides it', () => {
     const [i] = normalizeIssues([
@@ -245,6 +319,63 @@ describe('next, in order', () => {
   });
 });
 
+describe('design questions and the Decisions issue (28 Oct)', () => {
+  const decisions = issue(72, 'Sprint questions', []);
+  const world = (issues: RawIssue[], now = '2026-10-28T12:00:00Z'): World => ({
+    ...at('2026-10-21T01:00:00Z'),
+    doc: { ...doc, decisionsIssue: 72 },
+    issues: normalizeIssues(issues),
+    now: new Date(now),
+  });
+  const question = issue(85, '[task] X3: told once', ['lane:ux', 'blocked'], '', [
+    ['greenbeanbot', '2026-10-27T10:00:00Z', 'Implementer: which wording? (a) "Too heavy" (b) "Drop something". Recommended: (a).'],
+  ]);
+  const on72 = (login: string, createdAt: string, body: string): RawIssue => ({ ...decisions, comments: [{ author: { login }, createdAt, body }] });
+
+  it('the owner answers on the Decisions issue by naming the issue, and the lane builds it with the answer quoted', () => {
+    const w = world([question, on72('astevegreen', '2026-10-27T12:00:00Z', '#85 a\n#850 b')]);
+    expect(answerTo(w, w.issues[0]!)).toMatchObject({ on: 72, body: '#85 a\n#850 b' });
+    expect(nextJob(w, 'ux')).toMatchObject({ mode: 'build', issue: 85 });
+    expect(planMove(w, 85, 'in-progress').comment).toBe(
+      'Lane: unblocked by the owner\'s answer on #72, which the implementer reads as part of the spec: "#85 a #850 b"',
+    );
+  });
+  it('only the owner\'s comment, after the question, naming that issue, answers it', () => {
+    const others: [string, string, string][] = [
+      ['greenbeanbot', '2026-10-27T12:00:00Z', '#85 a'],
+      ['astevegreen', '2026-10-27T09:00:00Z', '#85 a'],
+      ['astevegreen', '2026-10-27T12:00:00Z', '#850 a, #8 b'],
+      ['greenbeanbot', '2026-10-27T12:00:00Z', 'Decision (architect): #85 takes (a).'],
+    ];
+    for (const [login, createdAt, body] of others) {
+      const w = world([question, on72(login, createdAt, body)]);
+      expect(answerTo(w, w.issues[0]!), body).toBeNull();
+      expect(nextJob(w, 'ux'), body).toBeNull();
+    }
+  });
+  it('one digest a day, with one mention, while a question waits', () => {
+    const d = decisionsDigest(world([question, decisions]));
+    expect(d).toMatchObject({ due: true, issue: 72, questions: [85] });
+    expect(d.body.match(/@astevegreen/g)).toHaveLength(1);
+    expect(d.body).toContain('- #85 X3 (ux): Implementer: which wording?');
+    expect(d.body).not.toContain('no recommendation given');
+    const posted = on72('greenbeanbot', '2026-10-28T08:00:00Z', d.body);
+    expect(decisionsDigest(world([question, posted], '2026-10-28T20:00:00Z'))).toMatchObject({
+      due: false,
+      why: expect.stringContaining('the next is due at 2026-10-29 08:00Z'),
+    });
+    expect(decisionsDigest(world([question, posted], '2026-10-29T08:00:00Z')).due).toBe(true);
+    expect(decisionsDigest(world([{ ...question, labels: [{ name: 'lane:ux' }, { name: 'sprint-ready' }] }, decisions]))).toMatchObject({
+      due: false,
+      questions: [],
+    });
+  });
+  it('names a question that gives no recommendation', () => {
+    const bare = issue(86, '[task] X4: y', ['lane:ux', 'blocked'], '', [['greenbeanbot', '2026-10-27T10:00:00Z', 'Implementer: which colour?']]);
+    expect(decisionsDigest(world([bare, decisions])).body).toContain('- #86 X4 (ux): Implementer: which colour? (no recommendation given)');
+  });
+});
+
 describe('has-work', () => {
   it('covers every session title the supervisor keeps, and refuses others', () => {
     expect(sessionTitles(doc)).toHaveLength(10);
@@ -278,6 +409,14 @@ describe('move', () => {
     expect(() => planMove(w(['to-integrate']), 7, 'held')).toThrow(/integrator's/);
     expect(() => planMove(w(['sprint-ready']), 7, 'held')).toThrow(/only work in progress/);
     expect(() => planMove(w(['held', 'blocked']), 7, 'in-progress')).toThrow(/state labels held and blocked/);
+  });
+  it('takes held work back with a comment that starts the next hold afresh', () => {
+    const sentBack = normalizeIssues([issue(7, '[task] B1: x', ['lane:fixes', 'held'], '', [['greenbeanbot', '2026-10-21T00:30:00Z', 'Integrator: conflicts with main']])]);
+    expect(planMove({ ...w([]), issues: sentBack }, 7, 'in-progress')).toMatchObject({
+      comment: 'Lane: retrying held work: the integrator sent it back.',
+      add: ['in-progress'],
+      remove: ['held'],
+    });
   });
   it('a second move to the same state changes nothing', () => {
     expect(planMove(w(['held']), 7, 'held')).toMatchObject({ comment: null, add: [], remove: [] });
@@ -340,7 +479,9 @@ describe('the command line', () => {
   it('status writes the block to the sprint log and lists only the new "Needs you" items', () => {
     const { fake, writes } = io([...ready, issue(9, '[task] B3: y', ['lane:fixes', 'blocked'])]);
     const out = JSON.parse(run(['status', '--write', '--also', 'stuck: YODC lane: ux'], fake).line);
-    expect(out.new).toEqual(['#9 [blocked] B3: waiting for your answer', 'stuck: YODC lane: ux']);
+    // A design question goes to the daily Decisions digest, never an hourly ping.
+    expect(out.needsYou).toContain('#9 [blocked] B3: a design question waits for your answer');
+    expect(out.new).toEqual(['stuck: YODC lane: ux']);
     expect(writes()).toEqual([{ args: ['issue', 'edit', '19', '--body-file', '-'], input: out.body }]);
     expect(out.body).toContain('- fixes: 0 sprint-ready, 1 in-progress, 0 to-integrate, 0 held, 1 blocked; closed: none');
   });
@@ -351,6 +492,18 @@ describe('the command line', () => {
       start: false,
       reason: `memory: 9000 MB free, under the 10240 MB floor (${MEMORY_FLOOR_MB} + ${SESSION_MB} for each of 4 starting)`,
     });
+  });
+  it('decisions posts the digest on the Decisions issue only when it is due', () => {
+    const named = { sprintDoc: () => `${SPRINT_MD}\nQuestions: #72 "Sprint questions".\n` };
+    const asked = [issue(9, '[task] B3: y', ['lane:fixes', 'blocked'], '', [['greenbeanbot', '2026-10-21T01:00:00Z', 'Implementer: a or b? Recommended: a.']]), issue(72, 'Sprint questions', [])];
+    const { fake, writes } = io(asked, named);
+    const out = JSON.parse(run(['decisions', '--write'], fake).line);
+    expect(out).toMatchObject({ due: true, issue: 72, questions: [9], written: true });
+    expect(writes()).toEqual([{ args: ['issue', 'comment', '72', '--body-file', '-'], input: out.body }]);
+    const dry = io(asked, named);
+    expect(JSON.parse(run(['decisions'], dry.fake).line).written).toBe(false);
+    expect(dry.writes()).toEqual([]);
+    expect(JSON.parse(run(['decisions', '--write'], io(asked).fake).line).error).toMatch(/names no Decisions issue/);
   });
   it('a failing gh is an error that says stop', () => {
     const out = run(['next', 'fixes'], io(ready, { gh: () => { throw new Error('HTTP 502'); } }).fake);

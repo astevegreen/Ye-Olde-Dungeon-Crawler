@@ -8,7 +8,7 @@
 // string they can't read (sh -c, pwsh -Command, cmd, eval), a command or git subcommand held in a variable
 // or a substitution, and git aliases. Words are read as the shell reads them (bash or PowerShell, by tool).
 //   --read-only   Bash: inspection commands only (the reviewer)
-//   --file-lock   Edit|Write: the sprint never edits its own machinery or the owner's files
+//   --file-lock   Edit|Write: the sprint never edits the machinery that governs its own sessions
 // Every Bash mode also refuses what no unattended session may do: skip hooks, force or delete
 // on the remote, discard work, change gh auth, or fetch from the web.
 // Every mode refuses the GitHub plugin's write tools (mcp__plugin_github_github__*): the plugin signs in
@@ -26,11 +26,13 @@ function deny(reason) {
   process.exit(2);
 }
 
-// Paths the sprint never edits, relative to the repo or worktree root.
+// Paths the sprint never edits, relative to the repo or worktree root: what governs the sprint's own sessions
+// (settings, hooks, the sprint skills and agents, git hooks, CI, the queue and push lock, docs/sprint.md) and the
+// save format. Since 28 Oct the rest (CLAUDE.md, ARCHITECTURE.md, package.json, other skills) is open like code.
 const LOCKED = [
-  /^\.claude\//, /^\.githooks\//, /^\.github\//, /^docs\/sprint\.md$/, /^CLAUDE\.md$/, /^ARCHITECTURE\.md$/,
-  /^package(-lock)?\.json$/, /^src\/engine\/storage\/migrator\.ts$/, /^scripts\/__tests__\/(sprintGuard|shellReader)\.test\.ts$/,
-  /^scripts\/sprint\//,
+  /^\.claude\/settings[^/]*\.json$/, /^\.claude\/hooks\//, /^\.claude\/skills\/sprint-/, /^\.claude\/agents\/(implementer|reviewer)\.md$/,
+  /^\.githooks\//, /^\.github\//, /^docs\/sprint\.md$/, /^scripts\/sprint\//,
+  /^src\/engine\/storage\/migrator\.ts$/, /^scripts\/__tests__\/(sprintGuard|shellReader)\.test\.ts$/,
 ];
 
 const tool = String(input.tool_name ?? '');

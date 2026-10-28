@@ -439,11 +439,19 @@ describe('--file-lock', () => {
       expect(bash(mode, `find ${m} -maxdepth 0 -exec git -C {} commit -m x \\;`, lane)).toBe(2);
     }
   });
-  it('refuses the main checkout and the locked paths', () => {
+  it("refuses the main checkout and what governs the sprint's own sessions", () => {
     expect(edit(path.join(main, 'src/ui/hud.ts'))).toBe(2);
-    for (const locked of ['.claude/agents/implementer.md', 'docs/sprint.md', 'package.json', 'CLAUDE.md',
-      'src/engine/storage/migrator.ts', '.githooks/pre-push', 'scripts/sprint/queue-rules.mjs']) {
-      expect(edit(path.join(lane, locked))).toBe(2);
+    for (const locked of ['.claude/settings.json', '.claude/settings.local.json', '.claude/hooks/sprint-guard.mjs',
+      '.claude/skills/sprint-lane/SKILL.md', '.claude/agents/implementer.md', '.claude/agents/reviewer.md',
+      '.githooks/pre-push', '.github/workflows/deploy.yml', 'docs/sprint.md', 'scripts/sprint/queue-rules.mjs',
+      'scripts/sprint/push-lock.mjs', 'scripts/__tests__/sprintGuard.test.ts', 'src/engine/storage/migrator.ts']) {
+      expect(edit(path.join(lane, locked)), locked).toBe(2);
+    }
+  });
+  it("leaves the owner's former files open since 28 Oct: instructions, docs, other skills and agents, package.json", () => {
+    for (const open of ['CLAUDE.md', 'ARCHITECTURE.md', 'package.json', 'package-lock.json', 'docs/architecture/quality-gates.md',
+      '.claude/skills/add-content/SKILL.md', '.claude/agents/scout.md', '.claude/rules/x.md', 'scripts/check-engine-purity.ts']) {
+      expect(edit(path.join(lane, open)), open).toBe(0);
     }
   });
 });

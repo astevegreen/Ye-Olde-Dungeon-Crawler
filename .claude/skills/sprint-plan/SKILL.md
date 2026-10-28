@@ -48,15 +48,19 @@ Lanes `story` and `lore`: the "Act II: The Rot Below" section is the design, and
 bug's details.
 
 ## 2. Check it can be specified
-First read the "Sprint questions" issue (`docs/sprint.md`, Planning day): an `astevegreen` comment there that
-answers a question by number settles it, like a line of `docs/sprint.md`.
-If the item needs a product decision not written in `docs/sprint.md`, `ARCHITECTURE.md` or those answers
-(balance feel, scope, a save break, a new mechanic, a name or placement the design leaves open):
-- on the planning day (`phase` `none`): comment it on "Sprint questions" (create that issue if it is missing)
-  as `Plan: Q<next number> <ID>: <question>`, with options and a recommended answer. File nothing for the item
-  yet, and go to the next item.
-- during the window (`phase` `open`): create the issue with the Goal and one question, label it `L` and `blocked`, and go to
-  the next item.
+First read the Decisions issue, #72 "Sprint questions" (`docs/sprint.md`, Planning day): an `astevegreen`
+comment there that answers a question by number settles it, like a line of `docs/sprint.md`.
+A technical question (how to build or structure it, APIs, tooling, tests, naming, placement in the code,
+performance, refactors) is yours to decide as the architect, never the owner's: write it into the spec as
+`Decision (architect): <question>: <decision>, because <why>` and go on.
+If the item needs a design decision not written in `docs/sprint.md`, `ARCHITECTURE.md` or those answers
+(game rules, balance feel, scope, a save break, a new mechanic, a name or placement in the game the design
+leaves open):
+- on the planning day (`phase` `none`): comment it on #72 as `Plan: Q<next number> <ID>: <question>`, with
+  options and a recommended answer. File nothing for the item yet, and go to the next item.
+- during the window (`phase` `open`): create the issue with the Goal and one question, with options and
+  `Recommended: <option>, because <why>`, label it `L` and `blocked`, and go to the next item. The supervisor's
+  daily digest asks the owner.
 
 A bug item: check it still happens on today's `origin/main`. Run its repro command or steps when it has them;
 otherwise search `git log` since the report for a fix that names it. Put what you found in the spec. Already

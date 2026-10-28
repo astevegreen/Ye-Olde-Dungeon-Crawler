@@ -17,5 +17,6 @@ Check:
 - nothing outside the request's scope changed
 
 Findings: start each with [blocker] or [note], then `path:line`, what is wrong, and which rule or part of the
-request it breaks. Blockers: wrong behaviour, a broken invariant, or a missing test. Notes: real risks and missing
-edge cases; no style comments. At most 10, most important first. If nothing is wrong, answer "No findings."
+request it breaks. Blockers: wrong behaviour, a broken invariant, or a missing test. A [blocker] holds the push
+until it is fixed, so keep it for those. Notes: real risks and missing edge cases; no style comments. At most 10,
+most important first. If nothing is wrong, answer "No findings."

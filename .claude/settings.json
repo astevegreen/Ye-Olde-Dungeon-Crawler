@@ -86,13 +86,24 @@
     "deny": [
       "Read(dist/**)",
       "Read(node_modules/**)",
-      "Read(package-lock.json)",
       "Read(playwright-report/**)",
       "Read(test-results/**)",
       "Read(*.log)"
     ]
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/lockfile-read.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "matcher": "startup|clear",

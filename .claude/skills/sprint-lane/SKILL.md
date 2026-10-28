@@ -47,7 +47,8 @@ time). `null`: nothing is left; stop. Otherwise it prints the task's `issue` (`n
 and `reason`:
 - `build`: `Q move <n> in-progress`, then run the implementer with "Mode: issue. Issue: <n>. Worktree: W."
 - `fix`: `Q move <n> in-progress`, then run the implementer with "Mode: fix. Issue: <n>. Worktree: W.
-  Concerns: <concerns>".
+  Concerns: <concerns>". When its `reason` says the machine failed it, the concerns are that failure, and the
+  fix is to run the gates again on the quieter machine.
 - `resume`: a stopped session built it; its branch holds the commits. Go straight to 2.1's reviewer run,
   unless `git -C W stash list` has an entry `On sprint/<n>:`: the session also left unfinished work, so run
   the implementer as for `build`, which restores it.
@@ -66,17 +67,24 @@ Otherwise, or when the update is refused, keep its `reason` (or the refusal) as 
    message fails, or the reply shows it has lost the task (it asks which issue, or starts again from the
    spec), run a fresh implementer with "Mode: fix. Issue: <n>. Worktree: W. Concerns: <list>"; after a
    `resume` there is no builder to message, so start that fresh one at once. Then the reviewer again.
-2. Final PASS: `Q move <n> to-integrate --note '<WHAT CHANGED and PLAYER-VISIBLE lines from the hand-back>'`.
-   Concerns left: `Q move <n> held --note '<the concerns>'`.
+2. Final PASS, or only `[minor]` concerns left: `Q move <n> to-integrate --note '<WHAT CHANGED and
+   PLAYER-VISIBLE lines from the hand-back>\nMinor, shipped: <each minor concern>'` (no "Minor" line after a
+   PASS). A minor concern that is real work (a missing test, a known gap) also gets a follow-up issue,
+   `gh issue create --title "[task] <ID>-follow: <what>" --label lane:$ARGUMENTS --label sprint-ready`, its body
+   the concern with its file:line, the line `Depends on: #<n>.` and #<n>'s `Requested:` trailer; name it in the
+   note.
+   A `[blocker]` left: `Q move <n> held --note '<the blocker concerns, each with its [blocker] tag>'`. Only a
+   blocker holds work.
    Write the note in single quotes, a line break as `\n`, and ’ for an apostrophe.
-3. BLOCKED: `Q move <n> blocked`. GATE-FAILED: `Q move <n> held`. The implementer has already commented why;
-   when it has already moved the issue, the move changes nothing.
+3. BLOCKED (a design question, with a recommendation, is on the issue; the supervisor's daily digest asks the
+   owner, and you go on to other work): `Q move <n> blocked`. GATE-FAILED: `Q move <n> held`. The implementer
+   has already commented why; when it has already moved the issue, the move changes nothing.
 Then step 1 again.
 
 ## 3. Report
 When you stop, comment once on issue #19 "Sprint log", under 15 lines: the lane, the time, one line per task
-(#issue: to-integrate, held or blocked), each question the owner must answer, why you stopped, and one line
-for each wake you could not arm.
+(#issue: to-integrate, held or blocked), why you stopped, and one line for each wake you could not arm. Design
+questions reach the owner in the daily digest, never here.
 Then, if you finished at least one task this session and did not stop on a usage limit or an error,
 `RemoteTrigger` `run` the `supervisor` id `Q window` prints (load RemoteTrigger with ToolSearch): it starts the
 integrator for your work, and a fresh session for this lane when work is left, now rather than at the next hour.

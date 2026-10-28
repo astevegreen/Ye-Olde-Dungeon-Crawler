@@ -7,9 +7,9 @@
  * Usage: npm run ci:watch [-- <sha>]   (default HEAD). Exits 0 only when the run succeeded.
  */
 import { execFileSync } from 'node:child_process';
+import { deployOutcome, type Job } from './lib/deploy-outcome';
 
 const WORKFLOW = 'deploy.yml';
-const DEPLOY_STEP = 'Deploy to GitHub Pages';
 const FIND_WITHIN_MS = 3 * 60_000; // a run is listed seconds after the push lands
 const FINISH_WITHIN_MS = 30 * 60_000;
 const POLL_MS = 15_000;
@@ -19,11 +19,6 @@ interface Run {
   status: string;
   conclusion: string;
   url: string;
-}
-
-interface Job {
-  name: string;
-  steps: { name: string; conclusion: string }[];
 }
 
 function run(command: string, args: string[]): string {
@@ -62,8 +57,7 @@ async function watch(sha: string): Promise<boolean> {
   }
   const jobs = jobsOf(current);
   if (current.conclusion === 'success') {
-    const deployed = jobs.some((job) => job.steps.some((step) => step.name === DEPLOY_STEP && step.conclusion === 'success'));
-    console.log(`${WORKFLOW}: success${deployed ? ', deployed' : ', not deployed: a newer push to main deploys instead'}`);
+    console.log(`${WORKFLOW}: success, ${deployOutcome(jobs)}`);
     return true;
   }
   const failedSteps = jobs

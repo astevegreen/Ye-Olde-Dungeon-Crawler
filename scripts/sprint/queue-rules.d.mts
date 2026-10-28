@@ -31,6 +31,8 @@ export interface SprintDoc {
   window: { start: Date; end: Date } | null;
   lanes: { name: string; worktree: string }[];
   logIssue: number;
+  /** The standing Decisions issue (`#<n> "Sprint questions"`), or null when the doc names none. */
+  decisionsIssue: number | null;
   preSprintTag: string | null;
   backlog: Record<string, BacklogItem[]>;
 }
@@ -66,7 +68,9 @@ export function normalizeIssues(raw: RawIssue[]): Issue[];
 export function matchesId(issue: Issue, id: string): boolean;
 export function bodyRefs(body: string): number[];
 export function ownerReply(issue: Issue): Issue['comments'][number] | null;
-export function heldRetry(issue: Issue, freeMb: number): { retry: boolean; why: string; concerns?: string };
+export const MACHINE_RETRIES: number;
+/** `owner`: whether it waits for the owner (false while it waits only for the machine). */
+export function heldRetry(issue: Issue, freeMb: number): { retry: boolean; owner: boolean; why: string; concerns?: string | null };
 
 export interface Deploy {
   headSha: string;
@@ -118,10 +122,12 @@ export interface MovePlan {
 }
 export function planMove(world: World, number: number, to: string, note?: string | null): MovePlan;
 
+export function answerTo(world: World, issue: Issue): (Issue['comments'][number] & { on: number }) | null;
 export function statusBlock(
   world: World,
   options?: { also?: string[]; oldBody?: string },
 ): { body: string; needsYou: string[]; new: string[] };
+export function decisionsDigest(world: World): { due: boolean; issue: number; questions: number[]; why: string; body: string };
 
 export interface QueueIO {
   sprintDoc(): string;

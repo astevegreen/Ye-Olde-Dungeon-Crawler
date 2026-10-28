@@ -36,16 +36,36 @@ Each commit's trailer quotes the permission it rests on:
 - a soak finding: `Requested: "A headline feature + polish (Recommended)" (sprint S<n>, soak finding)`
 - a hunt finding: `Requested: "A headline feature + polish (Recommended)" (sprint S<n>, hunt finding)`
 
-## What still stops a task (unchanged)
+## What still stops a task
 
-- **Product decisions are the owner's**: balance feel, scope, a save-format break (`migrator.ts`,
+The owner's gates since 28 Oct ("Auto; audit holds loosening", "Design only, daily digest"): the owner keeps
+product and design, money and identity, and destruction; CI, the reviewer and agy decide the rest, with
+`git revert` as the safety net.
+
+- **Design decisions are the owner's**: game rules, balance feel, scope, a save-format break (`migrator.ts`,
   `CURRENT_SCHEMA_VERSION`), new mechanics, and a name or placement the design leaves open. A task that needs
-  one: comment one question on the issue, label it `blocked`, and move on. Never invent a rule.
+  one: comment one question on the issue, with options and a recommended answer, label it `blocked`, and move
+  on to other work. Never invent a rule. The supervisor puts every open question in one daily digest on the
+  Decisions issue, #72 "Sprint questions" (Planning day).
+- **Technical questions are never asked**: how to build or structure it, APIs, tooling, tests, naming,
+  placement in the code, performance, refactors, architecture-doc updates. The Opus session that meets one
+  (implementer or plan) decides it as the architect, comments `Decision (architect): <question>: <decision>,
+  because <why>` on the issue, and goes on.
+- **`held` is for a `[blocker]` only.** A `[minor]` concern ships, named in the hand-over note, or becomes a
+  follow-up issue when it is real work. A machine failure (a time-out, memory running out, a loaded host)
+  retries by itself once free memory is over the floor, whatever the newest comment says, and never waits for
+  the owner; after three retries the time-out counts as the code's.
 - **§8.1 protected files**: only exception 1 (a confirmed bug, shown by a test that fails without the fix),
-  and never `migrator.ts`. Exceptions 2–5 are not available to the sprint.
-- **Locked paths** (`.claude/hooks/sprint-guard.mjs --file-lock`): `.claude/`, `.githooks/`, `.github/`,
-  `scripts/sprint/`, this file, `CLAUDE.md`, `ARCHITECTURE.md`, `package.json`, `package-lock.json`, `migrator.ts`. No new
-  dependencies.
+  and never `migrator.ts`. Exceptions 2–5 are not available to the sprint: 4 and 5 need a second look, which
+  sprint sessions don't run.
+- **Locked paths** (`.claude/hooks/sprint-guard.mjs --file-lock`), what governs the sprint's own sessions:
+  `.claude/settings*.json`, `.claude/hooks/`, the sprint skills and agents (`.claude/skills/sprint-*`,
+  `.claude/agents/implementer.md`, `.claude/agents/reviewer.md`), `.githooks/`, `.github/`, `scripts/sprint/`,
+  this file, and `migrator.ts`. `CLAUDE.md`, `ARCHITECTURE.md`, `package.json`, the other skills and agents,
+  and the docs are open like any code. No new dependencies.
+- **Rails** (`scripts/second-look.mjs` lists them: hooks, guards, gates, git hooks, CI workflows,
+  `.claude/settings*.json`, the push lock): a task touching one lands only once the rail audit says it loosens
+  nothing (`sprint-integrate`, step 1.2).
 - Every `ARCHITECTURE.md` invariant, every hook, and the gates. Hooks are never skipped.
 - Only the integrator pushes, and only `git push origin HEAD:main`.
 
@@ -77,7 +97,8 @@ Both Act II lanes edit `src/content/cotw/index.ts`: keep each change to its own 
    nothing up.
 2. `sprint-lane <lane>` takes one at a time: the `implementer` builds it on branch `sprint/<issue>` from
    `origin/main` in the lane's worktree and commits (the pre-commit hook gates each commit); the `reviewer`
-   reads `git diff origin/main...sprint/<issue>`. PASS: label `to-integrate`.
+   reads `git diff origin/main...sprint/<issue>`. PASS, or only `[minor]` concerns left after one fix round:
+   label `to-integrate`; a `[blocker]` left: `held`.
 3. `sprint-integrate` takes up to three `to-integrate` issues per push, oldest first: cherry-picks each
    branch onto `origin/main` as its own commits, runs the gates once, pushes, watches CI, closes the issues
    and logs what players will see. A conflict sends back only the issue that caused it; a red gate or a red
@@ -354,7 +375,7 @@ mechanics, renaming spells.
   issues:
   - `has-work "<session title>"` for the supervisor;
   - `next <lane>` and `move <n> <state>` for the lanes;
-  - `status` for the status block;
+  - `status` for the status block, and `decisions` for the daily digest of design questions;
   - the cue's `window`, `started`, `sessions`, `lock`, `resume` and `identity`.
 
   It reads the issues with `gh` and this file as pushed to `origin/main`, and prints one line of JSON. A
@@ -395,11 +416,13 @@ review starts from numbers instead of transcripts:
   it reproduces on `origin/main` or is marked "reproduce or close", and no item contradicts another or "What
   still stops a task". Its concerns are fixed in this file first.
 - Plan sessions spec each lane's first 6 issues (`/sprint-plan <lane>`, every lane but research). Every design
-  question goes in one issue, "Sprint questions": one numbered question per comment, with options and a
-  recommended answer. The owner answers them in one sitting before the window opens, by number; plan sessions
-  then file the items those answers settle.
-- During the window, a new question goes on its task issue as usual, since lanes look for the answer there.
-  The status block links it under "Needs you".
+  question goes in one issue, the Decisions issue #72 "Sprint questions": one numbered question per comment,
+  with options and a recommended answer. The owner answers them in one sitting before the window opens, by
+  number; plan sessions then file the items those answers settle.
+- During the window, a design question goes on its task issue, labelled `blocked`, and the lane works on other
+  issues. Once a day at most, the supervisor posts every open one on #72 in one digest with one @-mention
+  (`queue.mjs decisions --write`). The owner answers there, one line per question (`#<issue> <answer>`), or
+  on the task issue; only the owner's own comments answer, and the queue reads both places.
 
 ## Preflight (the dry run checks most of it; the owner fixes what it finds)
 

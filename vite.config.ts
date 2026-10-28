@@ -11,7 +11,7 @@ declare const process: any;
 // handoff notes and the pre-push hook's sprint lock. About half the suite's time, for code most
 // commits never touch.
 const TOOLING_TESTS = [
-  'scripts/__tests__/{commitMsg,encapsulationGateWidening,engineCreepGate,gateStamp,handoffNotes,mainScopeGateWidening,purityGatePatterns,pushLock}.test.ts',
+  'scripts/__tests__/{commitMsg,deployScope,encapsulationGateWidening,engineCreepGate,gateStamp,handoffNotes,mainScopeGateWidening,purityGatePatterns,pushLock}.test.ts',
 ];
 
 // Shown on the title screens (src/ui/branding.ts), so the UI never claims a version the build isn't.

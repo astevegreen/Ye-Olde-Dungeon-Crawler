@@ -60,7 +60,7 @@ issue, `B` is `sprint/<n>`.
       `docs/sprint.md` ("What still stops a task"), and every commit in `git -C I log --format=%B <base>..B`
       must carry a `Requested: ` line. Either fails: send it back (step 3) with "[blocker]" before the why, so
       it waits for the owner.
-   3. The rail audit: run `node C:/Antigravity/YODC-integrate/scripts/second-look.mjs --rails-only --range <base>..B "<B's Requested: line>"`
+   3. The rail audit: run `node C:/Antigravity/YODC-integrate/scripts/second-look.mjs --rails-only --range <base>..B "sprint issue #<n>"`
       on a line of its own with `run_in_background: true`, and wait for its notification. A branch that touches
       no rail (`RAILS` in `scripts/lib/second-look.mjs`: gates, their allowlists and configs, `package.json`)
       ends at once; one that does gets a deep agy review asking whether it loosens a check. Its last line:

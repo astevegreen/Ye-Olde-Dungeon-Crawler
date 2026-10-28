@@ -63,7 +63,7 @@ product and design, money and identity, and destruction; CI, the reviewer and ag
   `.claude/agents/implementer.md`, `.claude/agents/reviewer.md`), `.githooks/`, `.github/`, `scripts/sprint/`,
   this file, and `migrator.ts`. `CLAUDE.md`, `ARCHITECTURE.md`, `package.json`, the other skills and agents,
   and the docs are open like any code. No new dependencies.
-- **Rails** (`scripts/second-look.mjs` lists them: hooks, guards, gates, git hooks, CI workflows,
+- **Rails** (`RAILS` in `scripts/lib/second-look.mjs`: hooks, guards, gates, git hooks, CI workflows,
   `.claude/settings*.json`, the push lock): a task touching one lands only once the rail audit says it loosens
   nothing (`sprint-integrate`, step 1.2).
 - Every `ARCHITECTURE.md` invariant, every hook, and the gates. Hooks are never skipped.

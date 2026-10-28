@@ -7,6 +7,7 @@ import {
   MEMORY_FLOOR_MB,
   SESSION_MB,
   TRIGGERS_FILE,
+  WAKE_FILE,
   WINDOW_FILE,
   answerTo,
   bodyRefs,
@@ -21,6 +22,7 @@ import {
   parseSprintDoc,
   planMove,
   researchQueue,
+  resetFromTranscript,
   run,
   sessionTitles,
   statusBlock,
@@ -642,24 +644,79 @@ describe('the cue (window, ledger, lock)', () => {
     expect(q(['window', 'archived'], noGh(local, new Date('2026-10-25T04:00:00Z'))).out).toMatchObject({ phase: 'after', archiver: null });
     expect(file(WINDOW_FILE)).toMatchObject({ supervisor: 'trig_sup', archiver: null, end: '2026-10-25T03:00:00.000Z', stoppedBy: 'sprint-stop' });
   });
-  it('wake moves the one-shot supervisor to 2 minutes past a usage-limit reset, but not just before the :22 run', () => {
+  it('wake arms a waiter to fire the supervisor 2 minutes past a usage-limit reset, but not just before the :22 run', () => {
     const { local } = memory({});
     q(['window', 'start', '40', '--environment', 'env_01SNfen'], noGh(local));
-    const wake = (at?: string, now = NOW) => q(['wake', ...(at ? ['--resets-at', String(Date.parse(at) / 1000)] : [])], noGh(local, now));
-    expect(wake('2026-10-25T01:30:00Z').out).toMatchObject({ arm: false, reason: expect.stringMatching(/^no wake on record/) });
-    q(['window', 'ids', '--wake', 'trig_wake'], noGh(local));
-    expect(q(['window'], noGh(local)).out.wake).toBe('trig_wake');
-    expect(wake('2026-10-25T01:30:00Z')).toEqual({ code: 0, out: { arm: true, at: '2026-10-25T01:32:00.000Z', wake: 'trig_wake', reason: 'the usage limit resets at 2026-10-25T01:30Z' } });
+    const wake = (at?: string, now = NOW) => {
+      local.remove(WAKE_FILE);
+      return q(['wake', ...(at ? ['--resets-at', String(Date.parse(at) / 1000)] : [])], noGh(local, now));
+    };
+    expect(wake('2026-10-25T01:30:00Z').out).toMatchObject({ arm: false, reason: 'no supervisor on record' });
+    q(['window', 'ids', '--supervisor', 'trig_sup'], noGh(local));
+    expect(wake('2026-10-25T01:30:00Z')).toEqual({ code: 0, out: { arm: true, at: '2026-10-25T01:32:00.000Z', supervisor: 'trig_sup', reason: 'the usage limit resets at 2026-10-25T01:30Z' } });
     // A reset on a part minute rounds up, and 02:23 is an hour from the next run.
     expect(wake('2026-10-25T02:20:30Z').out).toMatchObject({ arm: true, at: '2026-10-25T02:23:00.000Z' });
     expect(wake('2026-10-25T02:05:00Z').out).toMatchObject({ arm: false, reason: expect.stringMatching(/2026-10-25T02:22Z run follows/) });
     expect(wake('2026-10-25T02:20:00Z').out).toMatchObject({ arm: false });
     expect(wake('2026-10-24T22:00:00Z').out).toMatchObject({ arm: false, reason: expect.stringMatching(/has passed/) });
     expect(wake('2026-10-26T15:00:00Z').out).toMatchObject({ arm: false, reason: expect.stringMatching(/after the window ends/) });
-    expect(wake().out).toMatchObject({ arm: false, reason: expect.stringMatching(/no rate_limit_info.resetsAt/) });
+    expect(wake().out).toMatchObject({ arm: false, reason: expect.stringMatching(/names no reset time/) });
     expect(q(['wake', '--resets-at', 'soon'], noGh(local)).code).toBe(2);
     q(['window', 'stop'], noGh(local, new Date('2026-10-25T00:00:00Z')));
     expect(wake('2026-10-25T01:30:00Z', new Date('2026-10-25T00:01:00Z')).out).toMatchObject({ arm: false, reason: 'no window is open' });
+  });
+  it('wake reads the reset from the stopped session\'s transcript, or else from the error, and arms one waiter per reset', () => {
+    const { local, file } = memory({});
+    q(['window', 'start', '40', '--environment', 'env_01SNfen'], noGh(local));
+    q(['window', 'ids', '--supervisor', 'trig_sup'], noGh(local));
+    // As 25 Oct's lane transcript has it: the error entry carries the reset; ordinary entries carry none.
+    const entry = (resetsAt: number) => JSON.stringify({
+      type: 'assistant', apiError: 'usage_limit_reached', isApiErrorMessage: true,
+      apiErrorParams: { rate_limit_info: { status: 'rejected', resetsAt, rateLimitType: 'five_hour' } },
+      quotaLimits: { status: 'rejected', resetsAt, rateLimitType: 'five_hour' },
+      message: { content: [{ type: 'text', text: "You've hit your session limit · resets 8:30pm (America/New_York)" }] },
+    });
+    const ordinary = JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'a "resetsAt" in prose' }] } });
+    const reset = Date.parse('2026-10-25T00:30:00Z') / 1000;
+    const transcript = [ordinary, entry(reset - 36_000), ordinary, entry(reset), ordinary].join('\n');
+    const reading = (text: string): QueueIO => ({ ...noGh(local), readFile: () => text });
+    const message = "You've hit your session limit · resets 8:30pm (America/New_York)";
+
+    expect(resetFromTranscript(transcript)).toBe(reset);
+    expect(resetFromTranscript(ordinary)).toBeNull();
+    expect(q(['wake', '--transcript', 't.jsonl'], reading(transcript)).out).toMatchObject({ arm: true, at: '2026-10-25T00:32:00.000Z', supervisor: 'trig_sup' });
+    expect(file(WAKE_FILE)).toEqual({ at: '2026-10-25T00:32:00.000Z', resetsAt: reset });
+    // The other lanes stop on the same limit: the waiter is already armed.
+    expect(q(['wake', '--transcript', 't.jsonl', '--message', message], reading(transcript)).out).toMatchObject({ arm: false, reason: expect.stringMatching(/already fires the supervisor at 2026-10-25T00:32Z/) });
+
+    // A transcript not yet written, or holding only an earlier limit, falls back to the time the error names.
+    local.remove(WAKE_FILE);
+    expect(q(['wake', '--transcript', 't.jsonl', '--message', message], reading(ordinary)).out).toMatchObject({ arm: true, at: '2026-10-25T00:32:00.000Z' });
+    local.remove(WAKE_FILE);
+    expect(q(['wake', '--transcript', 't.jsonl', '--message', message], reading(entry(reset - 36_000))).out).toMatchObject({ arm: true, at: '2026-10-25T00:32:00.000Z' });
+    local.remove(WAKE_FILE);
+    expect(q(['wake', '--transcript', 't.jsonl', '--message', 'API Error: Rate limit reached'], reading('')).out).toMatchObject({ arm: false, reason: expect.stringMatching(/names no reset time/) });
+
+    // A later limit replaces a waiter left from an earlier one.
+    local.write(WAKE_FILE, { at: '2026-10-24T20:02:00.000Z', resetsAt: reset - 16_800 });
+    expect(q(['wake', '--resets-at', String(reset)], noGh(local)).out).toMatchObject({ arm: true });
+    expect(file(WAKE_FILE)).toMatchObject({ at: '2026-10-25T00:32:00.000Z' });
+  });
+  it('wake --due fires the armed waiter once, and only while the window is open', () => {
+    const { local, file } = memory({});
+    q(['window', 'start', '40', '--environment', 'env_01SNfen'], noGh(local));
+    q(['window', 'ids', '--supervisor', 'trig_sup'], noGh(local));
+    const due = (at: string, now = new Date('2026-10-25T00:32:00Z')) => q(['wake', '--due', at], noGh(local, now)).out;
+    const arm = () => q(['wake', '--resets-at', String(Date.parse('2026-10-25T00:30:00Z') / 1000)], noGh(local));
+    arm();
+    expect(due('2026-10-25T01:00:00.000Z')).toMatchObject({ fire: false, reason: expect.stringMatching(/waiter for 2026-10-25T00:32:00.000Z replaced this one/) });
+    expect(due('2026-10-25T00:32:00.000Z')).toEqual({ fire: true, supervisor: 'trig_sup', reason: 'armed for 2026-10-25T00:32:00.000Z' });
+    expect(file(WAKE_FILE)).toBeUndefined();
+    expect(due('2026-10-25T00:32:00.000Z')).toMatchObject({ fire: false, reason: 'no waiter is armed; another fired' });
+    // The owner stopped the sprint while it waited.
+    arm();
+    q(['window', 'stop'], noGh(local, new Date('2026-10-25T00:10:00Z')));
+    expect(due('2026-10-25T00:32:00.000Z')).toMatchObject({ fire: false, reason: 'no window is open' });
   });
   it('an open window with no environment starts and archives nothing', () => {
     const { local } = memory({ [WINDOW_FILE]: { ...OCTOBER_WINDOW, start: '2026-10-24T20:00:00.000Z', end: '2026-10-25T20:00:00.000Z', environment: null } });

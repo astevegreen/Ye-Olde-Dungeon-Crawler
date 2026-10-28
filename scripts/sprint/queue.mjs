@@ -6,7 +6,10 @@
  *   window                            {phase, window, environment, supervisor, archiver, wake, stoppedBy, logIssue, titles}
  *   window start [hours] --environment <env> [--dry-run]   opens the window now (/sprint-start)
  *   window ids [--supervisor <trig>] [--archiver <trig>] [--wake <trig>]   records the scheduled tasks' ids
- *   wake [--resets-at <epoch s>]      {arm, at, wake, reason}: move the wake supervisor to after a usage limit
+ *   wake --transcript <file> [--message <text>] | --resets-at <epoch s>
+ *                                     {arm, at, supervisor, reason}: arm the waiter that fires the supervisor
+ *                                     after a usage limit (.claude/hooks/usage-limit-wake.mjs)
+ *   wake --due <at>                   {fire, supervisor, reason}: the waiter's check at its time
  *   window stop | window archived     ends the window now (/sprint-stop); clears the archiver once it is off
  *   started "<title>" <trig>          records a trigger the supervisor created
  *   sessions [--all]                  {title: trigger id or null}; --all lists every one, newest first

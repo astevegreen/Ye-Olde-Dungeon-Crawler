@@ -53,13 +53,6 @@ and `reason`:
   unless `git -C W stash list` has an entry `On sprint/<n>:`: the session also left unfinished work, so run
   the implementer as for `build`, which restores it.
 
-**Wake.** Each time you take an issue, whatever its mode, before the implementer or the reviewer runs:
-`get_session` with no id (load it and `update_trigger` with ToolSearch), then
-`Q wake --resets-at <its external_metadata.rate_limit_info.resetsAt>`, or `Q wake` alone when it has none.
-`"arm": true`: `update_trigger` the `wake` id it prints with run_once_at its `at` and enabled `true`, so
-that if a usage limit stops this session, a supervisor restarts the lanes 2 minutes after the reset.
-Otherwise, or when the update is refused, keep its `reason` (or the refusal) as one line for step 3 and go on.
-
 ## 2. Review and hand over
 1. STATUS DONE (or `resume`): run the reviewer with "Issue <n>, branch sprint/<n>."
    CONCERNS: send them to the implementer that built it, with `SendMessage` (load it with ToolSearch) to the
@@ -83,7 +76,7 @@ Then step 1 again.
 
 ## 3. Report
 When you stop, comment once on issue #19 "Sprint log", under 15 lines: the lane, the time, one line per task
-(#issue: to-integrate, held or blocked), why you stopped, and one line for each wake you could not arm. Design
+(#issue: to-integrate, held or blocked), and why you stopped. Design
 questions reach the owner in the daily digest, never here.
 Then, if you finished at least one task this session and did not stop on a usage limit or an error,
 `RemoteTrigger` `run` the `supervisor` id `Q window` prints (load RemoteTrigger with ToolSearch): it starts the

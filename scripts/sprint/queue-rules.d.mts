@@ -7,6 +7,7 @@ export const MEMORY_FLOOR_MB: number;
 export const WINDOW_FILE: string;
 export const TRIGGERS_FILE: string;
 export const LOCK_FILE: string;
+export const WAKE_FILE: string;
 export const DEFAULT_HOURS: number;
 export const SESSION_MB: number;
 export const STATES: readonly string[];
@@ -147,3 +148,6 @@ export interface QueueIO {
   readFile(file: string): string;
 }
 export function run(argv: string[], io: QueueIO): { code: number; line: string };
+
+/** The epoch seconds a usage-limit stop resets at, from the stopped session's transcript; null when none. */
+export function resetFromTranscript(text: string): number | null;

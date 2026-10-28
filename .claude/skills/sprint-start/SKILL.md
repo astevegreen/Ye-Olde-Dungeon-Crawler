@@ -117,15 +117,15 @@ run stops and gives its report (step 6).
    3. Then `Q window ids --archiver <its trig_ id>`.
    4. When the trigger create fails, the sprint still starts: "no archiver, so finished sessions pile up;
       archive them by hand".
-3. **Wake:** a usage limit stops every session, and the supervisor's own runs fail until it resets. So each
-   lane, as it takes an issue, moves this one-shot supervisor to 2 minutes past the reset (`Q wake`).
+3. **Wake:** a one-shot supervisor at the window's end, which starts the drain. (A usage limit needs nothing
+   here: the usage-limit hook fires the hourly supervisor 2 minutes past the reset; docs/sprint.md, Machinery.)
    1. `create_trigger` with name `YODC sprint supervisor wake`, run_once_at the `end` `Q window start`
       printed (in RFC3339, seconds and all: at the window's end it starts the drain), prompt
       `/sprint-supervisor`, create_new_session_on_fire `true`, the same environment_id, notifications `{}`
       and initiation `human_request`, with no `connectors`.
    2. Then `Q window ids --wake <its trig_ id>`.
-   3. When the create fails, the sprint still starts: "no wake, so after a usage limit lanes wait for the
-      hourly supervisor".
+   3. When the create fails, the sprint still starts: "no wake, so the drain waits for the supervisor's next
+      hourly run after the window ends".
 
 ## 5. Go
 `fire_trigger` the supervisor, so the lanes start now rather than at minute 22. Then write the step 6 lines

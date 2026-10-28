@@ -6,7 +6,7 @@
  * The cue's state (the window, the trigger ledger, the supervisor's lock) is this computer's, read and
  * written through `io.local`. Types: queue-rules.d.mts.
  */
-import { resumeAfter } from './usage-limit.mjs';
+import { namedReset, resumeAfter } from './usage-limit.mjs';
 
 /** Sprint sessions comment as the bot; only the owner's own account answers for the owner. */
 export const OWNER = 'astevegreen';
@@ -133,10 +133,12 @@ export function parseSprintDoc(text) {
 //   sprint-triggers.json   [{title, id, at}]: every trigger the supervisor created, so it finds a session by
 //                          id: RemoteTrigger's list shows only the account's newest 20, and three sprints share it
 //   sprint-supervisor.lock {at}: one supervisor run at a time, whether the hour or a stopping session fired it
+//   sprint-wake.json       {at, resetsAt}: the one waiter that fires the supervisor after a usage limit
 
 export const WINDOW_FILE = 'sprint-window.json';
 export const TRIGGERS_FILE = 'sprint-triggers.json';
 export const LOCK_FILE = 'sprint-supervisor.lock';
+export const WAKE_FILE = 'sprint-wake.json';
 /** /sprint-start's window when it names no hours, and the longest it opens. */
 export const DEFAULT_HOURS = 40;
 const MAX_HOURS = 96;
@@ -253,26 +255,63 @@ const WAKE_DELAY = 2 * 60_000;
 const WAKE_QUIET = 15 * 60_000;
 
 /**
- * `wake --resets-at <epoch s>`: when a usage limit stops every session, no supervisor run can start until
- * it resets, so a lane taking an issue moves the window's one-shot "wake" supervisor to 2 minutes past the
- * reset `get_session` names. Not when the supervisor's own :22 run follows within 15 minutes: two
- * supervisors at once can start a lane twice. Prints {arm, at, wake, reason}; `at` is for `run_once_at`.
+ * The epoch seconds a usage-limit stop resets at, from the stopped session's transcript: Claude Code records
+ * the rejected request's `quotaLimits` (or `apiErrorParams.rate_limit_info`) on its error entry, and on no
+ * other. The last such entry; null when there is none.
  */
-function wakeCommand(w, now, resetsAt) {
-  const no = (reason) => ({ arm: false, at: null, wake: w?.wake ?? null, reason });
+export function resetFromTranscript(text) {
+  const lines = String(text ?? '').split(/\r?\n/);
+  for (let k = lines.length - 1; k >= 0; k--) {
+    if (!lines[k].includes('"resetsAt"')) continue;
+    let entry;
+    try {
+      entry = JSON.parse(lines[k]);
+    } catch {
+      continue;
+    }
+    const info = entry?.quotaLimits ?? entry?.apiErrorParams?.rate_limit_info;
+    if (entry?.apiError && info?.status === 'rejected' && Number.isInteger(info.resetsAt)) return info.resetsAt;
+  }
+  return null;
+}
+
+/**
+ * `wake`: a usage limit stops every session, and no supervisor run can start until it resets. Claude Code's
+ * StopFailure hook (.claude/hooks/usage-limit-wake.mjs) passes the stopped session's transcript and error;
+ * this reads the reset and arms one waiter (scripts/sprint/wake-waiter.mjs) to fire the supervisor 2 minutes
+ * past it. Not when the supervisor's own :22 run follows within 15 minutes: two supervisors at once can start
+ * a lane twice. Several sessions stop on one limit, so a reset already armed arms nothing. Prints
+ * {arm, at, supervisor, reason}, with the waiter's claim to write.
+ */
+function wakeCommand(w, now, resetsAt, armed) {
+  const no = (reason) => ({ out: { arm: false, at: null, supervisor: w?.supervisor ?? null, reason }, writes: [] });
   if (phaseOf(w, now) !== 'open') return no('no window is open');
-  if (!w.wake) return no('no wake on record; the hourly supervisor covers a usage limit');
-  if (resetsAt === undefined) return no('get_session gave no rate_limit_info.resetsAt; the hourly supervisor covers a usage limit');
-  const seconds = Number(resetsAt);
-  if (!Number.isInteger(seconds) || seconds <= 0) throw refuse(`--resets-at "${resetsAt}" is not epoch seconds`, 'Pass rate_limit_info.resetsAt from get_session as it is.');
-  const at = new Date(Math.ceil((seconds * 1000 + WAKE_DELAY) / 60_000) * 60_000);
-  if (at <= now) return no(`the reset at ${iso(new Date(seconds * 1000))} has passed`);
+  if (!w.supervisor) return no('no supervisor on record');
+  if (resetsAt === null) return no('the stop names no reset time; the hourly supervisor covers it');
+  const at = new Date(Math.ceil((resetsAt * 1000 + WAKE_DELAY) / 60_000) * 60_000);
+  if (at <= now) return no(`the reset at ${iso(new Date(resetsAt * 1000))} has passed`);
   if (at > w.end) return no(`${iso(at)} is after the window ends`);
   const run = new Date(at);
   run.setUTCMinutes(SUPERVISOR_MINUTE, 0, 0);
   if (run < at) run.setUTCHours(run.getUTCHours() + 1);
   if (run - at <= WAKE_QUIET) return no(`the supervisor's ${iso(run)} run follows ${iso(at)} within 15 minutes`);
-  return { arm: true, at: at.toISOString(), wake: w.wake, reason: `the usage limit resets at ${iso(new Date(seconds * 1000))}` };
+  if (armed?.at === at.toISOString()) return no(`a waiter already fires the supervisor at ${iso(at)}`);
+  return {
+    out: { arm: true, at: at.toISOString(), supervisor: w.supervisor, reason: `the usage limit resets at ${iso(new Date(resetsAt * 1000))}` },
+    writes: [[WAKE_FILE, { at: at.toISOString(), resetsAt }]],
+  };
+}
+
+/**
+ * `wake --due <at>`: the waiter asks at its time whether to fire. Only the waiter armed for that time fires,
+ * once, and only while the window is open; it then checks the supervisor is still switched on.
+ */
+function wakeDue(w, now, at, armed) {
+  const no = (reason) => ({ fire: false, supervisor: w?.supervisor ?? null, reason });
+  if (armed?.at !== at) return no(armed ? `the waiter for ${armed.at} replaced this one` : 'no waiter is armed; another fired');
+  if (phaseOf(w, now) !== 'open') return no('no window is open');
+  if (!w.supervisor) return no('no supervisor on record');
+  return { fire: true, supervisor: w.supervisor, reason: `armed for ${at}` };
 }
 
 /**
@@ -815,7 +854,7 @@ export function decisionsDigest(world) {
 // --- the command line ----------------------------------------------------------------------------------
 
 const USAGE = [
-  'Usage: queue.mjs window [start [hours] --environment <env> [--dry-run] | ids [--supervisor <trig>] [--archiver <trig>] [--wake <trig>] | stop | archived] | wake [--resets-at <epoch s>]',
+  'Usage: queue.mjs window [start [hours] --environment <env> [--dry-run] | ids [--supervisor <trig>] [--archiver <trig>] [--wake <trig>] | stop | archived] | wake [--resets-at <epoch s> | --transcript <file> [--message <text>] | --due <at>]',
   'started "<session title>" <trig> | sessions [--all] | lock | unlock | resume --log <file> --last-event <ISO> | identity',
   'has-work "<session title>" [--starting <n>] | next <lane> [--taken <n,n>] | move <n> <state> [--note \'<text>\'] | status [--write] [--also \'<line>\']... | decisions [--write]',
 ].join(' | ');
@@ -859,7 +898,34 @@ function cueCommand(command, words, f, doc, w, io) {
       hours: words[1], environment: last('environment'), supervisor: last('supervisor'), archiver: last('archiver'), wake: last('wake'), dryRun: Boolean(f['dry-run']),
     }));
   }
-  if (command === 'wake') return done(wakeCommand(w, now, last('resets-at')));
+  if (command === 'wake') {
+    const armed = io.local.read(WAKE_FILE);
+    if (last('due')) {
+      const out = wakeDue(w, now, last('due'), armed);
+      if (armed?.at === last('due')) io.local.remove(WAKE_FILE);
+      return done(out);
+    }
+    let resetsAt = null;
+    if (last('resets-at') !== undefined) {
+      resetsAt = Number(last('resets-at'));
+      if (!Number.isInteger(resetsAt) || resetsAt <= 0) throw refuse(`--resets-at "${last('resets-at')}" is not epoch seconds`, 'Pass the reset as epoch seconds.');
+    } else {
+      // The transcript is exact, but Claude Code writes it a moment behind: an entry from an earlier limit, or
+      // none yet, falls back to the time the error names.
+      if (last('transcript')) {
+        try {
+          resetsAt = resetFromTranscript(io.readFile(last('transcript')));
+        } catch {
+          resetsAt = null;
+        }
+      }
+      if (resetsAt === null || resetsAt * 1000 <= now.getTime()) {
+        const named = namedReset(last('message'), now.getTime());
+        resetsAt = named === null ? null : Math.round(named / 1000);
+      }
+    }
+    return apply(wakeCommand(w, now, resetsAt, armed));
+  }
   if (command === 'started') return apply(recordStart(doc, w, readLedger(io.local), now, words[0], words[1]));
   if (command === 'sessions') return done(sessions(doc, w, readLedger(io.local), { all: Boolean(f.all) }));
   if (command === 'lock') {

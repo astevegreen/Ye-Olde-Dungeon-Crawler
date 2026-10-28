@@ -58,6 +58,18 @@ function resetAt(m, zone, last) {
 
 const iso = (t) => new Date(t).toISOString().replace(/:\d{2}\.\d{3}Z$/, 'Z');
 
+/** The reset a usage-limit error names, as epoch ms, the first after `last`; null when it names none I can read. */
+export function namedReset(text, last) {
+  if (!LIMIT.test(String(text ?? ''))) return null;
+  const m = RESET.exec(text);
+  if (!m) return null;
+  try {
+    return resetAt(m, m[6], last);
+  } catch {
+    return null; // a zone Intl doesn't know
+  }
+}
+
 /**
  * `{start, reason, after?, restartAt?}`: `after` is the reset, and `start` stays false until `restartAt`, 2
  * minutes later. `lastEventAt` is the run's last event; a run that ended any other way starts at once.
@@ -66,18 +78,9 @@ export function resumeAfter(text, { lastEventAt, now = new Date() } = {}) {
   const last = new Date(lastEventAt ?? Number.NaN).getTime();
   if (Number.isNaN(last)) throw new Error(`--last-event "${lastEventAt ?? ''}" is not a time; give the run's last_event_at`);
   if (!LIMIT.test(String(text ?? ''))) return { start: true, reason: 'the run did not stop on a usage limit' };
-  const m = RESET.exec(text);
-  let after = null;
-  let named = false;
-  if (m) {
-    try {
-      after = resetAt(m, m[6], last);
-      named = after !== null;
-    } catch {
-      after = null; // a zone Intl doesn't know: wait the hour instead
-    }
-  }
-  after ??= last + HOUR;
+  let after = namedReset(text, last);
+  const named = after !== null;
+  after ??= last + HOUR; // no reset to read: wait the hour instead
   const start = now.getTime() >= after + MARGIN;
   const why = named
     ? `usage limit; resets ${iso(after)}`

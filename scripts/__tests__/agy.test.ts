@@ -9,6 +9,7 @@ import {
   ORDER,
   SONNET,
   askFirstAvailable,
+  askModel,
   buildPrompt,
   byLine,
   diffStats,
@@ -211,5 +212,38 @@ describe('talking to agy', () => {
         reply({ status: 'SUCCESS', response: 'partial' }, '[agy] print timeout after 10m0s with turn in progress'),
       ),
     ).toThrow('the model ran out of time (10m0s) before finishing its answer');
+  });
+
+  // The reply agy gave on 2026-10-28 when a model ran a command: success, no answer, the refusal named.
+  const REFUSED = {
+    conversation_id: 'c-1',
+    status: 'SUCCESS',
+    response: '',
+    denied_actions: [{ action: 'command', display_name: 'RunCommand' }],
+  };
+  const runs = (...replies: object[]) => {
+    const asked: string[][] = [];
+    const run = (args: string[]) => {
+      asked.push(args);
+      return { status: 0, stdout: JSON.stringify(replies[asked.length - 1]), stderr: '' };
+    };
+    return { run, asked };
+  };
+
+  it('resumes a run cut off for a refused command once, in the same conversation, and returns its answer', () => {
+    const { run, asked } = runs(REFUSED, { status: 'SUCCESS', response: 'LOOSENS: no\n' });
+    expect(askModel(run, 'Audit this.', OPUS, ['--add-dir', 'C:/tmp'])).toBe('LOOSENS: no');
+    expect(asked[0]).toEqual(['-p', 'Audit this.', '--output-format', 'json', '--model', OPUS, '--print-timeout', '10m', '--add-dir', 'C:/tmp']);
+    expect(asked[1].slice(-4)).toEqual(['--add-dir', 'C:/tmp', '--conversation', 'c-1']);
+    expect(asked[1][1]).toMatch(/^Your command was refused/);
+  });
+
+  it('passes the refusal on when the resumed run tries a command again, and never resumes another failure', () => {
+    const twice = runs(REFUSED, REFUSED, REFUSED);
+    expect(() => askModel(twice.run, 'Audit this.', OPUS)).toThrow(/not allowed to do \(RunCommand\)/);
+    expect(twice.asked).toHaveLength(2);
+    const quota = runs({ status: 'ERROR', error: QUOTA });
+    expect(() => askModel(quota.run, 'Audit this.', OPUS)).toThrow(QUOTA);
+    expect(quota.asked).toHaveLength(1);
   });
 });

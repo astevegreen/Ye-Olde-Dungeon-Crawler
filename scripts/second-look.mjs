@@ -10,16 +10,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {
-  ORDER,
-  TIMEOUT,
-  askFirstAvailable,
-  buildPrompt,
-  byLine,
-  diffStats,
-  parseReply,
-  pickDepth,
-} from './lib/agy.mjs';
+import { ORDER, askFirstAvailable, askModel, buildPrompt, byLine, diffStats, pickDepth } from './lib/agy.mjs';
 import { RAILS, RAIL_MODELS, railFiles, verdict } from './lib/second-look.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -61,9 +52,7 @@ function ask(promptFile, material, pick, models, tmp) {
   const prompt = buildPrompt(readFileSync(path.join(ROOT, 'scripts', promptFile), 'utf8'), file);
   try {
     const answer = askFirstAvailable(models, (model) =>
-      parseReply(
-        run('agy', ['-p', prompt, '--output-format', 'json', '--model', model, '--print-timeout', TIMEOUT, '--add-dir', tmp]),
-      ),
+      askModel((args) => run('agy', args), prompt, model, ['--add-dir', tmp]),
     );
     return { answer: answer.response, model: answer.model, by: byLine({ ...answer, ...pick }) };
   } catch (err) {

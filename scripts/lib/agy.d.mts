@@ -33,6 +33,8 @@ export interface AgyRun {
   error?: { code?: string; message?: string };
 }
 export function parseReply(run: AgyRun): string;
+/** One model's answer; a run cut off for a refused command is resumed once. */
+export function askModel(run: (args: string[]) => AgyRun, prompt: string, model: string, extra?: string[]): string;
 
 export function resetsAt(message: string, now: number): Date;
 export interface QuotaStore {

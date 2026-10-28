@@ -87,8 +87,40 @@ export function parseReply(r) {
   if (out.error) throw new Error(out.error);
   const denied = (out.denied_actions ?? []).map((a) => a.display_name ?? a.action);
   if (denied.length)
-    throw new Error(`the model gave no answer after trying something it is not allowed to do (${denied.join(', ')})`);
+    throw Object.assign(
+      new Error(`the model gave no answer after trying something it is not allowed to do (${denied.join(', ')})`),
+      { conversation: out.conversation_id },
+    );
   throw new Error(`the model gave no answer (agy status ${out.status})`);
+}
+
+// What a model is told when its conversation is resumed after a refused command.
+const REFUSED =
+  'Your command was refused: no command can run here, so do not try another. From what you have read, and ' +
+  'reading files if you must, write your answer now, in the format the task asked for.';
+
+const agyArgs = (prompt, model, extra) => [
+  '-p',
+  prompt,
+  '--output-format',
+  'json',
+  '--model',
+  model,
+  '--print-timeout',
+  TIMEOUT,
+  ...extra,
+];
+
+// Asks one model through `run(args)` (agy, run to the end) and returns its answer, or throws why not; `extra`
+// adds flags such as --add-dir. A model that tries a command is cut off with no answer though it may have read
+// everything (Opus ended a rail audit on `echo blocked`, 28 Oct), so its conversation is resumed once, told why.
+export function askModel(run, prompt, model, extra = []) {
+  try {
+    return parseReply(run(agyArgs(prompt, model, extra)));
+  } catch (err) {
+    if (!err.conversation) throw err;
+    return parseReply(run(agyArgs(REFUSED, model, [...extra, '--conversation', err.conversation])));
+  }
 }
 
 // agy says when a used-up quota comes back ("Resets in 151h45m8s"); without that, the model is tried again in an hour.

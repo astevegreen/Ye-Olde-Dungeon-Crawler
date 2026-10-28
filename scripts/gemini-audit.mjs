@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ORDER, TIMEOUT, askFirstAvailable, buildPrompt, byLine, parseReply, pickDepth } from './lib/agy.mjs';
+import { ORDER, askFirstAvailable, askModel, buildPrompt, byLine, pickDepth } from './lib/agy.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const USAGE = 'usage: node scripts/gemini-audit.mjs specs <issue numbers...> | weekly | narrative [--dry-run]';
@@ -50,20 +50,7 @@ function askGemini(promptName, material, what) {
   const prompt = buildPrompt(text, file);
   const pick = pickDepth(what);
   const answer = askFirstAvailable(ORDER[pick.depth], (model) =>
-    parseReply(
-      run('agy', [
-        '-p',
-        prompt,
-        '--output-format',
-        'json',
-        '--model',
-        model,
-        '--print-timeout',
-        TIMEOUT,
-        '--add-dir',
-        tmp,
-      ]),
-    ),
+    askModel((args) => run('agy', args), prompt, model, ['--add-dir', tmp]),
   );
   return { ...answer, ...pick };
 }

@@ -333,12 +333,30 @@ describe('design questions and the Decisions issue (28 Oct)', () => {
   const on72 = (login: string, createdAt: string, body: string): RawIssue => ({ ...decisions, comments: [{ author: { login }, createdAt, body }] });
 
   it('the owner answers on the Decisions issue by naming the issue, and the lane builds it with the answer quoted', () => {
-    const w = world([question, on72('astevegreen', '2026-10-27T12:00:00Z', '#85 a\n#850 b')]);
-    expect(answerTo(w, w.issues[0]!)).toMatchObject({ on: 72, body: '#85 a\n#850 b' });
+    const w = world([question, on72('astevegreen', '2026-10-27T12:00:00Z', '#85 a\n  and keep it short\n#850 b')]);
+    // Only #85's lines are its answer: the line that starts with #85, up to the next one that starts with a number.
+    expect(answerTo(w, w.issues[0]!)).toMatchObject({ on: 72, body: '#85 a\n  and keep it short' });
     expect(nextJob(w, 'ux')).toMatchObject({ mode: 'build', issue: 85 });
     expect(planMove(w, 85, 'in-progress').comment).toBe(
-      'Lane: unblocked by the owner\'s answer on #72, which the implementer reads as part of the spec: "#85 a #850 b"',
+      'Lane: unblocked by the owner\'s answer on #72, which the implementer reads as part of the spec: "#85 a and keep it short"',
     );
+  });
+  it('a mention of an issue inside another line answers nothing (TD review, 28 Oct)', () => {
+    const other = issue(86, '[task] X4: who wins', ['lane:ux', 'blocked'], '', [
+      ['greenbeanbot', '2026-10-27T10:00:00Z', 'Implementer: attacker or defender? Recommended: defender.'],
+    ]);
+    const said = '#86 no, the defender wins. I need to think more about #85.';
+    const w = world([question, other, on72('astevegreen', '2026-10-27T12:00:00Z', said)]);
+    expect(answerTo(w, w.issues[1]!)).toMatchObject({ on: 72, body: said });
+    expect(answerTo(w, w.issues[0]!)).toBeNull();
+    expect(nextJob(w, 'ux')).toMatchObject({ mode: 'build', issue: 86 });
+    expect(() => planMove(w, 85, 'in-progress')).toThrow(/has not answered/);
+    expect(decisionsDigest(w).questions).toEqual([85]);
+    // Nor does a quoted digest line, or the number alone with nothing after it.
+    for (const body of ['> - #85 X3 (ux): which wording?\nI will look tonight.', '#85\n#86 defender', 'Re #85: later.']) {
+      const q = world([question, on72('astevegreen', '2026-10-27T12:00:00Z', body)]);
+      expect(answerTo(q, q.issues[0]!), body).toBeNull();
+    }
   });
   it('only the owner\'s comment, after the question, naming that issue, answers it', () => {
     const others: [string, string, string][] = [
@@ -369,6 +387,37 @@ describe('design questions and the Decisions issue (28 Oct)', () => {
       due: false,
       questions: [],
     });
+  });
+  it('the digest never answers, and starts the 24 hours, whichever account posted it (gh may be the owner\'s)', () => {
+    const d = decisionsDigest(world([question, decisions]));
+    for (const login of ['astevegreen', 'greenbeanbot']) {
+      const w = world([question, on72(login, '2026-10-28T12:30:00Z', d.body)], '2026-10-28T20:00:00Z');
+      expect(answerTo(w, w.issues[0]!), login).toBeNull();
+      expect(decisionsDigest(w), login).toMatchObject({ due: false, questions: [85], why: expect.stringContaining('next is due at 2026-10-29 12:30Z') });
+    }
+    // Someone else's comment that looks like a digest neither answers nor holds the next one back.
+    const fake = world([question, on72('someone', '2026-10-28T12:30:00Z', d.body)], '2026-10-28T20:00:00Z');
+    expect(decisionsDigest(fake).due).toBe(true);
+  });
+  it('a new question on an issue the last digest listed is in the next one: answers count by time', () => {
+    const d = decisionsDigest(world([question, decisions], '2026-10-27T11:00:00Z'));
+    const thread: RawIssue = {
+      ...decisions,
+      comments: [
+        { author: { login: 'astevegreen' }, createdAt: '2026-10-27T11:00:00Z', body: d.body },
+        { author: { login: 'astevegreen' }, createdAt: '2026-10-27T13:00:00Z', body: '#85 a' },
+      ],
+    };
+    const again = issue(85, '[task] X3: told once', ['lane:ux', 'blocked'], '', [
+      ...question.comments!.map((c): [string, string, string] => [c.author!.login, c.createdAt, c.body!]),
+      ['greenbeanbot', '2026-10-27T14:00:00Z', 'Lane: unblocked by the owner\'s answer on #72.'],
+      ['greenbeanbot', '2026-10-27T15:00:00Z', 'Implementer: and which colour? (a) red (b) grey. Recommended: (a).'],
+    ]);
+    const w = world([again, thread], '2026-10-28T11:00:00Z');
+    expect(answerTo(w, w.issues[0]!)).toBeNull();
+    const next = decisionsDigest(w);
+    expect(next).toMatchObject({ due: true, questions: [85] });
+    expect(next.body).toContain('- #85 X3 (ux): Implementer: and which colour?');
   });
   it('names a question that gives no recommendation', () => {
     const bare = issue(86, '[task] X4: y', ['lane:ux', 'blocked'], '', [['greenbeanbot', '2026-10-27T10:00:00Z', 'Implementer: which colour?']]);
@@ -420,6 +469,21 @@ describe('move', () => {
   });
   it('a second move to the same state changes nothing', () => {
     expect(planMove(w(['held']), 7, 'held')).toMatchObject({ comment: null, add: [], remove: [] });
+  });
+  it('a blocker, the reviewer\'s or agy\'s, never goes to integration and keeps its tag on the hold (TD review, 28 Oct)', () => {
+    const building = w(['in-progress'], { branchAhead: () => 1 });
+    expect(() => planMove(building, 7, 'to-integrate', 'WHAT CHANGED: a\\nSecond look: [blocker] a.ts:3 drops the flag')).toThrow(/names a \[blocker\]/);
+    // Untagged, "minor" would make heldRetry read the hold as minor concerns and retry it.
+    expect(() => planMove(building, 7, 'held', 'the second look found a blocker in a.ts:3, and a minor naming nit')).toThrow(/\[blocker\] tag/);
+    const held = planMove(building, 7, 'held', '1. [blocker] a.ts:3 drops the flag (second look)\\n2. [minor] b.ts:1 naming');
+    expect(held.comment).toBe('Lane: held. 1. [blocker] a.ts:3 drops the flag (second look)\n2. [minor] b.ts:1 naming');
+    // GATE-FAILED holds with no note: the implementer has already commented why.
+    expect(planMove(building, 7, 'held')).toMatchObject({ comment: null, add: ['held'] });
+    const sentBack = 'Integrator: [blocker] the rail audit says it loosens a rail: .githooks/pre-push:40 skips Playwright on a minor change';
+    for (const body of [held.comment!, sentBack]) {
+      const [i] = normalizeIssues([issue(7, '[task] B1: x', ['lane:fixes', 'held'], '', [['greenbeanbot', '2026-10-21T02:00:00Z', body]])]);
+      expect(heldRetry(i!, 20_000), body).toMatchObject({ retry: false, owner: true, why: expect.stringContaining('[blocker]') });
+    }
   });
 });
 

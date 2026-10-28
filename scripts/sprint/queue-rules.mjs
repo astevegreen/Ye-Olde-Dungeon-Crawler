@@ -16,6 +16,12 @@ export const BOT = 'greenbeanbot';
  * implementer, posted as the bot: never an answer, a send-back or a sprint step, so the rules skip it.
  */
 export const AUDIT = '<!-- gemini-audit -->';
+/**
+ * The supervisor's daily digest on the Decisions issue starts with this (`decisionsDigest`). Its lines name every
+ * open question's issue, and gh may be signed in as the owner when it posts, so a digest is never an answer.
+ */
+const DIGEST = 'Decisions digest';
+const isDigest = (c) => (c.author === BOT || c.author === OWNER) && c.body.trimStart().startsWith(DIGEST);
 /** Under this, the supervisor starts nothing; over it, a lane retries work the machine failed. */
 export const MEMORY_FLOOR_MB = 4096;
 /** The labels that say where a sprint issue stands. `move` keeps one of them on each issue. */
@@ -363,10 +369,28 @@ export function ownerReply(issue) {
   return findLast(issue.comments, (c) => c.author === OWNER && (!lastBot || c.at > lastBot.at));
 }
 
+/** A line that answers an issue on the Decisions issue: `#<n>` first on it, after spaces at most. */
+const answers = (n) => new RegExp(String.raw`^[ \t]*#${n}(?!\w)`);
+const ANSWER = answers(String.raw`\d+`);
+
 /**
- * The owner's answer to a blocked issue's question: their reply on the issue itself, or their comment on
- * the Decisions issue that names `#<n>`, posted after the bot's newest comment on the issue. Only the
- * owner's own account answers; an answer the bot relays, or an architect decision, never does.
+ * The owner's answer to `#n` in one Decisions comment: the line that starts with `#n` and the lines under it, up
+ * to the next line that starts with an issue number; null when no line starts with `#n`, or nothing follows it.
+ * A mention anywhere else answers nothing: "#6 no, the defender wins. I need to think more about #5." is #6's.
+ */
+function answerIn(body, n) {
+  const lines = body.split(/\r?\n/);
+  const at = lines.findIndex((l) => answers(n).test(l));
+  if (at < 0) return null;
+  const end = lines.findIndex((l, k) => k > at && ANSWER.test(l));
+  const text = lines.slice(at, end < 0 ? undefined : end).join('\n').trim();
+  return /[^\s\p{P}]/u.test(text.replace(answers(n), '')) ? text : null;
+}
+
+/**
+ * The owner's answer to a blocked issue's question: their reply on the issue itself, or a line of their comment
+ * on the Decisions issue that starts with `#<n>`, posted after the bot's newest comment on the issue. Only the
+ * owner's own account answers; an answer the bot relays, an architect decision, or the digest never does.
  */
 export function answerTo(world, issue) {
   const own = ownerReply(issue);
@@ -374,9 +398,12 @@ export function answerTo(world, issue) {
   const decisions = world.doc.decisionsIssue ? byNumber(world, world.doc.decisionsIssue) : null;
   if (!decisions || decisions.number === issue.number) return null;
   const lastBot = findLast(issue.comments, (c) => c.author === BOT);
-  const names = new RegExp(String.raw`(^|[^\w#&])#${issue.number}(?!\d)`);
-  const found = findLast(decisions.comments, (c) => c.author === OWNER && (!lastBot || c.at > lastBot.at) && names.test(c.body));
-  return found ? { ...found, on: decisions.number } : null;
+  const found = findLast(
+    decisions.comments,
+    (c) => c.author === OWNER && !isDigest(c) && (!lastBot || c.at > lastBot.at) && answerIn(c.body, issue.number) !== null,
+  );
+  // Only the answer to this issue is quoted to its implementer, not the owner's lines about other issues.
+  return found ? { ...found, body: answerIn(found.body, issue.number), on: decisions.number } : null;
 }
 
 /** The comment a lane writes when it takes held work back (`planMove`): where the next held episode starts. */
@@ -676,11 +703,22 @@ export function planMove(world, number, to, note = null) {
   if (from !== 'in-progress') throw refuse(`#${number} is ${from}; only work in progress moves to ${to}`, RETRY);
   if (to === 'to-integrate') {
     if (!text) throw refuse('ready to integrate needs a note', "Run it again with --note '<WHAT CHANGED and PLAYER-VISIBLE lines from the hand-back>'.");
+    // A blocker, the reviewer's or agy's, never reaches the integrator: it holds the work.
+    if (BLOCKER.test(text)) {
+      throw refuse('the note names a [blocker], and only a PASS or minor concerns go to integration', "Move it to held instead, with --note '<each blocker, with its [blocker] tag>'.");
+    }
     const ahead = world.branchAhead(number);
     if (ahead === 0) {
-      throw refuse(`sprint/${number} has no commits ahead of origin/main`, `Nothing to integrate: move it to held with a --note saying why.`);
+      throw refuse(`sprint/${number} has no commits ahead of origin/main`, `Nothing to integrate: move it to held with --note '[blocker] <why>'.`);
     }
     return plan(`Lane: ready to integrate, branch sprint/${number}.\n${text}`);
+  }
+  // A hold note is read by heldRetry: without its [blocker] tag a blocker would read as minor and be retried.
+  if (to === 'held' && text && !BLOCKER.test(text)) {
+    throw refuse(
+      'a hold note names each blocker with its [blocker] tag, and only a blocker holds work',
+      "Run it again with each blocker tagged [blocker]; with minor concerns only, move it to-integrate with a 'Minor, shipped:' line.",
+    );
   }
   return plan(text ? `Lane: ${to}. ${text}` : null);
 }
@@ -739,13 +777,14 @@ export function statusBlock(world, { also = [], oldBody = '' } = {}) {
 
 // --- decisions ----------------------------------------------------------------------------------------
 
-const DIGEST = 'Decisions digest';
 const DAY = 24 * HOUR;
 
 /**
  * `decisions [--write]`: the daily digest of design questions on the standing Decisions issue. Due when an
  * open lane issue is blocked on a question the owner has not answered and no digest was posted in the last
- * 24 hours: one comment a day, one @-mention, every open question with its recommendation.
+ * 24 hours, by either account: one comment a day, one @-mention, every open question with its recommendation.
+ * An answer counts only when it is newer than the question (`answerTo`), so a new question on an issue the
+ * last digest already listed is in the next one.
  */
 export function decisionsDigest(world) {
   const n = world.doc.decisionsIssue;
@@ -755,7 +794,7 @@ export function decisionsDigest(world) {
   const questions = world.issues
     .filter((i) => i.open && i.labels.includes('blocked') && i.labels.some((l) => l.startsWith('lane:')) && !answerTo(world, i))
     .sort((a, b) => a.number - b.number);
-  const last = findLast(issue.comments, (c) => c.author === BOT && c.body.startsWith(DIGEST));
+  const last = findLast(issue.comments, isDigest);
   const nextAt = last ? new Date(last.at.getTime() + DAY) : null;
   const due = questions.length > 0 && (!nextAt || world.now >= nextAt);
   const ask = (i) => {

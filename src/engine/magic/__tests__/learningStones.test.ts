@@ -292,6 +292,14 @@ describe('Shard and stone', () => {
     expect(engine.handlePlayerAction(new ReadLearningStoneAction(player, face)).success).toBe(false);
   });
 
+  it('refuses a spell the stone does not show, keeping the shard and the turn', () => {
+    player.addItem(shard());
+    stepOn();
+    const result = engine.handlePlayerAction(new ReadLearningStoneAction(player, 'no-such-spell'));
+    expect(result).toMatchObject({ success: false, cost: 0, message: 'The stone shows no such spell.' });
+    expect(player.inventory.getAllCarriedItems().some((i) => i.id === 'shard-f4')).toBe(true);
+  });
+
   it('turns the shard into a rune of a face when both are turned down', () => {
     player.addItem(shard());
     stepOn();

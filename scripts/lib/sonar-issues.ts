@@ -60,9 +60,6 @@ export async function sonarIssues(args: string[], get: Get): Promise<SonarIssues
   if (files && issues.some((issue) => !files.some((path) => issue.component === `${PROJECT_KEY}:${path}`))) {
     return { ok: false, lines: ['SonarCloud answered for more than the files asked; nothing printed.'] };
   }
-  if (files && issues.some((issue) => !files.some((path) => issue.component === `${PROJECT_KEY}:${path}`))) {
-    return { ok: false, lines: ['SonarCloud ignored the file scope and answered for the whole project; nothing printed.'] };
-  }
   // A private or unknown project also answers 200 with no issues, so an empty result is checked against the project itself.
   if (total === 0) {
     const project = await get(`${API}/components/show?component=${PROJECT_KEY}`);

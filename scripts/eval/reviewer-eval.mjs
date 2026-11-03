@@ -128,44 +128,11 @@ function runOne(c, k) {
 // call's tool result. The final `result` line carries the run's usage across every model,
 // subagents included.
 function parseStream(stdout) {
-  const lines = stdout
-    .split('\n')
-    .filter(Boolean)
-    .map((line) => {
-      try {
-        return JSON.parse(line);
-      } catch {
-        return null;
-      }
-    })
-    .filter(Boolean);
-  let callId = null;
-  let handback = '';
-  let toolResult = '';
-  const reviewerModels = new Set();
-  for (const e of lines) {
-    const content = Array.isArray(e.message?.content) ? e.message.content : [];
-    const inReviewer = Boolean(callId) && e.parent_tool_use_id === callId;
-    for (const part of content) {
-      if (part?.type === 'tool_use' && ['Agent', 'Task'].includes(part.name) && part.input?.subagent_type === 'reviewer') callId = part.id;
-      if (part?.type === 'tool_use' && inReviewer && part.name === 'SubagentHandback') handback = String(part.input?.message ?? '');
-      if (part?.type === 'tool_result' && callId && part.tool_use_id === callId) {
-        toolResult = Array.isArray(part.content) ? part.content.map((x) => x?.text ?? '').join('\n') : String(part.content ?? '');
-      }
-    }
-    if (e.type === 'assistant' && inReviewer && e.message?.model) reviewerModels.add(e.message.model);
-  }
+  const lines = stdout.split('\n').filter(Boolean).map(parseLine).filter(Boolean);
+  const { callId, handback, toolResult, reviewerModels } = readReviewerCall(lines);
   const answer = handback || toolResult;
   const final = lines.findLast((e) => e.type === 'result') ?? {};
-  const usage = Object.values(final.modelUsage ?? {});
-  const sum = (key) => usage.reduce((s, m) => s + (m[key] ?? 0), 0);
-  const tokens = {
-    input: sum('inputTokens'),
-    cacheRead: sum('cacheReadInputTokens'),
-    cacheWrite: sum('cacheCreationInputTokens'),
-    output: sum('outputTokens'),
-  };
-  tokens.total = tokens.input + tokens.cacheRead + tokens.cacheWrite + tokens.output;
+  const tokens = sumTokens(final);
   return {
     usedReviewer: Boolean(callId),
     reviewerModels: [...reviewerModels],
@@ -176,6 +143,53 @@ function parseStream(stdout) {
     costUSD: final.total_cost_usd ?? null,
     permissionDenials: (final.permission_denials ?? []).map((d) => `${d.tool_name}: ${String(d.tool_input?.command ?? '').slice(0, 160)}`),
   };
+}
+
+function parseLine(line) {
+  try {
+    return JSON.parse(line);
+  } catch {
+    return null;
+  }
+}
+
+function toolResultText(content) {
+  return Array.isArray(content) ? content.map((x) => x?.text ?? '').join('\n') : String(content ?? '');
+}
+
+function isReviewerCall(part) {
+  return part?.type === 'tool_use' && ['Agent', 'Task'].includes(part.name) && part.input?.subagent_type === 'reviewer';
+}
+
+function readReviewerCall(lines) {
+  let callId = null;
+  let handback = '';
+  let toolResult = '';
+  const reviewerModels = new Set();
+  for (const e of lines) {
+    const content = Array.isArray(e.message?.content) ? e.message.content : [];
+    const inReviewer = Boolean(callId) && e.parent_tool_use_id === callId;
+    for (const part of content) {
+      if (isReviewerCall(part)) callId = part.id;
+      if (part?.type === 'tool_use' && inReviewer && part.name === 'SubagentHandback') handback = String(part.input?.message ?? '');
+      if (part?.type === 'tool_result' && callId && part.tool_use_id === callId) toolResult = toolResultText(part.content);
+    }
+    if (e.type === 'assistant' && inReviewer && e.message?.model) reviewerModels.add(e.message.model);
+  }
+  return { callId, handback, toolResult, reviewerModels };
+}
+
+function sumTokens(final) {
+  const usage = Object.values(final.modelUsage ?? {});
+  const sum = (key) => usage.reduce((s, m) => s + (m[key] ?? 0), 0);
+  const tokens = {
+    input: sum('inputTokens'),
+    cacheRead: sum('cacheReadInputTokens'),
+    cacheWrite: sum('cacheCreationInputTokens'),
+    output: sum('outputTokens'),
+  };
+  tokens.total = tokens.input + tokens.cacheRead + tokens.cacheWrite + tokens.output;
+  return tokens;
 }
 
 function summarise(text) {

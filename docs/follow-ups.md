@@ -13,7 +13,6 @@ it. Sessions add to it by day; sprint lanes file follow-up issues instead. Movin
 ## Engine
 
 ## Content (cotw pack)
-- No test asserts the prologue's dawn tally lines (`dawnLine`, all/some/none saved) or the "chant breaks off" raid end (`src/content/cotw/prologue.ts`, `raidEndLine`); found 3 Nov 2026 by the reviewer on 811627bc.
 
 ## Presentation
 

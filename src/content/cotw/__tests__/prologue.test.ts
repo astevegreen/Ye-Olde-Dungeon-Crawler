@@ -17,6 +17,7 @@ import {
 } from '../../../engine';
 import { ClimbStairsAction } from '../../../engine/actions/stairs';
 import { DeathResolver } from '../../../engine/combat/deathResolver';
+import { setCounter } from '../../../engine/state/worldState';
 import { cotwManifest } from '../index';
 import { COTW_PROLOGUE, GATEWARD_CHOICE, GATEWARD_HEARD_FLAG, PROLOGUE_VILLAGERS } from '../prologue';
 import { TOWN_STAIRS_DOWN } from '../townLayout';
@@ -315,6 +316,23 @@ describe('cotw prologue: the night raid', () => {
     expect(engine.getWorldFlag('cotw_prologue_struck_down')).toBe(true);
     expect(engine.messages.some((m) => m.includes('A blow takes you off your feet.'))).toBe(true);
     expect(engine.messages.some((m) => m.includes('The chant breaks off.'))).toBe(false);
+  });
+
+  it.each([
+    { saved: PROLOGUE_VILLAGERS.length, struck: false, line: 'Every villager the thralls held is safe in the longhouse.' },
+    { saved: 1, struck: false, line: `1 of the ${PROLOGUE_VILLAGERS.length} the thralls held are safe in the longhouse.` },
+    { saved: 0, struck: false, line: 'None of the villagers the thralls held came home.' },
+    { saved: 0, struck: true, line: 'You wake where you fell' },
+  ])('dawn tallies $saved saved (struck down: $struck)', ({ saved, struck, line }) => {
+    const engine = newRun();
+    setFlag(engine.worldState, 'cotw_prologue_coven_fled', true);
+    setCounter(engine.worldState, 'cotw_prologue_villagers_saved', saved);
+    if (struck) engine.player.takeDamage(engine.player.hp + 100);
+    wait(engine);
+
+    expect(isPrologueRunning(engine.worldState, COTW_PROLOGUE)).toBe(false);
+    expect(engine.messages.some((m) => m.includes(line))).toBe(true);
+    if (!struck) expect(engine.messages.some((m) => m.includes('The chant breaks off.'))).toBe(true);
   });
 
   it('a hero held at the HP floor outside the pipeline ends the night on the next bump, freeing no one', () => {

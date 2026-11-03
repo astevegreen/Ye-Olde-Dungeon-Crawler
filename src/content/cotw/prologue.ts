@@ -355,14 +355,7 @@ function endRaid(ctx: EngineContext): void {
   if (ctx.player.wasHeldAtHpFloor) setFlag(ctx.worldState, FLAG_STRUCK_DOWN, true);
   const struckDown = getFlag(ctx.worldState, FLAG_STRUCK_DOWN);
   setFlag(ctx.worldState, FLAG_COUNTDOWN_STOPPED, true);
-  ctx.log(
-    struckDown
-      ? 'A blow takes you off your feet. The snow is very cold, and then there is nothing.'
-      : covenSlain(ctx)
-        ? // The matriarch the Oath later bargains with (choices.ts), seen once here.
-          'Over her sisters’ bodies a third troll-wife, older and taller, steps out of the fountain’s shadow. She tears the Hearth-Tear loose with her bare hands, looks at you once, and sinks down the cellar stairs with it. The thralls melt into the dark after her.'
-        : 'The chant breaks off. What is left of the coven sinks down the cellar stairs with the Hearth-Tear blazing, and the thralls melt into the dark after it.'
-  );
+  ctx.log(raidEndLine(ctx, struckDown));
   for (const villager of PROLOGUE_VILLAGERS) {
     if (isAccountedFor(ctx, villager.id)) continue;
     setFlag(ctx.worldState, takenFlag(villager.id), true);
@@ -373,16 +366,27 @@ function endRaid(ctx: EngineContext): void {
   concludePrologue(ctx, COTW_PROLOGUE, true);
   ctx.player.heal(ctx.player.maxHp);
   ctx.player.restoreMana(ctx.player.maxMana);
-  const saved = getCounter(ctx.worldState, COUNTER_SAVED);
-  ctx.log(
-    saved === PROLOGUE_VILLAGERS.length
-      ? 'Every villager the thralls held is safe in the longhouse. Bjarnarhaven will not forget it.'
-      : saved > 0
-        ? `${saved} of the ${PROLOGUE_VILLAGERS.length} the thralls held are safe in the longhouse.`
-        : struckDown
-          ? 'You wake where you fell, someone’s cloak thrown over you, your wounds bound.'
-          : 'None of the villagers the thralls held came home.'
-  );
+  ctx.log(dawnLine(getCounter(ctx.worldState, COUNTER_SAVED), struckDown));
+}
+
+/** How the raid ends, as the hero sees it. */
+function raidEndLine(ctx: EngineContext, struckDown: boolean): string {
+  if (struckDown) return 'A blow takes you off your feet. The snow is very cold, and then there is nothing.';
+  return covenSlain(ctx)
+    ? // The matriarch the Oath later bargains with (choices.ts), seen once here.
+      'Over her sisters’ bodies a third troll-wife, older and taller, steps out of the fountain’s shadow. She tears the Hearth-Tear loose with her bare hands, looks at you once, and sinks down the cellar stairs with it. The thralls melt into the dark after her.'
+    : 'The chant breaks off. What is left of the coven sinks down the cellar stairs with the Hearth-Tear blazing, and the thralls melt into the dark after it.';
+}
+
+/** The tally at dawn of the villagers brought home. */
+function dawnLine(saved: number, struckDown: boolean): string {
+  if (saved === PROLOGUE_VILLAGERS.length) {
+    return 'Every villager the thralls held is safe in the longhouse. Bjarnarhaven will not forget it.';
+  }
+  if (saved > 0) return `${saved} of the ${PROLOGUE_VILLAGERS.length} the thralls held are safe in the longhouse.`;
+  return struckDown
+    ? 'You wake where you fell, someone’s cloak thrown over you, your wounds bound.'
+    : 'None of the villagers the thralls held came home.';
 }
 
 /**

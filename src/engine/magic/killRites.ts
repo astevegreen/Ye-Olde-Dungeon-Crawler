@@ -119,16 +119,7 @@ export class KillRiteManager {
       takeShortcut(engine, victim);
       result = { performed: true, essenceItemId: essence?.id, message };
     } else if (rite.teachesSpellId && !player.spellsKnown.includes(rite.teachesSpellId)) {
-      const learned = player.learnSpellResult(rite.teachesSpellId);
-      const spell = engine.manifest?.spells?.find((s) => s.id === rite.teachesSpellId) ?? getSpell(rite.teachesSpellId);
-      const waiting = learned.outcome === 'full' ? ' Every slot in your grimoires is full: it waits in your spellbook until you make room.' : '';
-      const message =
-        formatMagicMessage(config.learnMessage, {
-          monster: victim.name,
-          spell: spell?.name ?? rite.teachesSpellId,
-        }) + waiting;
-      engine.recordVisualEffects([{ type: 'screen_flash', color: '#38bdf8', durationMs: 250 }]);
-      result = { performed: true, taughtSpellId: rite.teachesSpellId, message };
+      result = teachRiteSpell(engine, config, victim, rite.teachesSpellId);
     } else {
       const essence = dropEssence(engine, config, rite.essenceElement, victim);
       const message = essence
@@ -151,6 +142,20 @@ export class KillRiteManager {
     });
     return result;
   }
+}
+
+/** A rite's spell taught to the hero, or left waiting in the spellbook when every grimoire slot is full. */
+function teachRiteSpell(engine: GameEngine, config: KillRiteConfig, victim: Entity, spellId: string): KillRiteResult {
+  const learned = engine.player.learnSpellResult(spellId);
+  const spell = engine.manifest?.spells?.find((s) => s.id === spellId) ?? getSpell(spellId);
+  const waiting = learned.outcome === 'full' ? ' Every slot in your grimoires is full: it waits in your spellbook until you make room.' : '';
+  const message =
+    formatMagicMessage(config.learnMessage, {
+      monster: victim.name,
+      spell: spell?.name ?? spellId,
+    }) + waiting;
+  engine.recordVisualEffects([{ type: 'screen_flash', color: '#38bdf8', durationMs: 250 }]);
+  return { performed: true, taughtSpellId: spellId, message };
 }
 
 function dropEssence(engine: GameEngine, config: KillRiteConfig, element: string, victim: Entity) {

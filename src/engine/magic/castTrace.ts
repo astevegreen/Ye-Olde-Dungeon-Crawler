@@ -67,21 +67,31 @@ export function castGeometry(
   }
 
   if (mode === 'area_burst' || (mode === 'tile' && spell.areaOfEffect > 0) || spell.visual?.archetype === 'direct_burst') {
-    // A thrown burst flies to the tile aimed at (no further) and bursts where it stops.
-    let epicenter: Position = { x: target.x, y: target.y };
-    let ray: ProjectilePathResult | undefined;
-    if (spell.visual?.archetype === 'projectile_burst' || (spell.range > 0 && spell.visual?.archetype !== 'direct_burst')) {
-      const stepsToTarget = Math.max(Math.abs(target.x - caster.x), Math.abs(target.y - caster.y));
-      ray = traceProjectile(engine.map, caster.x, caster.y, target.x, target.y, flightLength(Math.min(spell.range, stepsToTarget), caster, target), false, caster.id);
-      if (ray.path.length > 0) epicenter = ray.impactTile;
-      // A wall at the caster's side stops it at once: it bursts there, as a ray's burst does.
-      else if (ray.hitWall) epicenter = { x: caster.x, y: caster.y };
-      if (ray.path.length === 0) ray = undefined;
-    }
-    return { ray, reflects: false, burst: { epicenter, radius } };
+    return thrownBurst(engine, spell, caster, target, radius);
   }
 
   return { reflects: false };
+}
+
+/** A thrown burst flies to the tile aimed at (no further) and bursts where it stops. */
+function thrownBurst(
+  engine: GameEngine,
+  spell: SpellDefinition,
+  caster: Position & { id: string },
+  target: Position,
+  radius: number
+): CastGeometry {
+  let epicenter: Position = { x: target.x, y: target.y };
+  let ray: ProjectilePathResult | undefined;
+  if (spell.visual?.archetype === 'projectile_burst' || (spell.range > 0 && spell.visual?.archetype !== 'direct_burst')) {
+    const stepsToTarget = Math.max(Math.abs(target.x - caster.x), Math.abs(target.y - caster.y));
+    ray = traceProjectile(engine.map, caster.x, caster.y, target.x, target.y, flightLength(Math.min(spell.range, stepsToTarget), caster, target), false, caster.id);
+    if (ray.path.length > 0) epicenter = ray.impactTile;
+    // A wall at the caster's side stops it at once: it bursts there, as a ray's burst does.
+    else if (ray.hitWall) epicenter = { x: caster.x, y: caster.y };
+    if (ray.path.length === 0) ray = undefined;
+  }
+  return { ray, reflects: false, burst: { epicenter, radius } };
 }
 
 /**

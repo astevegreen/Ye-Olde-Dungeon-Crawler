@@ -439,14 +439,8 @@ export class ReadLearningStoneAction implements Action {
     const config = getLearningStoneConfig(engine);
     if (!config || !holdsStoneShard(engine)) return { success: false, cost: 0, message: 'You hold no shard for a stone here.' };
     const record = ensureRecord(this.entity, engine.currentFloor);
-    const at = findLearningStone(engine);
-    if (!record.shortcut && (!at || at.x !== this.entity.x || at.y !== this.entity.y)) {
-      return { success: false, cost: 0, message: 'The shard must be set in its stone.' };
-    }
-    const faces = drawStoneFaces(engine);
-    if (this.spellId !== null && !faces.includes(this.spellId)) {
-      return { success: false, cost: 0, message: 'The stone shows no such spell.' };
-    }
+    const refusal = this.refusal(engine, record);
+    if (refusal) return { success: false, cost: 0, message: refusal };
 
     const shortcut = !!record.shortcut;
     const shard = heldShard(engine, config);
@@ -479,5 +473,15 @@ export class ReadLearningStoneAction implements Action {
     const cost = this.entity.getActionCost(BASE_ACTION_COST);
     this.entity.consumeEnergy(cost);
     return { success: true, cost, message };
+  }
+
+  /** Why the read can't happen here, or null: the shard is set in its stone (or shortcut), and the face is shown. */
+  private refusal(engine: GameEngine, record: StoneRecord): string | null {
+    const at = findLearningStone(engine);
+    if (!record.shortcut && (!at || at.x !== this.entity.x || at.y !== this.entity.y)) return 'The shard must be set in its stone.';
+    // Drawn even for a rune: the first read draws and shows this floor's faces.
+    const faces = drawStoneFaces(engine);
+    if (this.spellId !== null && !faces.includes(this.spellId)) return 'The stone shows no such spell.';
+    return null;
   }
 }

@@ -46,11 +46,12 @@ async function resetGame(page) {
   await page.evaluate(async () => {
     const ih = window.__cotwInputHandler;
     const r = window.__cotwRenderer;
-    for (let i = 0; i < 8 && ih && !ih.modalStack.isEmpty(); i++) {
-      const top = ih.modalStack.top() ?? null;
+    const stack = ih?.modalStack;
+    for (let i = 0; i < 8 && stack?.isEmpty() === false; i++) {
+      const top = stack.top() ?? null;
       window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
       await new Promise((res) => setTimeout(res, 80));
-      if (top && ih.modalStack.top() === top) { try { top.close?.(); } catch {} ih.modalStack.remove(top.id); }
+      if (top && stack.top() === top) { try { top.close?.(); } catch {} stack.remove(top.id); }
     }
     for (const o of ['inventoryOverlay', 'targetingOverlay', 'mapOverlay', 'inspectOverlay', 'shopOverlay']) if (r?.[o]?.isOpen) r[o].close();
     document.querySelectorAll('.crash-dialog, #crash-dialog').forEach((d) => d.remove());

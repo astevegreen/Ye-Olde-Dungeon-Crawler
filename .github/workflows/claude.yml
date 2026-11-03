@@ -42,13 +42,17 @@ jobs:
           node-version: '24'
           cache: 'npm'
 
+      # --ignore-scripts skips package lifecycle scripts; the one this repo
+      # needs, `prepare` (git hooks), is run by hand on the next line.
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci --ignore-scripts
+          git config core.hooksPath .githooks
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+        run: npx --no-install playwright install --with-deps
 
-      - uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@4845bacbb38b3c4b15d948f035349786f678e068 # v1.0.267
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |

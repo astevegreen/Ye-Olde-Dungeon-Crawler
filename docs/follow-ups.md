@@ -11,6 +11,7 @@ it. Sessions add to it by day; sprint lanes file follow-up issues instead. Movin
 - A decision only the owner can make goes to the owner as a question, not here.
 
 ## Engine
+- No test covers a kill rite teaching into full grimoires (the "Every slot in your grimoires is full" suffix) or its `screen_flash` (`src/engine/magic/killRites.ts`, `teachRiteSpell`); found 3 Nov 2026 by the reviewer on 1d02df90.
 
 ## Content (cotw pack)
 

@@ -103,6 +103,7 @@ describe('Kill rites', () => {
     expect(player.spellsKnown).toContain('jotunbrann');
     expect(engine.compendium.isKillRitePerformed('fire_rite')).toBe(true);
     expect(capture.some((e) => e.type === 'kill_rite_performed')).toBe(true);
+    expect(engine.messages.some((m) => /^You learn .+ from fire_rite\.$/.test(m))).toBe(true);
   });
 
   it('does nothing when the killing blow has the wrong element', () => {

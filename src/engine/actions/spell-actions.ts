@@ -313,9 +313,10 @@ export class ReadScrollAction implements Action {
     );
     const result = castAction.perform(engine);
     // Only a cast that takes spends the scroll, and only one of a stack.
-    if (!result.success) return result;
-    this.user.inventory.consumeOne(this.scroll.id);
-    engine.log(isPlayer ? `The ${name} crumbles to dust in your hands!` : `The ${name} crumbles to dust!`);
+    if (result.success) {
+      this.user.inventory.consumeOne(this.scroll.id);
+      engine.log(isPlayer ? `The ${name} crumbles to dust in your hands!` : `The ${name} crumbles to dust!`);
+    }
     return result;
   }
 }

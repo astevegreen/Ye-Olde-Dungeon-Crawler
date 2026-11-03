@@ -1,6 +1,7 @@
 import type { GameEngine } from '../engine';
 import { Monster } from '../entities/monster';
 import { getTileDefinition } from '../grid/tile';
+import type { BossFleeResolution } from '../types/manifest';
 
 /**
  * "Driven off" boss resolution (`GameContentManifest.bossFleeResolutions`): converts
@@ -17,14 +18,18 @@ export function tickBossFleeResolutions(engine: GameEngine): void {
     if (!boss || boss.aiState !== 'fleeing') continue;
     const turnsFled = engine.modifyWorldCounter(`boss_flee_turns:${watcher.monsterDefinitionId}`, 1);
     if (turnsFled === 1 && watcher.fleeBeginMessage) engine.log(watcher.fleeBeginMessage);
-    if (turnsFled < watcher.fleeTurnsRequired) continue;
-    engine.setWorldFlag(watcher.sealedFlag, true);
-    const portal = watcher.portalTileId ? getTileDefinition(watcher.portalTileId) : undefined;
-    if (portal) {
-      engine.map.setTile(boss.x, boss.y, portal);
-      if (watcher.portalMessage) engine.log(watcher.portalMessage);
-    }
-    engine.removeEntity(boss);
-    engine.log(`${boss.name} flees into the dark, driven off for good!`);
+    if (turnsFled >= watcher.fleeTurnsRequired) driveOff(engine, watcher, boss);
   }
+}
+
+/** Seals the encounter, opens the boss's portal if it has one, and takes the boss off the floor. */
+function driveOff(engine: GameEngine, watcher: BossFleeResolution, boss: Monster): void {
+  engine.setWorldFlag(watcher.sealedFlag, true);
+  const portal = watcher.portalTileId ? getTileDefinition(watcher.portalTileId) : undefined;
+  if (portal) {
+    engine.map.setTile(boss.x, boss.y, portal);
+    if (watcher.portalMessage) engine.log(watcher.portalMessage);
+  }
+  engine.removeEntity(boss);
+  engine.log(`${boss.name} flees into the dark, driven off for good!`);
 }

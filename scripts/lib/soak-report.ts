@@ -264,7 +264,7 @@ export function soakReport(all: ReportSummary[], opts: ReportOptions): string {
     const key = n >= 3 ? '3+' : String(n);
     learnedBuckets.set(key, [...(learnedBuckets.get(key) ?? []), s.deepestFloor]);
   }
-  out.push(table(['spells learned', 'runs', 'median deepest'], [...learnedBuckets].sort().map(([k, d]) => [k, d.length, median(d)])));
+  out.push(table(['spells learned', 'runs', 'median deepest'], [...learnedBuckets].sort(([a], [b]) => a.localeCompare(b)).map(([k, d]) => [k, d.length, median(d)])));
 
   out.push(
     "\nEvery spell in the pack: who knew it, cast it, and what it did. `stone from`: the first floor a stone teaches it; `borrowed`: casts by what grimoire neighbours lent them, whose damage counts as the cast's."

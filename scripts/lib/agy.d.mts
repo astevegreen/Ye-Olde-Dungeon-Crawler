@@ -24,6 +24,8 @@ export function pickDepth(reviewed: Reviewed, deepPaths?: readonly string[]): Pi
 export function diffStats(diff: string): { files: string[]; lines: number };
 
 export const TIMEOUT: string;
+/** How long a run resumed after a time-out may take. */
+export const RESUME_TIMEOUT: string;
 export function buildPrompt(text: string, materialFile?: string): string;
 
 export interface AgyRun {
@@ -33,7 +35,7 @@ export interface AgyRun {
   error?: { code?: string; message?: string };
 }
 export function parseReply(run: AgyRun): string;
-/** One model's answer; a run cut off for a refused command is resumed once. */
+/** One model's answer; a run cut off for a refused command or a time-out is resumed once. */
 export function askModel(run: (args: string[]) => AgyRun, prompt: string, model: string, extra?: string[]): string;
 
 export function resetsAt(message: string, now: number): Date;

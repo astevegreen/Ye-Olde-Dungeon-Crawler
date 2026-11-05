@@ -81,8 +81,15 @@ export function parseReply(r) {
     throw new Error(`agy exited ${r.status}: ${(r.stderr || r.stdout || '').trim().split('\n')[0]}`);
   }
   // Past --print-timeout agy returns whatever the model had written so far; never post that as a finished audit.
-  const timedOut = /print timeout after (\S+)/i.exec(r.stderr ?? '')?.[1];
-  if (timedOut) throw new Error(`the model ran out of time (${timedOut}) before finishing its answer`);
+  // The conversation keeps what the model read, so askModel can resume it for an answer.
+  const timedOut =
+    /print timeout after (\S+)/i.exec(r.stderr ?? '')?.[1] ??
+    (out.finished_reason === 'print_timeout' ? (/after (\S+)/.exec(out.error ?? '')?.[1] ?? 'its limit') : null);
+  if (timedOut)
+    throw Object.assign(new Error(`the model ran out of time (${timedOut}) before finishing its answer`), {
+      conversation: out.conversation_id,
+      timedOut: true,
+    });
   if (out.status === 'SUCCESS' && out.response?.trim()) return out.response.trim();
   if (out.error) throw new Error(out.error);
   const denied = (out.denied_actions ?? []).map((a) => a.display_name ?? a.action);
@@ -99,7 +106,15 @@ const REFUSED =
   'Your command was refused: no command can run here, so do not try another. From what you have read, and ' +
   'reading files if you must, write your answer now, in the format the task asked for.';
 
-const agyArgs = (prompt, model, extra) => [
+// What a model is told when its conversation is resumed after it ran out of time.
+const LATE =
+  'Your time is up: read nothing more and run no command. From what you have already read, write your answer ' +
+  'now, in the format the task asked for.';
+
+// How long a resumed run may take. A resume that reads nothing still took about 4 minutes on Flash (5 Nov 2026).
+export const RESUME_TIMEOUT = '6m';
+
+const agyArgs = (prompt, model, extra, timeout = TIMEOUT) => [
   '-p',
   prompt,
   '--output-format',
@@ -107,19 +122,22 @@ const agyArgs = (prompt, model, extra) => [
   '--model',
   model,
   '--print-timeout',
-  TIMEOUT,
+  timeout,
   ...extra,
 ];
 
 // Asks one model through `run(args)` (agy, run to the end) and returns its answer, or throws why not; `extra`
-// adds flags such as --add-dir. A model that tries a command is cut off with no answer though it may have read
-// everything (Opus ended a rail audit on `echo blocked`, 28 Oct), so its conversation is resumed once, told why.
+// adds flags such as --add-dir. A model can be cut off with no answer though it read everything: by trying a
+// command (Opus ended a rail audit on `echo blocked`, 28 Oct), or by running out of time (Flash on a 401-line deep
+// review, 5 Nov). Either way its conversation is resumed once, told why, so the reading is not thrown away.
 export function askModel(run, prompt, model, extra = []) {
   try {
     return parseReply(run(agyArgs(prompt, model, extra)));
   } catch (err) {
     if (!err.conversation) throw err;
-    return parseReply(run(agyArgs(REFUSED, model, [...extra, '--conversation', err.conversation])));
+    const resume = [...extra, '--conversation', err.conversation];
+    if (err.timedOut) return parseReply(run(agyArgs(LATE, model, resume, RESUME_TIMEOUT)));
+    return parseReply(run(agyArgs(REFUSED, model, resume)));
   }
 }
 

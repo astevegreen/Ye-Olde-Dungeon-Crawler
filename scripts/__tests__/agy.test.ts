@@ -7,6 +7,7 @@ import {
   FLASH,
   OPUS,
   ORDER,
+  RESUME_TIMEOUT,
   SONNET,
   askFirstAvailable,
   askModel,
@@ -245,5 +246,27 @@ describe('talking to agy', () => {
     const quota = runs({ status: 'ERROR', error: QUOTA });
     expect(() => askModel(quota.run, 'Audit this.', OPUS)).toThrow(QUOTA);
     expect(quota.asked).toHaveLength(1);
+  });
+
+  // The reply agy 1.5.1 gave on 2026-11-05 when --print-timeout cut a turn off (it also exits 3).
+  const LATE = {
+    conversation_id: 'c-2',
+    status: 'ERROR',
+    response: '',
+    error: 'print timeout after 10m0s with the turn still in progress; the response is partial',
+    finished_reason: 'print_timeout',
+  };
+
+  it('resumes a run that ran out of time once, told to answer from what it read, on the shorter limit', () => {
+    const { run, asked } = runs(LATE, { status: 'SUCCESS', response: 'No findings.\n' });
+    expect(askModel(run, 'Review this.', FLASH, ['--add-dir', 'C:/tmp'])).toBe('No findings.');
+    expect(asked[1][1]).toMatch(/^Your time is up: read nothing more/);
+    expect(asked[1].slice(-6)).toEqual(['--print-timeout', RESUME_TIMEOUT, '--add-dir', 'C:/tmp', '--conversation', 'c-2']);
+  });
+
+  it('passes the time-out on when the resumed run runs out of time too, so the next model is asked', () => {
+    const twice = runs(LATE, { ...LATE, error: 'print timeout after 6m0s with the turn still in progress' });
+    expect(() => askModel(twice.run, 'Review this.', FLASH)).toThrow('the model ran out of time (6m0s) before finishing its answer');
+    expect(twice.asked).toHaveLength(2);
   });
 });

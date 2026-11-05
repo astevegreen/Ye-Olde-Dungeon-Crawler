@@ -29,3 +29,39 @@ export function shouldEscape(c: EscapeCheck): boolean {
   if (!low) return false;
   return c.healCost === null || c.justHealed || c.mana < c.healCost + c.escapeCost;
 }
+
+/** Where an aimed Phase Door can land (beside Hliðskjálf, its slot's `spellPatch` aims it). */
+export interface LandingCheck {
+  hero: { x: number; y: number };
+  /** The patched spell's range, counted as the engine counts it: Chebyshev (`spellPipeline.ts`). */
+  reach: number;
+  /** The awake hostiles the bot runs from. */
+  foes: { x: number; y: number }[];
+  /** A tile the hero may land on: in bounds, passable, empty, no hazard or danger, in sight. */
+  open: (x: number, y: number) => boolean;
+}
+
+/**
+ * The open tile in reach farthest from every foe, two tiles away at least; null when there is
+ * none, so the Heal, potion and scroll steps run instead. Ties keep the first tile scanned.
+ *
+ * Rebuilt in the page from its source text like `shouldEscape`: no imports, no outside calls.
+ */
+export function escapeLanding(c: LandingCheck): { x: number; y: number } | null {
+  let best: { x: number; y: number } | null = null;
+  let bestGap = 1;
+  for (let dy = -c.reach; dy <= c.reach; dy++) {
+    for (let dx = -c.reach; dx <= c.reach; dx++) {
+      const x = c.hero.x + dx;
+      const y = c.hero.y + dy;
+      if (!c.open(x, y)) continue;
+      let gap = Infinity;
+      for (const m of c.foes) gap = Math.min(gap, Math.max(Math.abs(m.x - x), Math.abs(m.y - y)));
+      if (gap > bestGap) {
+        best = { x, y };
+        bestGap = gap;
+      }
+    }
+  }
+  return best;
+}

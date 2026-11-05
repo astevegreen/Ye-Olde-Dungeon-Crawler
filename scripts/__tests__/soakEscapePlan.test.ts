@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { shouldEscape, type EscapeCheck } from '../../e2e/soak/escapePlan';
+import { escapeLanding, shouldEscape, type EscapeCheck, type LandingCheck } from '../../e2e/soak/escapePlan';
 
 /**
  * Soak K4: the bot casts Phase Door when badly hurt in melee. The rule runs in the page (the bot
@@ -113,5 +113,58 @@ describe('shouldEscape', () => {
     for (const c of cases) {
       expect(rebuilt(c)).toBe(shouldEscape(c));
     }
+  });
+});
+
+/**
+ * Beside Hliðskjálf an aimed Phase Door picks its landing (`escapeAt` in playerBot.ts): the open
+ * tile in reach farthest from every foe, two tiles away at least, or none.
+ */
+describe('escapeLanding', () => {
+  const room = (over: Partial<LandingCheck>): LandingCheck => ({
+    hero: { x: 10, y: 10 },
+    reach: 3,
+    foes: [{ x: 11, y: 10 }],
+    open: () => true,
+    ...over,
+  });
+
+  it('lands on the tile farthest from the foe', () => {
+    expect(escapeLanding(room({}))).toEqual({ x: 7, y: 7 });
+  });
+
+  it('counts reach as the engine does, so a diagonal corner in range is a landing', () => {
+    // Euclidean reach (the old check) dropped (7,7) at range 3: hypot(3,3) > 3.
+    const t = escapeLanding(room({ open: (x, y) => x === 7 && y === 7 }));
+    expect(t).toEqual({ x: 7, y: 7 });
+  });
+
+  it('never lands beyond its reach', () => {
+    const t = escapeLanding(room({ reach: 2 }));
+    expect(t).not.toBeNull();
+    expect(Math.max(Math.abs(t!.x - 10), Math.abs(t!.y - 10))).toBeLessThanOrEqual(2);
+  });
+
+  it('keeps away from every foe, not just the nearest one', () => {
+    const t = escapeLanding(room({ foes: [{ x: 11, y: 10 }, { x: 7, y: 7 }] }));
+    expect(t).not.toBeNull();
+    const gap = Math.min(...[{ x: 11, y: 10 }, { x: 7, y: 7 }].map((m) => Math.max(Math.abs(m.x - t!.x), Math.abs(m.y - t!.y))));
+    expect(gap).toBeGreaterThanOrEqual(2);
+  });
+
+  it('skips tiles that are not open', () => {
+    const t = escapeLanding(room({ open: (x) => x >= 10 }));
+    expect(t).not.toBeNull();
+    expect(t!.x).toBeGreaterThanOrEqual(10);
+  });
+
+  it('returns null when every open tile is beside a foe, so the Heal, potion and scroll steps run', () => {
+    expect(escapeLanding(room({ open: (x, y) => Math.abs(x - 11) <= 1 && Math.abs(y - 10) <= 1 }))).toBeNull();
+    expect(escapeLanding(room({ open: () => false }))).toBeNull();
+  });
+
+  it('runs rebuilt from its source text, as the page runs it', () => {
+    const rebuilt = new Function(`return (${escapeLanding.toString()})`)() as typeof escapeLanding;
+    expect(rebuilt(room({}))).toEqual(escapeLanding(room({})));
   });
 });

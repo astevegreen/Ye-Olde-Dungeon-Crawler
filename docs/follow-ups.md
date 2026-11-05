@@ -18,5 +18,6 @@ it. Sessions add to it by day; sprint lanes file follow-up issues instead. Movin
 ## Presentation
 
 ## Tests, gates and tooling
+- No test covers the soak bot's Phase Door landing pick beside Hliðskjálf (`escapeAt`, `e2e/soak/playerBot.ts:1424-1441`): the farthest open tile at least two from every foe, and the null fall-through to Heal, potion and scroll; pull it into `e2e/soak/escapePlan.ts` as a pure function like `shouldEscape`. [5 Nov 2026, reviewer on the K4 cherry-pick]
 
 ## Docs

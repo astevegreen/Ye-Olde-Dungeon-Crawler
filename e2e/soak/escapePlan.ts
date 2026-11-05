@@ -33,7 +33,7 @@ export function shouldEscape(c: EscapeCheck): boolean {
 /** Where an aimed Phase Door can land (beside Hliðskjálf, its slot's `spellPatch` aims it). */
 export interface LandingCheck {
   hero: { x: number; y: number };
-  /** The patched spell's range, counted as the engine counts it: Chebyshev (`spellPipeline.ts`). */
+  /** The patched spell's range, counted as the aimed teleport counts it: straight-line (`teleportToAim`). */
   reach: number;
   /** The awake hostiles the bot runs from. */
   foes: { x: number; y: number }[];
@@ -52,6 +52,7 @@ export function escapeLanding(c: LandingCheck): { x: number; y: number } | null 
   let bestGap = 1;
   for (let dy = -c.reach; dy <= c.reach; dy++) {
     for (let dx = -c.reach; dx <= c.reach; dx++) {
+      if (Math.hypot(dx, dy) > c.reach) continue;
       const x = c.hero.x + dx;
       const y = c.hero.y + dy;
       if (!c.open(x, y)) continue;

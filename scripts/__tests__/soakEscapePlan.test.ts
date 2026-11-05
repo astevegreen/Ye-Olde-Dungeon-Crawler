@@ -130,19 +130,21 @@ describe('escapeLanding', () => {
   });
 
   it('lands on the tile farthest from the foe', () => {
-    expect(escapeLanding(room({}))).toEqual({ x: 7, y: 7 });
+    expect(escapeLanding(room({}))).toEqual({ x: 7, y: 10 });
   });
 
-  it('counts reach as the engine does, so a diagonal corner in range is a landing', () => {
-    // Euclidean reach (the old check) dropped (7,7) at range 3: hypot(3,3) > 3.
-    const t = escapeLanding(room({ open: (x, y) => x === 7 && y === 7 }));
-    expect(t).toEqual({ x: 7, y: 7 });
+  it('counts reach in a straight line, as the aimed teleport does, so a corner past it is never picked', () => {
+    // teleportToAim refuses hypot(dx, dy) > range: (7,7) is 4.24 from the hero at range 3.
+    expect(escapeLanding(room({ open: (x, y) => x === 7 && y === 7 }))).toBeNull();
+    expect(escapeLanding(room({ open: (x, y) => x === 8 && y === 8 }))).toEqual({ x: 8, y: 8 });
   });
 
   it('never lands beyond its reach', () => {
-    const t = escapeLanding(room({ reach: 2 }));
-    expect(t).not.toBeNull();
-    expect(Math.max(Math.abs(t!.x - 10), Math.abs(t!.y - 10))).toBeLessThanOrEqual(2);
+    for (const reach of [2, 3, 6]) {
+      const t = escapeLanding(room({ reach }));
+      expect(t).not.toBeNull();
+      expect(Math.hypot(t!.x - 10, t!.y - 10)).toBeLessThanOrEqual(reach);
+    }
   });
 
   it('keeps away from every foe, not just the nearest one', () => {

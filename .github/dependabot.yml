@@ -1,0 +1,27 @@
+# Weekly version updates as pull requests, which run ci.yml and playwright.yml before anything
+# merges. Minor and patch updates come grouped, one pull request per ecosystem; a major version
+# comes on its own. A release waits 7 days first, so a broken or hijacked release is usually
+# pulled before it reaches us. Security updates are separate (Dependabot alerts) and skip the wait.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      npm-minor-and-patch:
+        patterns: ['*']
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions-minor-and-patch:
+        patterns: ['*']
+        update-types: [minor, patch]

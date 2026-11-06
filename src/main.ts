@@ -65,6 +65,7 @@ import { InputHandler } from './rendering/input-handler';
 import { TitleScreen } from './ui/title-screen';
 import { DiagnosticModal } from './ui/diagnostic-modal';
 import { canPlayerAct, createPipelineErrorReporter, playEffectBatch } from './main/turnGate';
+import { toUIModal, type LegacyModal } from './main/modalAdapter';
 import { runAndExplain } from './ui/actionFeedback';
 import { FeedbackModal } from './ui/feedbackModal';
 import { SagaShareModal } from './ui/sagaShareModal';
@@ -313,30 +314,8 @@ window.addEventListener('DOMContentLoaded', () => {
    * Modal classes here predate UIModal and differ in shape (one exposes isOpen as a
    * method), so each is adapted rather than reshaped.
    */
-  const pushModal = (
-    id: string,
-    target: {
-      isOpen: boolean | (() => boolean);
-      handleKeyDown?: (e: KeyboardEvent) => boolean;
-      close: () => void;
-      focusRoot?: () => HTMLElement | null;
-    }
-  ): void => {
-    if (!inputHandler) return;
-    const openNow = () => (typeof target.isOpen === 'function' ? target.isOpen() : target.isOpen);
-    inputHandler.modalStack.push({
-      id,
-      get isOpen() {
-        return openNow();
-      },
-      set isOpen(value: boolean) {
-        if (!value) target.close();
-      },
-      handleKeyDown: (e: KeyboardEvent) => (openNow() ? (target.handleKeyDown?.(e) ?? false) : false),
-      close: () => target.close(),
-      // Forwarded, or Tab is trapped in a dialog it can't move through (R-ui-4).
-      focusRoot: target.focusRoot ? () => target.focusRoot!() : undefined,
-    });
+  const pushModal = (id: string, target: LegacyModal): void => {
+    inputHandler?.modalStack.push(toUIModal(id, target));
   };
 
   const popModal = (id: string): void => {

@@ -291,6 +291,11 @@ export class DungeonGeneratorRegistry {
     return this.strategies.get(id);
   }
 
+  /** Removes a strategy registered for a while (a test's), so the registry is as it was. */
+  public static unregister(id: string): void {
+    this.strategies.delete(id);
+  }
+
   public static getAll(): DungeonGeneratorStrategy[] {
     return Array.from(this.strategies.values());
   }

@@ -27,12 +27,19 @@ export class SmithService {
   public static workableItems(engine: GameEngine, npcId: string): Item[] {
     const smith = SmithService.smithFor(engine, npcId);
     if (!smith) return [];
-    return SmithService.candidates(engine, smith).filter((item) => item.enchantmentLevel < smith.stepPricesCp.length);
+    return SmithService.candidates(engine, smith).filter((item) => SmithService.hasStepPrice(smith, item));
   }
 
-  /** The price of the item's next step; undefined past the smith's last. */
+  /** Whether the smith's price list has a step for the item's level: +0 up to the last step. */
+  private static hasStepPrice(smith: SmithDefinition, item: Item): boolean {
+    const level = item.enchantmentLevel;
+    return Number.isInteger(level) && level >= 0 && level < smith.stepPricesCp.length;
+  }
+
+  /** The price of the item's next step; undefined below +0 or past the smith's last. */
   public static nextStepPrice(engine: GameEngine, npcId: string, item: Item): number | undefined {
-    return SmithService.smithFor(engine, npcId)?.stepPricesCp[item.enchantmentLevel];
+    const smith = SmithService.smithFor(engine, npcId);
+    return smith && SmithService.hasStepPrice(smith, item) ? smith.stepPricesCp[item.enchantmentLevel] : undefined;
   }
 
   /** Raises the item one step, for the step's price. */

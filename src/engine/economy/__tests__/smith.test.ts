@@ -54,6 +54,20 @@ describe('Gunther raises +N one step at a time, up to +3 (Q47 "A")', () => {
     expect(mail.stats.defenseBonus).toBe(5);
   });
 
+  // The price list starts at +0: an item below it has no step price, and must not be charged
+  // `undefined` (which once turned a purse into NaN coins).
+  it('will not work an item below +0, and charges nothing for it', () => {
+    const dented = sword('dented', { enchantmentLevel: -1 });
+    engine.player.inventory.primaryPack.addItem(dented);
+    const before = getPlayerTotalCp(engine.player);
+
+    expect(SmithService.workableItems(engine, GUNTHER)).not.toContain(dented);
+    expect(SmithService.nextStepPrice(engine, GUNTHER, dented)).toBeUndefined();
+    expect(SmithService.upgrade(engine, GUNTHER, dented).success).toBe(false);
+    expect(getPlayerTotalCp(engine.player)).toBe(before);
+    expect(dented.enchantmentLevel).toBe(-1);
+  });
+
   it('starts from the level an item already has: a +2 from the dungeon costs 2,000 for +3', () => {
     const found = sword('found', { enchantmentLevel: 2, stats: { attackBonus: 8 } });
     engine.player.inventory.primaryPack.addItem(found);

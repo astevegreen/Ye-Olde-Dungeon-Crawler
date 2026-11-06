@@ -36,43 +36,45 @@ describe('Headless Chaos / Monkey Simulation (5,000 Actions)', () => {
     const storage = new MemoryStorage();
     const pm = new ProfileManager(storage);
 
-    // 1. Initialize full game session with cotw manifest
-    const session = pm.createCharacter('ChaosMonkey', {
-      strength: 14,
-      startInTown: true,
-      seed: 1337,
-    });
+    // 1. A full game session with the cotw manifest. A run ends when its hero dies: the death
+    // is checked, and a fresh hero (its own seed) carries the loop on. Reviving the corpse in
+    // place, as this once did, played on in a state the game never reaches.
+    const startRun = (run: number) => {
+      const session = pm.createCharacter(`ChaosMonkey${run}`, {
+        strength: 14,
+        startInTown: true,
+        seed: 1337 + run,
+      });
+      const started = session.engine;
+
+      // Seed some fun items into backpack for chaotic inventory interactions
+      const pack = started.player.inventory.primaryPack;
+      pack.addItem(ItemFactory.createBroadsword(`monkey-sword-${run}`));
+      pack.addItem(ItemFactory.createCursedMace(`monkey-cursed-mace-${run}`));
+      pack.addItem(ItemFactory.createWoodenShield(`monkey-shield-${run}`));
+      pack.addItem(ItemFactory.createLeatherArmor(`monkey-armor-${run}`));
+      pack.addItem(
+        new Container({
+          id: `monkey-pouch-${run}`,
+          name: 'Small Belt Pouch',
+          category: 'container',
+          slot: 'waist',
+          containerType: 'belt',
+          weight: 200,
+          bulk: 400,
+          maxWeightCapacity: 3000,
+          maxBulkCapacity: 2000,
+        })
+      );
+
+      // Ensure player knows core offensive/utility spells
+      started.player.spellsKnown = ['magic_arrow', 'firebolt', 'lightning_bolt', 'heal_minor', 'phase_door'];
+      return session;
+    };
+    let runs = 1;
+    let session = startRun(runs);
     let engine = session.engine;
     let profile = session.profile;
-
-    // Seed some fun items into backpack for chaotic inventory interactions
-    const pack = engine.player.inventory.primaryPack;
-    pack.addItem(ItemFactory.createBroadsword('monkey-sword'));
-    pack.addItem(ItemFactory.createCursedMace('monkey-cursed-mace'));
-    pack.addItem(ItemFactory.createWoodenShield('monkey-shield'));
-    pack.addItem(ItemFactory.createLeatherArmor('monkey-armor'));
-    pack.addItem(
-      new Container({
-        id: 'monkey-pouch',
-        name: 'Small Belt Pouch',
-        category: 'container',
-        slot: 'waist',
-        containerType: 'belt',
-        weight: 200,
-        bulk: 400,
-        maxWeightCapacity: 3000,
-        maxBulkCapacity: 2000,
-      })
-    );
-
-    // Ensure player knows core offensive/utility spells
-    engine.player.spellsKnown = [
-      'magic_arrow',
-      'firebolt',
-      'lightning_bolt',
-      'heal_minor',
-      'phase_door',
-    ];
 
     const TOTAL_ACTIONS = 5000;
     let successfulActions = 0;
@@ -87,10 +89,14 @@ describe('Headless Chaos / Monkey Simulation (5,000 Actions)', () => {
       }
       const p = engine.player;
 
-      // Revive player if killed in previous combat so stress test continues
       if (!p.isAlive()) {
-        p.hp = p.maxHp;
-        p.mana = p.maxMana;
+        // The death went through the game's own rules: the run is over, not merely at 0 HP.
+        expect(engine.gameState.runStatus, `run ${runs} at action ${tick}`).toBe('fallen');
+        runs++;
+        session = startRun(runs);
+        engine = session.engine;
+        profile = session.profile;
+        continue;
       }
 
       // Periodically give player mana to keep spellcasting active
@@ -294,8 +300,12 @@ describe('Headless Chaos / Monkey Simulation (5,000 Actions)', () => {
       }
     }
 
-    expect(saveSizesKb.length).toBe(saveReloadCount);
-    expect(successfulActions + failedActions).toBeGreaterThanOrEqual(TOTAL_ACTIONS - 100);
+    // Every 500th action saved and reloaded, and the monkey mostly did things, not bumped into
+    // walls: this seed lands about 73% (3,668 of 4,995) and dies five times.
+    expect(saveReloadCount).toBe(TOTAL_ACTIONS / 500);
+    expect(saveSizesKb.every((kb) => kb > 0)).toBe(true);
+    expect(successfulActions / (successfulActions + failedActions)).toBeGreaterThanOrEqual(0.6);
+    expect(runs, 'no hero died, so the death check never ran').toBeGreaterThanOrEqual(2);
     // Wall-clock budgets live in `npm run sim` (scripts/headless-sim.ts), not in the correctness suite.
   }, 120_000);
 });

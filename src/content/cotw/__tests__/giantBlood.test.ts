@@ -36,37 +36,21 @@ describe("Giant's Blood heritage buff (Act 1, replaces the old permafrost/obsidi
     expect(player.statusManager.getAll().filter((e) => e.type === GIANT_BLOOD_STATUS)).toHaveLength(1);
   });
 
-  it('grants +3 attack / +3 defense on floors 1-9 (Rime Hollows)', () => {
-    const { engine, player } = buildEngine(3);
+  // Each band's first and last floor: Rime Hollows 1-9 (+3), Dwarven Works 10-17 (+2),
+  // Obsidian Siphon 18-25 (+1).
+  it.each([
+    [1, 3], [9, 3],
+    [10, 2], [17, 2],
+    [18, 1], [25, 1],
+  ])('on floor %i grants +%i attack and defense', (floor, bonus) => {
+    const { engine, player } = buildEngine(floor);
     const baseAttack = player.attack;
     const baseDefense = player.defense;
 
     engine.handlePlayerAction(new WaitAction(player));
 
-    expect(player.attack).toBe(baseAttack + 3);
-    expect(player.defense).toBe(baseDefense + 3);
-  });
-
-  it('grants +2 attack / +2 defense on floors 10-17 (Abandoned Dwarven Works)', () => {
-    const { engine, player } = buildEngine(12);
-    const baseAttack = player.attack;
-    const baseDefense = player.defense;
-
-    engine.handlePlayerAction(new WaitAction(player));
-
-    expect(player.attack).toBe(baseAttack + 2);
-    expect(player.defense).toBe(baseDefense + 2);
-  });
-
-  it('grants +1 attack / +1 defense on floors 18-25 (Obsidian Siphon)', () => {
-    const { engine, player } = buildEngine(20);
-    const baseAttack = player.attack;
-    const baseDefense = player.defense;
-
-    engine.handlePlayerAction(new WaitAction(player));
-
-    expect(player.attack).toBe(baseAttack + 1);
-    expect(player.defense).toBe(baseDefense + 1);
+    expect(player.attack).toBe(baseAttack + bonus);
+    expect(player.defense).toBe(baseDefense + bonus);
   });
 
   it('removes itself once Act 2 begins (floor 26), dropping the bonus back to zero', () => {

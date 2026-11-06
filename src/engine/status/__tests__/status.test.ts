@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
+import { StatusHandlerRegistry } from '../statusHandlers';
 import { StatusManager } from '../statusManager';
 import { Player } from '../../entities/player';
 import { createTestSkeleton } from '../../__fixtures__/testHelpers';
@@ -106,5 +107,48 @@ describe('Status Affliction System', () => {
     player.statusManager.removeStatus('blindness');
     engine.updateFov();
     expect(engine.fov.isVisible(player.x + 2, player.y)).toBe(true);
+  });
+
+  describe('re-applying a status the bearer already has', () => {
+    afterEach(() => StatusHandlerRegistry.resetToDefaults());
+
+    it('keeps one instance, with the longer duration and the stronger potency', () => {
+      const mgr = new StatusManager();
+      mgr.applyStatus({ type: 'poison', duration: 5, potency: 2 });
+
+      expect(mgr.applyStatus({ type: 'poison', duration: 3, potency: 4 })).toBe(true);
+      expect(mgr.getAll().filter((e) => e.type === 'poison')).toHaveLength(1);
+      expect(mgr.getStatus('poison')).toMatchObject({ duration: 5, potency: 4 });
+
+      mgr.applyStatus({ type: 'poison', duration: 9, potency: 1 });
+      expect(mgr.getStatus('poison')).toMatchObject({ duration: 9, potency: 4 });
+    });
+
+    it('keeps the potency it has when the new one names none', () => {
+      const mgr = new StatusManager();
+      mgr.applyStatus({ type: 'poison', duration: 2, potency: 3 });
+      mgr.applyStatus({ type: 'poison', duration: 4 });
+      expect(mgr.getStatus('poison')).toMatchObject({ duration: 4, potency: 3 });
+    });
+
+    it("runs the handler's onApply only the first time", () => {
+      const { engine, player } = setupEngine();
+      let applied = 0;
+      StatusHandlerRegistry.register('test_once', { onApply: () => { applied++; return 'It takes hold.'; } });
+
+      expect(player.statusManager.applyStatusDetailed({ type: 'test_once', duration: 2 }, [], player, engine).message).toBe('It takes hold.');
+      expect(player.statusManager.applyStatusDetailed({ type: 'test_once', duration: 5 }, [], player, engine).message).toBeUndefined();
+      expect(applied).toBe(1);
+      expect(player.statusManager.getStatus('test_once')?.duration).toBe(5);
+    });
+
+    it('adds a second instance of a stacking status, each with its own duration', () => {
+      const mgr = new StatusManager();
+      StatusHandlerRegistry.register('test_stacking', { stacks: true });
+      mgr.applyStatus({ type: 'test_stacking', duration: 2 });
+      mgr.applyStatus({ type: 'test_stacking', duration: 7 });
+
+      expect(mgr.getAll().filter((e) => e.type === 'test_stacking').map((e) => e.duration).sort()).toEqual([2, 7]);
+    });
   });
 });

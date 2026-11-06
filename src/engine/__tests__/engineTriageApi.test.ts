@@ -106,19 +106,19 @@ describe('GameEngine Triage & Diagnostic Public API', () => {
     });
 
     it('places item on ground tile beneath player when inventory is full', () => {
-      // Fill pack to capacity (capacity limit or max weight)
-      // Small belt pouch has 3 capacity
-      for (let i = 0; i < 30; i++) {
-        player.addItem(ItemFactory.createBroadsword(`filler-${i}`));
+      // Fill the pack until not even one more potion fits.
+      let filled = false;
+      for (let i = 0; i < 2000 && !filled; i++) {
+        filled = !player.addItem(ItemFactory.createHealthPotion(`filler-${i}`));
       }
+      expect(filled).toBe(true);
 
       const extraItem = ItemFactory.createHealthPotion('overflow-potion');
       const result = engine.diagnostics.spawnItem(extraItem);
 
-      if (!result.placedInPack) {
-        expect(result.groundTile).toEqual({ x: player.x, y: player.y });
-        expect(map.getItemsAt(player.x, player.y)).toContain(extraItem);
-      }
+      expect(result.placedInPack).toBe(false);
+      expect(result.groundTile).toEqual({ x: player.x, y: player.y });
+      expect(map.getItemsAt(player.x, player.y)).toContain(extraItem);
     });
   });
 

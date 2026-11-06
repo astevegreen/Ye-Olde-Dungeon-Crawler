@@ -140,19 +140,20 @@ describe('generated cotw floors hide traps (manifest.trapPlacement)', () => {
         expect(traps.length, where).toBeLessThanOrEqual(range.max);
         total += traps.length;
         const reach = new SpawnSiteFilter(r.map, { anchor: r.playerSpawn, minDistance: 0 });
+        // Every floor 1-49 has a way down (49 is above the last floor).
+        expect(r.stairsDown, `${where}: no stairs down`).toBeDefined();
+        const stairs = r.stairsDown!;
         for (const t of traps) {
           expect(r.map.getTile(t.x, t.y)?.type, where).toBe('floor');
           expect(r.map.getItemsAt(t.x, t.y), where).toEqual([]);
           expect(r.map.getEntityAt(t.x, t.y), where).toBeNull();
           expect(reach.reaches(t.x, t.y), `${where}: a trap behind a secret door or in a cage`).toBe(true);
           expect(Math.hypot(t.x - r.playerSpawn.x, t.y - r.playerSpawn.y), where).toBeGreaterThanOrEqual(TRAP_ARRIVAL_CLEARANCE);
-          if (r.stairsDown) {
-            expect(Math.max(Math.abs(t.x - r.stairsDown.x), Math.abs(t.y - r.stairsDown.y)), where).toBeGreaterThanOrEqual(TRAP_STAIRS_CLEARANCE);
-          }
+          expect(Math.max(Math.abs(t.x - stairs.x), Math.abs(t.y - stairs.y)), where).toBeGreaterThanOrEqual(TRAP_STAIRS_CLEARANCE);
           const def = cotwManifest.traps!.find((d) => d.type === t.type)!;
           expect(floor, `${where}: ${t.type} above its minFloor`).toBeGreaterThanOrEqual(def.minFloor ?? 1);
         }
-        if (r.stairsDown) expect(reach.reaches(r.stairsDown.x, r.stairsDown.y), where).toBe(true);
+        expect(reach.reaches(stairs.x, stairs.y), where).toBe(true);
       }
     }
     expect(total).toBeGreaterThan(FLOORS.length * SEEDS.length);

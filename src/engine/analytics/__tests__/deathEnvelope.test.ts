@@ -70,9 +70,11 @@ describe('DeathEnvelope & Run-Failure Telemetry', () => {
 
   it('notifies external subscribers of a player death', () => {
     let subscriberEnvelope: DeathEnvelope | null = null;
+    let calls = 0;
 
     const unsubscribe = DeathEnvelopeTracker.subscribe((env) => {
       subscriberEnvelope = env;
+      calls++;
     });
 
     DeathResolver.resolveDeath(engine, killer, player);
@@ -81,9 +83,12 @@ describe('DeathEnvelope & Run-Failure Telemetry', () => {
     expect((subscriberEnvelope as any)?.victimName).toBe('Ragnar');
     expect(DeathEnvelopeTracker.getHistory().length).toBe(1);
 
+    expect(calls).toBe(1);
+
     unsubscribe();
     DeathEnvelopeTracker.recordPlayerDeath(engine, killer);
     expect(DeathEnvelopeTracker.getHistory().length).toBe(2);
+    expect(calls).toBe(1);
   });
 
   // R-dbg-14: the history grew one envelope per death for the whole session, and clearing it

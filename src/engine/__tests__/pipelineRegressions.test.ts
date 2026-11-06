@@ -132,7 +132,10 @@ describe('R-pipe-6 · item actions taken while the engine is paused (menu open) 
       return orcAttacks(engine);
     };
 
-    expect(attacksAfter(true)).toBe(attacksAfter(false));
+    // Anchored: three potions and a wait are at least three orc turns, so "both zero" can't pass.
+    const outside = attacksAfter(false);
+    expect(outside).toBeGreaterThanOrEqual(3);
+    expect(attacksAfter(true)).toBe(outside);
   });
 
   it('the menu is still paused afterwards: the world does not idle on', () => {

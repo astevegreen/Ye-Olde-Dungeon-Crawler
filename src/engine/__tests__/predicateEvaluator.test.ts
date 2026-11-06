@@ -169,10 +169,20 @@ describe('PredicateEvaluator', () => {
       expect(evaluatePredicate(p, state)).toBe(true);
     });
     
-    it('returns true for unknown predicate types', () => {
+    // Fails closed (owner's decision, 6 Nov 2026): a misspelled type in content keeps its
+    // choice or stock locked instead of opening it to everyone.
+    it('returns false for unknown predicate types', () => {
       const state = createWorldState();
       const p = { type: 'unknown_type_xxx' } as unknown as Predicate;
-      expect(evaluatePredicate(p, state)).toBe(true);
+      expect(evaluatePredicate(p, state)).toBe(false);
+    });
+
+    it('returns false when an unknown type sits under a not, an and or an or', () => {
+      const state = createWorldState({ flags: { a: true } });
+      const unknown = { type: 'hasFlagg', flag: 'a' } as unknown as Predicate;
+      expect(evaluatePredicate({ type: 'not', predicate: unknown }, state)).toBe(false);
+      expect(evaluatePredicate({ type: 'or', predicates: [{ type: 'hasFlag', flag: 'a' }, unknown] }, state)).toBe(false);
+      expect(evaluatePredicate({ type: 'and', predicates: [unknown] }, state)).toBe(false);
     });
   });
 });

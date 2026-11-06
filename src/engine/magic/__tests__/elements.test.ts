@@ -1,32 +1,22 @@
 import { describe, it, expect } from 'vitest';
 import { calculateElementalDamage } from '../elements';
+import type { ElementalAffinity, ElementType } from '../elements';
 
 describe('Elemental Damage and Resistances', () => {
-  it('scales damage for neutral affinity (1.0x)', () => {
-    const res = calculateElementalDamage(20, 'fire', 'neutral');
-    expect(res.finalDamage).toBe(20);
-    expect(res.multiplier).toBe(1.0);
-    expect(res.isHeal).toBe(false);
-  });
-
-  it('scales damage for weak affinity (1.5x)', () => {
-    const res = calculateElementalDamage(20, 'cold', 'weak');
-    expect(res.finalDamage).toBe(30);
-    expect(res.multiplier).toBe(1.5);
-    expect(res.isHeal).toBe(false);
-  });
-
-  it('scales damage for resistant affinity (0.5x)', () => {
-    const res = calculateElementalDamage(20, 'lightning', 'resistant');
-    expect(res.finalDamage).toBe(10);
-    expect(res.multiplier).toBe(0.5);
-    expect(res.isHeal).toBe(false);
-  });
-
-  it('negates damage completely for immune affinity (0.0x)', () => {
-    const res = calculateElementalDamage(20, 'poison', 'immune');
-    expect(res.finalDamage).toBe(0);
-    expect(res.multiplier).toBe(0.0);
+  it.each<[ElementalAffinity, ElementType, number, number, number]>([
+    // affinity, element, base, multiplier, final
+    ['neutral', 'fire', 20, 1.0, 20],
+    ['weak', 'cold', 20, 1.5, 30],
+    ['resistant', 'lightning', 20, 0.5, 10],
+    ['immune', 'poison', 20, 0.0, 0],
+    // Odd damage rounds half up, and a hit that lands is never below 1.
+    ['weak', 'cold', 7, 1.5, 11],
+    ['resistant', 'lightning', 7, 0.5, 4],
+    ['resistant', 'lightning', 1, 0.5, 1],
+  ])('%s to %s: %i damage x%f is %i', (affinity, element, base, multiplier, final) => {
+    const res = calculateElementalDamage(base, element, affinity);
+    expect(res.finalDamage).toBe(final);
+    expect(res.multiplier).toBe(multiplier);
     expect(res.isHeal).toBe(false);
   });
 

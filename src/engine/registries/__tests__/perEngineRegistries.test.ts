@@ -205,163 +205,68 @@ describe('Per-engine content registries', () => {
     expect(MonsterRegistry.has('kobold')).toBe(false);
   });
 
-  it('keeps two engines built from different trap manifests separate', () => {
-    const engineA = engineWith([], [trapDef('dart_trap')]);
-    const engineB = engineWith([], [trapDef('fire_rune')]);
+  /**
+   * One registry per row: what a manifest of A's or B's own adds, the engine's store, the
+   * static lookup the content code calls (which follows the engine that acted last), and an
+   * entry every engine inherits, where there is one.
+   */
+  interface RegistryCase {
+    a: string;
+    b: string;
+    manifest: (id: string) => Partial<Record<'traps' | 'spells' | 'companions' | 'aiStrategies' | 'aiBehaviors' | 'statusHandlers' | 'tiles', unknown>>;
+    own: (engine: GameEngine, id: string) => boolean;
+    facade: (id: string) => boolean;
+    inherited?: string;
+  }
+  const REGISTRIES: Record<string, RegistryCase> = {
+    trap: { a: 'dart_trap', b: 'fire_rune', manifest: (id) => ({ traps: [trapDef(id as TrapType)] }), own: (e, id) => e.registries.traps.has(id), facade: (id) => activeTrapStore().has(id) },
+    spell: {
+      a: 'frostbolt', b: 'pyroblast', manifest: (id) => ({ spells: [spellDef(id)] }), own: (e, id) => e.registries.spells.has(id),
+      facade: (id) => {
+        // getSpell answers from the same store as has.
+        expect(getSpell(id) !== undefined, `getSpell('${id}')`).toBe(SpellRegistry.has(id));
+        return SpellRegistry.has(id);
+      },
+    },
+    companion: { a: 'wolf_hound', b: 'snow_leopard', manifest: (id) => ({ companions: [companionDef(id)] }), own: (e, id) => e.registries.companions.has(id), facade: (id) => CompanionRegistry.has(id) },
+    'AI strategy': {
+      a: 'flank_attack', b: 'ambush_strike', manifest: (id) => ({ aiStrategies: [aiStrategyDef(id)] }), own: (e, id) => e.registries.aiStrategies.has(id),
+      facade: (id) => AIRegistry.has(id), inherited: 'aggressive_melee',
+    },
+    'AI behavior': {
+      a: 'tactical_retreat', b: 'berserk_charge', manifest: (id) => ({ aiBehaviors: { [id]: aiBehaviorDef(id) } }), own: (e, id) => e.registries.aiBehaviors.has(id),
+      facade: (id) => AiBehaviorRegistry.has(id), inherited: 'melee',
+    },
+    'status handler': {
+      a: 'frozen', b: 'cursed', manifest: (id) => ({ statusHandlers: { [id]: statusDef(`${id}_ended`) } }), own: (e, id) => e.registries.statusHandlers.has(id),
+      facade: (id) => StatusHandlerRegistry.has(id), inherited: 'poison',
+    },
+    tile: {
+      a: 'elven_grass', b: 'blighted_soil', manifest: (id) => ({ tiles: [tileDef(id)] }), own: (e, id) => e.registries.tiles.has(id),
+      facade: (id) => hasTileDefinition(id) && getTileDefinition(id).name === id, inherited: 'floor',
+    },
+  };
 
-    expect(engineA.registries.traps.has('dart_trap')).toBe(true);
-    expect(engineA.registries.traps.has('fire_rune')).toBe(false);
-    expect(engineB.registries.traps.has('fire_rune')).toBe(true);
-    expect(engineB.registries.traps.has('dart_trap')).toBe(false);
+  it.each(Object.entries(REGISTRIES))('keeps two engines built from different %s manifests separate', (_name, c) => {
+    const build = (id: string) => {
+      const m = c.manifest(id) as Record<string, never>;
+      return engineWith([], m.traps, m.spells, m.companions, m.aiStrategies, m.aiBehaviors, m.statusHandlers, m.tiles);
+    };
+    const engineA = build(c.a);
+    const engineB = build(c.b);
 
-    // The active trap store is B's
-    expect(activeTrapStore().has('fire_rune')).toBe(true);
-    expect(activeTrapStore().has('dart_trap')).toBe(false);
+    if (c.inherited) {
+      expect(c.own(engineA, c.inherited)).toBe(true);
+      expect(c.own(engineB, c.inherited)).toBe(true);
+    }
+    expect([c.own(engineA, c.a), c.own(engineA, c.b), c.own(engineB, c.b), c.own(engineB, c.a)]).toEqual([true, false, true, false]);
 
-    // Acting on A makes A's store the active one
+    // The static lookups follow the engine built last (B)...
+    expect([c.facade(c.b), c.facade(c.a)]).toEqual([true, false]);
+
+    // ...and switch to A once A acts.
     engineA.handlePlayerAction(new WaitAction(engineA.player));
-    expect(activeTrapStore().has('dart_trap')).toBe(true);
-    expect(activeTrapStore().has('fire_rune')).toBe(false);
-  });
-
-  it('keeps two engines built from different spell manifests separate', () => {
-    const engineA = engineWith([], [], [spellDef('frostbolt')]);
-    const engineB = engineWith([], [], [spellDef('pyroblast')]);
-
-    expect(engineA.registries.spells.has('frostbolt')).toBe(true);
-    expect(engineA.registries.spells.has('pyroblast')).toBe(false);
-    expect(engineB.registries.spells.has('pyroblast')).toBe(true);
-    expect(engineB.registries.spells.has('frostbolt')).toBe(false);
-
-    // Static facade points to B
-    expect(SpellRegistry.has('pyroblast')).toBe(true);
-    expect(SpellRegistry.has('frostbolt')).toBe(false);
-    expect(getSpell('pyroblast')).toBeDefined();
-    expect(getSpell('frostbolt')).toBeUndefined();
-
-    // Acting on A switches SpellRegistry to A
-    engineA.handlePlayerAction(new WaitAction(engineA.player));
-    expect(SpellRegistry.has('frostbolt')).toBe(true);
-    expect(SpellRegistry.has('pyroblast')).toBe(false);
-    expect(getSpell('frostbolt')).toBeDefined();
-    expect(getSpell('pyroblast')).toBeUndefined();
-  });
-
-  it('keeps two engines built from different companion manifests separate', () => {
-    const engineA = engineWith([], [], [], [companionDef('wolf_hound')]);
-    const engineB = engineWith([], [], [], [companionDef('snow_leopard')]);
-
-    expect(engineA.registries.companions.has('wolf_hound')).toBe(true);
-    expect(engineA.registries.companions.has('snow_leopard')).toBe(false);
-    expect(engineB.registries.companions.has('snow_leopard')).toBe(true);
-    expect(engineB.registries.companions.has('wolf_hound')).toBe(false);
-
-    // Static facade points to B
-    expect(CompanionRegistry.has('snow_leopard')).toBe(true);
-    expect(CompanionRegistry.has('wolf_hound')).toBe(false);
-
-    // Acting on A switches CompanionRegistry to A
-    engineA.handlePlayerAction(new WaitAction(engineA.player));
-    expect(CompanionRegistry.has('wolf_hound')).toBe(true);
-    expect(CompanionRegistry.has('snow_leopard')).toBe(false);
-  });
-
-  it('keeps two engines built from different AI strategy manifests separate', () => {
-    const engineA = engineWith([], [], [], [], [aiStrategyDef('flank_attack')]);
-    const engineB = engineWith([], [], [], [], [aiStrategyDef('ambush_strike')]);
-
-    // Both inherit default strategies
-    expect(engineA.registries.aiStrategies.has('aggressive_melee')).toBe(true);
-    expect(engineB.registries.aiStrategies.has('aggressive_melee')).toBe(true);
-
-    // Isolated custom strategies
-    expect(engineA.registries.aiStrategies.has('flank_attack')).toBe(true);
-    expect(engineA.registries.aiStrategies.has('ambush_strike')).toBe(false);
-    expect(engineB.registries.aiStrategies.has('ambush_strike')).toBe(true);
-    expect(engineB.registries.aiStrategies.has('flank_attack')).toBe(false);
-
-    // Static facade points to B
-    expect(AIRegistry.has('ambush_strike')).toBe(true);
-    expect(AIRegistry.has('flank_attack')).toBe(false);
-
-    // Acting on A switches AIRegistry to A
-    engineA.handlePlayerAction(new WaitAction(engineA.player));
-    expect(AIRegistry.has('flank_attack')).toBe(true);
-    expect(AIRegistry.has('ambush_strike')).toBe(false);
-  });
-
-  it('keeps two engines built from different AI behavior manifests separate', () => {
-    const engineA = engineWith([], [], [], [], [], { tactical_retreat: aiBehaviorDef('tactical_retreat') });
-    const engineB = engineWith([], [], [], [], [], { berserk_charge: aiBehaviorDef('berserk_charge') });
-
-    // Both inherit default behaviors (e.g. melee)
-    expect(engineA.registries.aiBehaviors.has('melee')).toBe(true);
-    expect(engineB.registries.aiBehaviors.has('melee')).toBe(true);
-
-    // Isolated custom behaviors
-    expect(engineA.registries.aiBehaviors.has('tactical_retreat')).toBe(true);
-    expect(engineA.registries.aiBehaviors.has('berserk_charge')).toBe(false);
-    expect(engineB.registries.aiBehaviors.has('berserk_charge')).toBe(true);
-    expect(engineB.registries.aiBehaviors.has('tactical_retreat')).toBe(false);
-
-    // Static facade points to B
-    expect(AiBehaviorRegistry.has('berserk_charge')).toBe(true);
-    expect(AiBehaviorRegistry.has('tactical_retreat')).toBe(false);
-
-    // Acting on A switches AiBehaviorRegistry to A
-    engineA.handlePlayerAction(new WaitAction(engineA.player));
-    expect(AiBehaviorRegistry.has('tactical_retreat')).toBe(true);
-    expect(AiBehaviorRegistry.has('berserk_charge')).toBe(false);
-  });
-
-  it('keeps two engines built from different status handler manifests separate', () => {
-    const engineA = engineWith([], [], [], [], [], {}, { frozen: statusDef('thawed') });
-    const engineB = engineWith([], [], [], [], [], {}, { cursed: statusDef('cleansed') });
-
-    // Both inherit builtin statuses (e.g. poison, blindness)
-    expect(engineA.registries.statusHandlers.has('poison')).toBe(true);
-    expect(engineB.registries.statusHandlers.has('poison')).toBe(true);
-
-    // Isolated custom status handlers
-    expect(engineA.registries.statusHandlers.has('frozen')).toBe(true);
-    expect(engineA.registries.statusHandlers.has('cursed')).toBe(false);
-    expect(engineB.registries.statusHandlers.has('cursed')).toBe(true);
-    expect(engineB.registries.statusHandlers.has('frozen')).toBe(false);
-
-    // Static facade points to B
-    expect(StatusHandlerRegistry.has('cursed')).toBe(true);
-    expect(StatusHandlerRegistry.has('frozen')).toBe(false);
-
-    // Acting on A switches StatusHandlerRegistry to A
-    engineA.handlePlayerAction(new WaitAction(engineA.player));
-    expect(StatusHandlerRegistry.has('frozen')).toBe(true);
-    expect(StatusHandlerRegistry.has('cursed')).toBe(false);
-  });
-
-  it('keeps two engines built from different tile manifests separate', () => {
-    const engineA = engineWith([], [], [], [], [], {}, {}, [tileDef('elven_grass')]);
-    const engineB = engineWith([], [], [], [], [], {}, {}, [tileDef('blighted_soil')]);
-
-    // Both inherit canonical tiles (e.g. floor, wall)
-    expect(engineA.registries.tiles.has('floor')).toBe(true);
-    expect(engineB.registries.tiles.has('floor')).toBe(true);
-
-    // Isolated custom tiles
-    expect(engineA.registries.tiles.has('elven_grass')).toBe(true);
-    expect(engineA.registries.tiles.has('blighted_soil')).toBe(false);
-    expect(engineB.registries.tiles.has('blighted_soil')).toBe(true);
-    expect(engineB.registries.tiles.has('elven_grass')).toBe(false);
-
-    // The static lookups resolve against B
-    expect(hasTileDefinition('blighted_soil')).toBe(true);
-    expect(hasTileDefinition('elven_grass')).toBe(false);
-    expect(getTileDefinition('blighted_soil').name).toBe('blighted_soil');
-
-    // Acting on A switches them to A
-    engineA.handlePlayerAction(new WaitAction(engineA.player));
-    expect(hasTileDefinition('elven_grass')).toBe(true);
-    expect(hasTileDefinition('blighted_soil')).toBe(false);
-    expect(getTileDefinition('elven_grass').name).toBe('elven_grass');
+    expect([c.facade(c.a), c.facade(c.b)]).toEqual([true, false]);
   });
 
   it('keeps two engines strictly isolated across all registries and runtime item state over 200 interleaved turns', () => {

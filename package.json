@@ -40,13 +40,13 @@
     "relay:deploy": "wrangler deploy --config relay/wrangler.toml"
   },
   "devDependencies": {
-    "@playwright/test": "^1.63.0",
-    "@types/node": "^26.5.1",
-    "knip": "^6.35.1",
-    "tsx": "^4.23.13",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.6",
+    "knip": "^6.44.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.7.3",
     "vite": "^6.4.0",
-    "vite-plugin-singlefile": "^2.1.0",
+    "vite-plugin-singlefile": "^2.3.4",
     "vitest": "^5.0.1",
     "wrangler": "^4.149.0"
   },

@@ -58,15 +58,38 @@ async function embark(page: Page): Promise<void> {
   await pastTheOpening(page);
 }
 
+const inputLocked = (page: Page) => page.evaluate(() => window.__cotwInputHandler!.isInputLocked);
+
+/** How long a shop ignores the keys that trade after it opens (R-ui-7: `ARMING_MS`, 250 ms). */
+const SHOP_ARMING_MS = 300;
+
 /**
- * Presses `key` until `done` holds. Right after a load, or while an effect plays, the
- * game can let a key go by (§4: tactical effects lock input); the player would press again.
+ * Presses `key` once and waits for `done`. While an effect plays the game lets keys go by
+ * (§4: tactical effects lock input), so it waits for the lock to free first (within 5 s),
+ * and presses again only when the lock was back on at the moment of the press. Any other
+ * press that does nothing fails here: a retry loop once hid swallowed first presses.
+ * `armingMs` waits out a dialog that ignores its keys for a moment after it opens.
  */
-async function pressUntil(page: Page, key: string, done: () => Promise<boolean>): Promise<void> {
-  await expect(async () => {
-    if (!(await done())) await page.keyboard.press(key);
-    expect(await done()).toBe(true);
-  }).toPass({ timeout: 10_000, intervals: [250] });
+async function pressUntil(page: Page, key: string, done: () => Promise<boolean>, armingMs = 0): Promise<void> {
+  if (armingMs > 0) await page.waitForTimeout(armingMs);
+  // Records, at each keydown and before the game sees it, whether input was locked then.
+  await page.evaluate(() => {
+    const w = window as unknown as { __lockAtKey?: boolean; __lockProbe?: boolean };
+    if (w.__lockProbe) return;
+    w.__lockProbe = true;
+    window.addEventListener('keydown', () => (w.__lockAtKey = window.__cotwInputHandler?.isInputLocked === true), true);
+  });
+  for (let attempt = 1; !(await done()); attempt++) {
+    await expect.poll(() => inputLocked(page), { message: 'input stayed locked past 5 s', timeout: 5_000 }).toBe(false);
+    await page.keyboard.press(key);
+    const lockedAtPress = await page.evaluate(() => (window as unknown as { __lockAtKey?: boolean }).__lockAtKey === true);
+    try {
+      await expect.poll(done, { message: `${key} did nothing`, timeout: 3_000 }).toBe(true);
+      return;
+    } catch (err) {
+      if (!lockedAtPress || attempt >= 3) throw err;
+    }
+  }
 }
 
 /** Runs triage calls from the page, then redraws (F2 is a player-reachable menu, §2). */
@@ -180,9 +203,12 @@ test.describe('a whole run', () => {
     await page.keyboard.press(await standBeside(page, shopNpc!));
     await expect.poll(() => stackIds(page)).toContain('shop');
     const purseBefore = await page.evaluate(() => window.__cotwEngine!.player.inventory.getAllCarriedItems().length);
-    // The shop ignores trading keys for a moment after it opens (R-ui-7), so press until it buys.
-    await pressUntil(page, 'Enter', async () =>
-      (await page.evaluate(() => window.__cotwEngine!.player.inventory.getAllCarriedItems().length)) > purseBefore
+    // The shop ignores trading keys for a moment after it opens (R-ui-7): wait that out, then buy.
+    await pressUntil(
+      page,
+      'Enter',
+      async () => (await page.evaluate(() => window.__cotwEngine!.player.inventory.getAllCarriedItems().length)) > purseBefore,
+      SHOP_ARMING_MS
     );
     await closeAll(page);
 
@@ -192,7 +218,7 @@ test.describe('a whole run', () => {
     await expect.poll(() => stackIds(page)).toContain('shop');
     // His window opens on the keeper's own lists; the pact keys 1-9 work on the Pacts tab.
     await page.locator('.st-subtab[data-act="view"][data-arg="pacts"]').click();
-    await pressUntil(page, 'Digit1', async () => (await engineState(page)).pacts.length === 1);
+    await pressUntil(page, 'Digit1', async () => (await engineState(page)).pacts.length === 1, SHOP_ARMING_MS);
     await closeAll(page);
     await expect(page.locator('.sb-hint')).toBeVisible();
     await expect(page.locator('.sb-hint .sb-title')).toContainText('Pacts');
@@ -363,7 +389,7 @@ test.describe('a whole run', () => {
     await page.keyboard.press('ArrowUp');
     const carried = () => page.evaluate(() => window.__cotwEngine!.player.inventory.getAllCarriedItems().length);
     const before = await carried();
-    await pressUntil(page, 'Enter', async () => (await carried()) > before);
+    await pressUntil(page, 'Enter', async () => (await carried()) > before, SHOP_ARMING_MS);
     expect((await focus()).inShop).toBe(true);
     await closeAll(page);
   });

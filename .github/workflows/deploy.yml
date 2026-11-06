@@ -21,7 +21,7 @@ jobs:
       ships: ${{ steps.scope.outputs.ships }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Decide whether this push ships
         id: scope
@@ -38,10 +38,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: 'npm'
@@ -69,17 +69,17 @@ jobs:
           mkdir -p sourcemaps/cotw && mv dist/*.map sourcemaps/cotw/ && cp dist/index.html sourcemaps/cotw/
 
       - name: Keep source maps for this build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sourcemaps-${{ github.sha }}
           path: sourcemaps
           retention-days: 90
 
       - name: Setup GitHub Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: './dist'
 
@@ -99,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Browser runs finish out of order, so an older push could finish its tests last and
       # deploy over a newer one. Only the branch tip deploys; a newer push deploys itself,
@@ -122,4 +122,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         if: steps.tip.outputs.current == 'true'
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

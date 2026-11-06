@@ -5,9 +5,18 @@ on:
     branches: [ main, master ]
   workflow_call:
 jobs:
-  test:
+  # One job per browser, side by side, each installing only its own browser (Playwright's
+  # sharding advice for CI). Each keeps one worker: Firefox and WebKit time out under more
+  # parallelism (playwright.config.ts).
+  browser:
+    name: browser (${{ matrix.project }})
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    strategy:
+      # Every browser reports, so one red run names all the browsers it breaks.
+      fail-fast: false
+      matrix:
+        project: [ chromium, firefox, webkit ]
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
@@ -16,14 +25,28 @@ jobs:
     - name: Install dependencies
       run: npm ci
     - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
+      run: npx playwright install --with-deps ${{ matrix.project }}
     - name: Build single-file bundle
       run: npm run build
     - name: Run Playwright tests
-      run: npx playwright test
+      run: npx playwright test --project=${{ matrix.project }}
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
-        name: playwright-report
+        name: playwright-report-${{ matrix.project }}
         path: playwright-report/
         retention-days: 30
+
+  # Branch protection requires a check named `test` (docs/architecture/quality-gates.md, CI):
+  # it passes only when every browser passed.
+  test:
+    needs: browser
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: All browsers passed
+      env:
+        RESULT: ${{ needs.browser.result }}
+      run: |
+        echo "Browsers: $RESULT"
+        [ "$RESULT" = "success" ]

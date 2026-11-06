@@ -1,5 +1,5 @@
 import { PRNG } from '../dungeon/prng';
-import { classifyLoadError, MISSING_SAVE, type LoadOutcome } from './loadResult';
+import { classifyLoadError, migrateForLoad, MISSING_SAVE, type LoadOutcome } from './loadResult';
 import { DungeonGenerator } from '../dungeon/dungeon-generator';
 import { TownMapGenerator } from '../town/townMap';
 import { InventoryManager } from '../inventory/inventory-manager';
@@ -435,7 +435,7 @@ export class ProfileManager {
     }
 
     try {
-      const { envelope } = defaultMigrator.migrate(raw);
+      const envelope = migrateForLoad(raw);
       const effectiveManifest = manifest ?? this.defaultManifest ?? DEFAULT_HEADLESS_MANIFEST;
       const result = deserializeGame(envelope.data, effectiveManifest);
 

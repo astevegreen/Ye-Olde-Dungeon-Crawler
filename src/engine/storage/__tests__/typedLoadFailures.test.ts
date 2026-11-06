@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ProfileManager } from '../profile-manager';
 import { AutosaveManager } from '../autosaveManager';
-import { CURRENT_SCHEMA_VERSION } from '../migrator';
-import { shouldNotifyPlayer } from '../loadResult';
+import { CURRENT_SCHEMA_VERSION, SchemaMigrator } from '../migrator';
+import { classifyLoadError, migrateForLoad, SaveLoadError, shouldNotifyPlayer } from '../loadResult';
 
 /**
  * Loads report why they failed (ARCHITECTURE.md §5). Callers must be able to tell
@@ -94,4 +94,57 @@ describe('Typed load failures', () => {
     const pm = new ProfileManager(storage as any);
     expect(pm.loadCharacter('no-such-hero')).toBeNull();
   });
+
+  // The version floor (§5): a save below it is refused as migration-failed, from either slot.
+  const belowFloor = () =>
+    JSON.stringify({ schemaVersion: CURRENT_SCHEMA_VERSION - 1, contentManifestId: 'cotw', timestamp: 1, data: { player: {}, map: {} } });
+
+  it('reports a character save below the version floor as migration-failed', () => {
+    const pm = new ProfileManager(storage as any);
+    storage.setItem(`${pm.saveKeyPrefix}hero-old`, belowFloor());
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(pm.loadCharacterResult('hero-old')).toMatchObject({ ok: false, reason: 'migration-failed' });
+  });
+
+  it('reports an autosave below the version floor as migration-failed, and a newer one as newer-than-engine', () => {
+    const am = new AutosaveManager(storage as any);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const withProfile = (raw: string) => JSON.stringify({ ...JSON.parse(raw), profile: { id: 'x', name: 'X' } });
+
+    storage.setItem(am.autosaveKey, withProfile(belowFloor()));
+    expect(am.loadAutosaveResult()).toMatchObject({ ok: false, reason: 'migration-failed' });
+
+    storage.setItem(am.autosaveKey, withProfile(JSON.stringify({ ...JSON.parse(belowFloor()), schemaVersion: CURRENT_SCHEMA_VERSION + 1 })));
+    expect(am.loadAutosaveResult()).toMatchObject({ ok: false, reason: 'newer-than-engine' });
+  });
+
+  it('reports a forward step that throws as migration-failed', () => {
+    const migrator = new SchemaMigrator();
+    migrator.registerMigration(CURRENT_SCHEMA_VERSION - 1, CURRENT_SCHEMA_VERSION, () => {
+      throw new Error('bad step');
+    });
+
+    expect(classifyLoadError(captured(() => migrateForLoad(belowFloor(), migrator)))).toMatchObject({ reason: 'migration-failed' });
+  });
+
+  // The reason comes from the save, not from how an error happens to be worded.
+  it('classifies by the error type, never by its wording', () => {
+    expect(classifyLoadError(new Error('Schema migration of the vault layout failed'))).toMatchObject({ reason: 'corrupt' });
+    expect(classifyLoadError(new Error('floor 9 is newer than engine version 3'))).toMatchObject({ reason: 'corrupt' });
+    expect(classifyLoadError(new SaveLoadError('newer-than-engine', 'any words'))).toMatchObject({
+      reason: 'newer-than-engine',
+      message: expect.stringMatching(/newer version/i),
+      detail: 'any words',
+    });
+  });
 });
+
+function captured(fn: () => unknown): unknown {
+  try {
+    fn();
+  } catch (err) {
+    return err;
+  }
+  throw new Error('expected a throw');
+}

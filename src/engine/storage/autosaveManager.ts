@@ -1,9 +1,9 @@
 import type { GameEngine } from '../engine';
-import { classifyLoadError, MISSING_SAVE, type LoadOutcome } from './loadResult';
+import { classifyLoadError, migrateForLoad, MISSING_SAVE, type LoadOutcome } from './loadResult';
 import type { CharacterProfile, SaveData, StorageAdapter } from './types';
 import type { GameContentManifest } from '../types/manifest';
 import { serializeGame, deserializeGame } from './serializer';
-import { CURRENT_SCHEMA_VERSION, defaultMigrator } from './migrator';
+import { CURRENT_SCHEMA_VERSION } from './migrator';
 import { getDefaultStorage } from './profile-manager';
 import { flightRecorder } from '../debug/flightRecorder';
 
@@ -173,7 +173,7 @@ export class AutosaveManager {
 
       // Always through the migrator, as a character save is: a current envelope passes
       // through, and a newer, missing or non-numeric version is refused, not mis-decoded.
-      const migratedData = defaultMigrator.migrate(env, CURRENT_SCHEMA_VERSION).envelope.data as SaveData;
+      const migratedData = migrateForLoad(env).data as SaveData;
 
       const manifest = activeManifest ?? this.manifest;
       const deserialized = deserializeGame(migratedData, manifest);

@@ -18,5 +18,6 @@ it. Sessions add to it by day; sprint lanes file follow-up issues instead. Movin
 ## Presentation
 
 ## Tests, gates and tooling
+- Planned: move type checking to TypeScript 7 (Microsoft's native compiler; `package.json` pins `^5.7.3`, the lockfile has 5.9.3). Measured 6 Nov 2026: `tsc --noEmit` passes with no errors and drops from 14.8s (3.7s with a warm incremental cache) to 2.1s, and the `e2e/` check from 9.7s to 1.4s; both run in `npm run lint` and `npm run build`. `scripts/check-engine-encapsulation.ts` imports the compiler API, which 7.0 lacks and 7.1 adds (beta 20 Oct 2026; stable reported for late November 2026). Wait for 7.1 and move in one step if the script runs on it unchanged; otherwise keep 5.9 beside 7.x for that script alone. The Rust port tsrs was looked at and skipped: it is experimental and would save under a second here. Found 6 Nov 2026 by the owner's research request.
 
 ## Docs

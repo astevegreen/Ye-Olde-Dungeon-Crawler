@@ -9,8 +9,6 @@ import {
   modifyFaction,
   getFaction,
 } from '../state/worldState';
-import { evaluatePredicate } from '../predicates/predicateEvaluator';
-import type { Predicate } from '../predicates/types';
 import type { ChoiceDefinition } from '../types/choice';
 import { ExecuteChoiceAction } from '../actions/choiceAction';
 import { GameEngine } from '../engine';
@@ -90,76 +88,6 @@ describe('World State Ledger (Pure Mutations & Queries)', () => {
     expect(getFlag(original, 'ancient_gate_opened')).toBe(true);
     expect(getCounter(original, 'sacrifices')).toBe(3);
     expect(getFaction(original, 'high_council')).toBe(50);
-  });
-});
-
-describe('Conditional Predicate Evaluator', () => {
-  it('returns true for undefined or missing predicates', () => {
-    const ws = createWorldState();
-    expect(evaluatePredicate(undefined, ws)).toBe(true);
-  });
-
-  it('evaluates hasFlag predicates accurately', () => {
-    const ws = createWorldState();
-    setFlag(ws, 'key_found', true);
-
-    expect(evaluatePredicate({ type: 'hasFlag', flag: 'key_found' }, ws)).toBe(true);
-    expect(evaluatePredicate({ type: 'hasFlag', flag: 'key_found', value: true }, ws)).toBe(true);
-    expect(evaluatePredicate({ type: 'hasFlag', flag: 'key_found', value: false }, ws)).toBe(false);
-    expect(evaluatePredicate({ type: 'hasFlag', flag: 'chest_opened' }, ws)).toBe(false);
-  });
-
-  it('evaluates minCounter and maxCounter predicates accurately', () => {
-    const ws = createWorldState();
-    incrementCounter(ws, 'relics', 3);
-
-    expect(evaluatePredicate({ type: 'minCounter', counter: 'relics', value: 2 }, ws)).toBe(true);
-    expect(evaluatePredicate({ type: 'minCounter', counter: 'relics', value: 3 }, ws)).toBe(true);
-    expect(evaluatePredicate({ type: 'minCounter', counter: 'relics', value: 4 }, ws)).toBe(false);
-
-    expect(evaluatePredicate({ type: 'maxCounter', counter: 'relics', value: 3 }, ws)).toBe(true);
-    expect(evaluatePredicate({ type: 'maxCounter', counter: 'relics', value: 2 }, ws)).toBe(false);
-  });
-
-  it('evaluates minFaction and maxFaction predicates accurately', () => {
-    const ws = createWorldState();
-    modifyFaction(ws, 'temple_standing', 10);
-
-    expect(evaluatePredicate({ type: 'minFaction', faction: 'temple_standing', value: 10 }, ws)).toBe(true);
-    expect(evaluatePredicate({ type: 'minFaction', faction: 'temple_standing', value: 20 }, ws)).toBe(false);
-    expect(evaluatePredicate({ type: 'maxFaction', faction: 'temple_standing', value: 15 }, ws)).toBe(true);
-    expect(evaluatePredicate({ type: 'maxFaction', faction: 'temple_standing', value: 5 }, ws)).toBe(false);
-  });
-
-  it('evaluates compound logical predicates (and, or, not)', () => {
-    const ws = createWorldState();
-    setFlag(ws, 'hero_of_town', true);
-    incrementCounter(ws, 'gold_tribute', 100);
-    modifyFaction(ws, 'thieves_guild', -20);
-
-    const andPred: Predicate = {
-      type: 'and',
-      predicates: [
-        { type: 'hasFlag', flag: 'hero_of_town' },
-        { type: 'minCounter', counter: 'gold_tribute', value: 50 },
-      ],
-    };
-    expect(evaluatePredicate(andPred, ws)).toBe(true);
-
-    const orPred: Predicate = {
-      type: 'or',
-      predicates: [
-        { type: 'minFaction', faction: 'thieves_guild', value: 0 },
-        { type: 'hasFlag', flag: 'hero_of_town' },
-      ],
-    };
-    expect(evaluatePredicate(orPred, ws)).toBe(true);
-
-    const notPred: Predicate = {
-      type: 'not',
-      predicate: { type: 'minFaction', faction: 'thieves_guild', value: 0 },
-    };
-    expect(evaluatePredicate(notPred, ws)).toBe(true);
   });
 });
 

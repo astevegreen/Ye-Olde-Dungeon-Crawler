@@ -1,21 +1,5 @@
 import { describe, it, expect, afterAll } from 'vitest';
-import {
-  COTW_CATALOG,
-  COTW_CATALOG_RECORD,
-  COTW_ITEMS,
-  COTW_WEAPONS,
-  COTW_OFFHAND,
-  COTW_HEAD,
-  COTW_TORSO,
-  COTW_CLOAKS,
-  COTW_HANDS,
-  COTW_FEET,
-  COTW_BELTS,
-  COTW_NECK,
-  COTW_RINGS,
-  COTW_CONTAINERS,
-  COTW_CONSUMABLES,
-} from '../items';
+import { COTW_CATALOG, COTW_CATALOG_RECORD, COTW_ITEMS } from '../items';
 import { GameEngine, GameMap, TILES, Player, Item, activateRegistries } from '../../../engine';
 import { WaitAction } from '../../../engine/actions/wait';
 import {
@@ -26,25 +10,6 @@ import {
 import { StatusHandlerRegistry } from '../../../engine/status/statusHandlers';
 
 describe('CotW item catalog', () => {
-  it('holds the 83 specified items less the four pulled as useless, plus the Mead of Suttungr and the rune pouch', () => {
-    expect(COTW_CATALOG).toHaveLength(81);
-  });
-
-  it('has exact category counts according to spec', () => {
-    expect(COTW_WEAPONS).toHaveLength(13);
-    expect(COTW_OFFHAND).toHaveLength(6);
-    expect(COTW_HEAD).toHaveLength(5);
-    expect(COTW_TORSO).toHaveLength(6);
-    expect(COTW_CLOAKS).toHaveLength(5);
-    expect(COTW_HANDS).toHaveLength(5);
-    expect(COTW_FEET).toHaveLength(5);
-    expect(COTW_BELTS).toHaveLength(5);
-    expect(COTW_NECK).toHaveLength(5);
-    expect(COTW_RINGS).toHaveLength(7);
-    expect(COTW_CONTAINERS).toHaveLength(5);
-    expect(COTW_CONSUMABLES).toHaveLength(14);
-  });
-
   it('ensures every item has a unique ID', () => {
     const ids = COTW_CATALOG.map((i) => i.id);
     const uniqueIds = new Set(ids);

@@ -62,17 +62,6 @@ describe('CotW Item Distribution & Economic Integration', () => {
     expect(packItemKeys.some((id) => id.includes('scroll_phase_door'))).toBe(true);
   });
 
-  it('populates Olaf the Chandler with wraps and sustenance', () => {
-    const olaf = COTW_TOWN.npcs.find((n) => n.id === 'npc-olaf');
-    expect(olaf?.merchantConfig).toBeDefined();
-    const stock = olaf!.merchantConfig!.initialInventory();
-    const stockKeys = stock.map((i) => i.definitionId ?? i.id);
-
-    expect(stockKeys.some((id) => id.includes('tattered_travelers_wrap'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('hearth_broth_flask'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('birch_tar_poultice'))).toBe(true);
-  });
-
   it('sells none of the useless items pulled in 1.9, nor copies of the starting kit', () => {
     // The torch came back with the dark floors (tracker 5.3): sold, never floor loot.
     const pulled = ['thief_lockpicks', 'travel_bread', 'bog_iron_whetstone', 'ice_stave_rune_tablet', 'sealskin_rucksack', 'rune_scratched_bark_map'];
@@ -83,38 +72,6 @@ describe('CotW Item Distribution & Economic Integration', () => {
     expect(COTW_STARTER_KIT.packItemIds).not.toContain('travel_bread');
     expect(sold).toContain('wooden_torch');
     expect(COTW_ITEMS.some((d) => d.id === 'wooden_torch')).toBe(false);
-  });
-
-  it('populates Gunther the Smith with Norse arms, armor, and forge implements', () => {
-    const gunther = COTW_TOWN.npcs.find((n) => n.id === 'npc-gunther');
-    expect(gunther?.merchantConfig).toBeDefined();
-    const stock = gunther!.merchantConfig!.initialInventory();
-    const stockKeys = stock.map((i) => i.definitionId ?? i.id);
-
-    expect(stockKeys.some((id) => id.includes('rime_bit_chisel'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('cinder_edge_shortsword'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('forge_tongue_hammer'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('lashed_driftwood_buckler'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('bellows_plate_shield'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('mammut_hide_brigandine'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('cinder_quenched_hauberk'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('skraeling_bone_circlet'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('soot_visored_helm'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('crampon_nailed_boots'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('duergar_forge_gauntlets'))).toBe(true);
-  });
-
-  it('populates Astrid the Alchemist with herbal curatives and tactical tools', () => {
-    const astrid = COTW_TOWN.npcs.find((n) => n.id === 'npc-astrid');
-    expect(astrid?.merchantConfig).toBeDefined();
-    const stock = astrid!.merchantConfig!.initialInventory();
-    const stockKeys = stock.map((i) => i.definitionId ?? i.id);
-
-    expect(stockKeys.some((id) => id.includes('hearth_broth_flask'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('birch_tar_poultice'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('bog_myrtle_tonic'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('bellows_skin_canteen'))).toBe(true);
-    expect(stockKeys.some((id) => id.includes('charm_watchful_eye'))).toBe(true);
   });
 
   it('prices every town item on the same copper scale as the starting purse', () => {

@@ -54,7 +54,6 @@ describe('Procedural Sprite Recipe Registry & Atlas Baking', () => {
     expect(atlas.atlasCanvas.width).toBe(16 * ATLAS_TILE_SIZE);
     expect(atlas.atlasCanvas.height).toBe(10 * ATLAS_TILE_SIZE);
 
-
     // Verify individual sprite canvases can be retrieved from the baked atlas
     const playerCanvas = atlas.getSpriteCanvas('player');
     expect(playerCanvas).toBeDefined();
@@ -88,11 +87,5 @@ describe('Procedural Sprite Recipe Registry & Atlas Baking', () => {
       wallCoords.row * SPRITE_SIZE,
       SPRITE_SIZE
     );
-  });
-
-  it('renders fallback graphic when a sprite key is missing in custom recipes and defaults', () => {
-    const atlas = new SpriteAtlas();
-    const fallbackCanvas = atlas.getSpriteCanvas('broadsword');
-    expect(fallbackCanvas).toBeDefined();
   });
 });

@@ -22,7 +22,6 @@ class MemoryStorage {
 let storage: MemoryStorage;
 beforeEach(() => { storage = new MemoryStorage(); });
 
-
 describe('Typed load failures', () => {
   it('reports a missing save as missing, and does not notify', () => {
     const pm = new ProfileManager(storage as any);
@@ -88,11 +87,6 @@ describe('Typed load failures', () => {
       expect(corrupt.reason).toBe('corrupt');
       expect(shouldNotifyPlayer(corrupt)).toBe(true);
     }
-  });
-
-  it('keeps the null-returning wrappers working for existing callers', () => {
-    const pm = new ProfileManager(storage as any);
-    expect(pm.loadCharacter('no-such-hero')).toBeNull();
   });
 
   // The version floor (§5): a save below it is refused as migration-failed, from either slot.

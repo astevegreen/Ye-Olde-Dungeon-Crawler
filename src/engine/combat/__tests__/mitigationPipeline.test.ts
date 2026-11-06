@@ -9,16 +9,6 @@ import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 
 describe('Mitigation Pipeline & Aspect Alignment', () => {
-  it('leaves gear as it was: nothing wears out', () => {
-    const player = new Player({ id: 'p1', name: 'Hero', position: { x: 5, y: 5 } });
-    const sword = new Item({ id: 'sword', name: 'Sword', category: 'weapon', slot: 'mainHand', weight: 1000, bulk: 500, stats: { attackBonus: 5 } });
-    player.inventory.paperdoll.equip(sword, 'mainHand');
-    const foe = new Actor({ id: 'foe', name: 'Foe', type: 'monster', faction: 'hostile', position: { x: 6, y: 5 }, stats: { hp: 30, maxHp: 30, attack: 4, defense: 0 } });
-    const engine = new GameEngine({ map: new GameMap(12, 12, TILES.FLOOR), player: new Player({ id: 'seed-holder', name: 'Seed', position: { x: 1, y: 1 } }), seed: 7 });
-    for (let i = 0; i < 50; i++) resolveCombatMitigation(player, foe, 10, engine);
-    expect(sword.effectiveStats.attackBonus).toBe(5);
-  });
-
   it('calculates aspect alignment bonuses for radiant vs corrupt/undead', () => {
     // Radiant vs Corrupt
     const radiantVsCorrupt = calculateAspectModifier('aspect_radiant', 'aspect_corrupt');

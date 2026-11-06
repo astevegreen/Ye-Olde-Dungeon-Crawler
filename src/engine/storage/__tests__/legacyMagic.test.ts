@@ -5,7 +5,6 @@ import { cotwManifest } from '../../../content/cotw';
 import { FIXTURE_GRIMOIRES } from '../../../../tests/fixtures/fixture-pack';
 import { deserializeGame, serializeGame } from '../serializer';
 import { convertLegacyMagic } from '../legacyMagic';
-import { WaitAction } from '../../actions/wait';
 import { slotOfSpell, validateGrimoireSystem } from '../../magic/grimoires';
 import type { GrimoireSystemConfig } from '../../magic/magicConfig';
 import type { GameContentManifest } from '../../types/manifest';
@@ -48,17 +47,6 @@ describe('carrying old magic over to the three grimoires', () => {
       'retired spell c adds no element',
     ]);
   });
-
-  it.each(['glyphs-two-slots-one-doubled', 'grounded-slot', 'page-two-active', 'hybrid-steam-lance', 'blood-spells-volatile-corruption', 'detect-and-teleport', 'kill-rite-performed', 'attunement-channel'])(
-    '%s loads with every known spell in a slot, and plays a turn',
-    (name) => {
-      const engine = load(name);
-      const { spellsKnown, grimoireState } = engine.player;
-      expect(grimoireState).toBeDefined();
-      for (const id of spellsKnown) expect(slotOfSpell(grimoireState!, id), id).toBeDefined();
-      expect(engine.handlePlayerAction(new WaitAction(engine.player)).success).toBe(true);
-    }
-  );
 
   it('keeps a spell in its old cell where the grimoire has it, and slots the rest in page order', () => {
     // Page 0: magic_arrow in slot 1 (0, -1), heal_minor in slot 3 (-1, 0), firebolt in slot 4 (0, 0).

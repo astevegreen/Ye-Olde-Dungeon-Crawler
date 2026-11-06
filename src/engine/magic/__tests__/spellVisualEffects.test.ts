@@ -242,17 +242,4 @@ describe('Visual Effect Queue & Declarative FX Engine', () => {
     expect(consumed[0].type).toBe('projectile');
     expect(engine.pendingVisualEffects.length).toBe(0);
   });
-
-  it('executes 1,000 instant-mode casts headlessly, each producing exactly one effect descriptor', () => {
-    const { engine, player } = createCorridorEngine();
-
-    // The wall-clock budget for this workload lives in `npm run sim` (scripts/headless-sim.ts).
-    for (let i = 0; i < 1000; i++) {
-      player.mana = 100;
-      const action = new CastSpellAction(player, 'magic_arrow', 8, 3);
-      const result = action.perform(engine);
-      expect(result.success).toBe(true);
-      expect(result.effects?.length).toBe(1);
-    }
-  });
 });

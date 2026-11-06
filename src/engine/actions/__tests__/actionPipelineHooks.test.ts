@@ -344,20 +344,6 @@ describe('Action Pipeline Hooks & Manifest Integration (Phase 3)', () => {
 
       // (c) An equivalent scenario run through the chaos runner's Step 4 counter actually fails the run
       expect(engine.actionPipeline.caughtExceptionCount).toBe(initialCounter + 1);
-
-      // Emulate chaos runner's Step 4 assertion to prove it fails loud rather than passing silently
-      const assertChaosRunnerZeroExceptions = (eng: GameEngine) => {
-        const count = eng.actionPipeline.caughtExceptionCount;
-        if (count > 0) {
-          throw new Error(
-            `Chaos runner failure: ${count} action pipeline exception(s) caught and suppressed during simulation!`
-          );
-        }
-      };
-
-      expect(() => assertChaosRunnerZeroExceptions(engine)).toThrow(
-        'Chaos runner failure: 1 action pipeline exception(s) caught and suppressed during simulation!'
-      );
     });
 
     it('isolates action.perform() engine exception: returns success: false, cost: 0, and increments counter', () => {

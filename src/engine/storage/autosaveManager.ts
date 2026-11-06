@@ -101,9 +101,13 @@ export class AutosaveManager {
   /**
    * The autosave is one rolling slot, so a later autosave can bury better progress: another
    * hero's, or the same hero's after retreating upstairs or loading an older save. Before
-   * `incoming` replaces the slot, the current autosave moves to the preserved slot when it
-   * belongs to a different hero or is deeper than `incoming`. The preserved slot is replaced
-   * unless it is the same hero's deeper run. A failure here never blocks the autosave itself.
+   * `incoming` replaces the slot, the current autosave is displaced unless it is the same
+   * hero at the same depth or shallower. One preserved slot then has two candidates, the
+   * displaced run and the one already kept, and it keeps (`keepsDisplaced`):
+   * - the displaced run, when the kept one is covered by `incoming` (same hero, as deep or deeper);
+   * - the kept run, when it covers the displaced one;
+   * - otherwise the deeper of the two, the displaced one on a tie, since it is newer.
+   * So the deepest floor in either slot never goes down. A failure here never blocks the autosave.
    */
   private preserveIfSuperseded(incoming: CharacterProfile): void {
     try {
@@ -111,14 +115,11 @@ export class AutosaveManager {
       if (!raw) return;
       const current = (JSON.parse(raw) as AutosaveEnvelope).profile;
       if (!current) return;
-      const sameHero = current.id === incoming.id;
-      if (sameHero && current.floor <= incoming.floor) return;
+      if (covers(incoming, current)) return;
 
       const keptRaw = this.storage.getItem(this.preservedAutosaveKey);
-      if (keptRaw) {
-        const kept = (JSON.parse(keptRaw) as AutosaveEnvelope).profile;
-        if (kept && kept.id === current.id && kept.floor > current.floor) return;
-      }
+      const kept = keptRaw ? (JSON.parse(keptRaw) as AutosaveEnvelope).profile : undefined;
+      if (kept && !keepsDisplaced(current, kept, incoming)) return;
       this.storage.setItem(this.preservedAutosaveKey, raw);
     } catch (err) {
       flightRecorder.warn('[AutosaveManager] Failed to preserve the superseded autosave:', { error: String(err) });
@@ -217,4 +218,16 @@ export class AutosaveManager {
       }
     }
   }
+}
+
+/** True when `a` makes `b` redundant: the same hero, at least as deep. */
+function covers(a: CharacterProfile, b: CharacterProfile): boolean {
+  return a.id === b.id && a.floor >= b.floor;
+}
+
+/** Whether the displaced autosave replaces the kept one in the preserved slot. */
+function keepsDisplaced(displaced: CharacterProfile, kept: CharacterProfile, incoming: CharacterProfile): boolean {
+  if (covers(incoming, kept)) return true;
+  if (covers(kept, displaced)) return false;
+  return displaced.floor >= kept.floor;
 }

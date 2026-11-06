@@ -19,5 +19,8 @@ it. Sessions add to it by day; sprint lanes file follow-up issues instead. Movin
 ## Presentation
 
 ## Tests, gates and tooling
+- Test-suite audit leftovers (6 Nov 2026, test-suite audit): the six `src/engine/storage/__tests__/*RoundTrip.test.ts` files want one table with a `roundTrip()` helper; 24 files still assign `globalThis.document`/`window` by hand instead of `vi.stubGlobal` (the config already unstubs); 19 hand-rolled fake DOMs could share happy-dom (a new dependency, so its own change); a shared sprite-sheet helper for the sprite tests; four gameplay specs could run in Chromium only; soak-shaped tests (`chaosSimulation.test.ts`) could move to the tooling project.
+- Tests the audit found missing (6 Nov 2026, test-suite audit): the rail list in `scripts/second-look.mjs` omits `tests/setup/sharedState.ts` and `packNeutralSource.test.ts` (a rail change: needs the rail audit); a viewport device-pixel-ratio test (`src/rendering/viewport.ts`); `validatePayload` cases in `relay/src/__tests__/relay.test.ts`; `decodeRunShare` rejecting a tampered score; BSP sealed-region checks in `dungeon-generator.ts`; a cap on how far one action may advance the world (`engine.ts`).
+- `src/engine/__tests__/scheduler-guard.test.ts:20` and `src/engine/__tests__/inspect.test.ts:43` were proposed for deletion but no other test covers zero-speed scheduling or a zero-cost inspect; kept (6 Nov 2026, test-suite audit).
 
 ## Docs

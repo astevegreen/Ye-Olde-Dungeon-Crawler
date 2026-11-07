@@ -1,6 +1,6 @@
 ---
 name: sprint-start
-description: Cue the YODC sprint in docs/sprint.md now. Checks the computer, opens the window, makes the supervisor and the archiver, fires the supervisor. Run only as /sprint-start [hours] [--dry-run], by the owner or the root /sprint-cue.
+description: Cues the YODC sprint now; run only as /sprint-start [hours] [--dry-run].
 disable-model-invocation: true
 argument-hint: "[hours] [--dry-run]"
 model: sonnet

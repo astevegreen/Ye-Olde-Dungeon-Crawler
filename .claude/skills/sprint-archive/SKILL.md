@@ -1,6 +1,6 @@
 ---
 name: sprint-archive
-description: The YODC sprint archiver. Archives the sprint's finished and stuck sessions, then switches itself off after the window. Run only from the "YODC sprint archiver" scheduled task that /sprint-start makes.
+description: Archives the YODC sprint's finished and stuck sessions; run only from the sprint archiver task.
 disable-model-invocation: true
 model: haiku
 hooks:

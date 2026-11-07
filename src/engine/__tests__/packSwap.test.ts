@@ -39,7 +39,7 @@ describe('equipping a different pack', () => {
     expect(frame.getItem(oldPack.id)).toBe(oldPack);
     expect(oldPack.getItems()).toHaveLength(0);
     expect(inv.storeItem(ItemFactory.createLeatherArmor('armor-2')).success).toBe(true);
-    expect(frame.getItem('armor-2')).toBeDefined();
+    expect(frame.getItem('armor-2')?.name).toBe(ItemFactory.createLeatherArmor('probe').name);
   });
 
   it('refuses a pack too small for what the old one holds, and changes nothing', () => {
@@ -71,6 +71,9 @@ describe('equipping a different pack', () => {
     const loadedInv = loaded.player.inventory;
     expect(loadedInv.primaryPack.id).toBe('frame');
     expect(loadedInv.paperdoll.getItem('pack')).toBe(loadedInv.primaryPack);
-    expect(loadedInv.primaryPack.getItem(oldId)).toBeDefined();
+    const loadedOldPack = loadedInv.primaryPack.getItem(oldId);
+    expect(loadedOldPack).not.toBeNull();
+    expect(loadedOldPack!.id).toBe(oldId);
+    expect(loadedInv.primaryPack.getItems().map((i) => i.id)).toContain(oldId);
   });
 });

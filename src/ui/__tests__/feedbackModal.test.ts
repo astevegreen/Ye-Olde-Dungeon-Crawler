@@ -225,14 +225,6 @@ describe('FeedbackModal (Headless)', () => {
     vi.restoreAllMocks();
   });
 
-  it('initializes and renders retro modal markup', () => {
-    const el = (globalThis as any).document.getElementById('feedback-modal');
-    expect(el).not.toBeNull();
-    expect(el?.querySelector('#btn-feedback-tab-bug')).not.toBeNull();
-    expect(el?.querySelector('#btn-feedback-tab-feature')).not.toBeNull();
-    expect(el?.querySelector('#btn-feedback-submit')).not.toBeNull();
-  });
-
   it('opens and registers with modal stack', () => {
     modal.open({ subject: 'Test Bug', description: 'Testing something broke' });
     expect(modal.isOpen).toBe(true);

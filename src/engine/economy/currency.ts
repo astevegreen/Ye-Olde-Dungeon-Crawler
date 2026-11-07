@@ -296,6 +296,11 @@ export function addCurrencyToPlayer(player: Player, amount: CurrencyBreakdown | 
  * placing canonical optimal change back into player's coin purse.
  */
 export function deductCurrencyFromPlayer(player: Player, costInCp: number): TransactionResult {
+  // A cost is a whole, non-negative number of copper: NaN would turn the purse into NaN coins,
+  // and a negative cost would mint money.
+  if (!Number.isSafeInteger(costInCp) || costInCp < 0) {
+    return { success: false, message: 'That price makes no sense; nothing was paid.', costInCp: 0 };
+  }
   const totalCp = getPlayerTotalCp(player);
   if (totalCp < costInCp) {
     return {

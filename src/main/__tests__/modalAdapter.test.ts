@@ -1,29 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
-import { ModalStackManager } from '../modalStack';
-import type { UIModal } from '../modalStack';
+import { ModalStackManager } from '../../ui/modalStack';
+import { toUIModal as adapter } from '../modalAdapter';
 
 /**
  * Modals register on the LIFO stack rather than switching the whole InputHandler off
- * (ARCHITECTURE.md §6). These cover the adapter shape main.ts pushes for modal classes
- * that predate UIModal — including one whose isOpen is a method, not a property.
+ * (ARCHITECTURE.md §6), through the adapter main.ts's pushModal uses for modal classes that
+ * predate UIModal, including one whose isOpen is a method, not a property.
  */
-function adapter(
-  id: string,
-  target: { isOpen: boolean | (() => boolean); handleKeyDown?: (e: KeyboardEvent) => boolean; close: () => void }
-): UIModal {
-  const openNow = () => (typeof target.isOpen === 'function' ? target.isOpen() : target.isOpen);
-  return {
-    id,
-    get isOpen() {
-      return openNow();
-    },
-    set isOpen(value: boolean) {
-      if (!value) target.close();
-    },
-    handleKeyDown: (e: KeyboardEvent) => (openNow() ? (target.handleKeyDown?.(e) ?? false) : false),
-    close: () => target.close(),
-  };
-}
 
 const keyEvent = (key: string) => ({ key, preventDefault: vi.fn(), stopPropagation: vi.fn() }) as unknown as KeyboardEvent;
 
@@ -76,5 +59,25 @@ describe('Modal stack registration', () => {
     stack.handleKeyDown(keyEvent('x'));
 
     expect(order).toEqual(['keybinds']);
+  });
+
+  it('closes the modal when the stack sets it shut, and forwards its focus root', () => {
+    let closed = false;
+    const root = {} as HTMLElement;
+    const modal = adapter('shop', { isOpen: () => !closed, close: () => { closed = true; }, focusRoot: () => root });
+
+    expect(modal.focusRoot?.()).toBe(root);
+    modal.isOpen = false;
+    expect(closed).toBe(true);
+    expect(modal.isOpen).toBe(false);
+  });
+
+  it('sends no key to a modal that has already closed', () => {
+    const handled = vi.fn(() => true);
+    const modal = adapter('choice', { isOpen: false, handleKeyDown: handled, close: () => undefined });
+
+    expect(modal.handleKeyDown(keyEvent('a'))).toBe(false);
+    expect(handled).not.toHaveBeenCalled();
+    expect(adapter('plain', { isOpen: true, close: () => undefined }).focusRoot).toBeUndefined();
   });
 });

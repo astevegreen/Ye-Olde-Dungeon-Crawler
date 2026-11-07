@@ -65,4 +65,14 @@ describe('.githooks/commit-msg on §8.1 protected files', () => {
     expect(owner.code).toBe(0);
     expect(owner.out).not.toContain('second-look');
   });
+
+  // §8.4: Antigravity is read-only. A tripwire only (both tools commit as one git user), so
+  // it catches the labelled line, at the start of a line, and nothing else.
+  it('refuses a commit carrying an Agent: Antigravity line, and only that', () => {
+    const labelled = commit('docs/note.md', 'docs: x\n\nAgent: Antigravity');
+    expect(labelled.code).not.toBe(0);
+    expect(labelled.out).toContain('Antigravity is read-only');
+    expect(commit('docs/note.md', 'docs: x\n\nReviewed the Agent: Antigravity report by hand').code).toBe(0);
+  });
 });
+

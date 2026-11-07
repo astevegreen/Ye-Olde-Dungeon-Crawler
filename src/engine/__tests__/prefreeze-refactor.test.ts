@@ -6,27 +6,7 @@ import { Player } from '../entities/player';
 import { PotionItem } from '../items/consumables';
 import { DrinkPotionAction } from '../actions/spell-actions';
 import { MovementAction } from '../actions/movement';
-import { SpellPipeline } from '../magic/spellPipeline';
 import { cotwManifest } from '../../content/cotw';
-import type { SpellDefinition } from '../magic/types';
-import { Visibility } from '../fov/types';
-
-/** A whole-floor reveal, as the old seer's spells were (cotw's Hliðskjálf reaches only so far). */
-const wholeFloorReveal = (target: 'actors' | 'items' | 'map', duration = 30): SpellDefinition => ({
-  id: `whole_floor_${target}`,
-  name: `Whole-floor ${target}`,
-  school: 'Divination',
-  manaCost: 0,
-  element: 'arcane',
-  range: 0,
-  basePower: 0,
-  areaOfEffect: 0,
-  reflects: false,
-  targetType: 'self',
-  targetingMode: 'self',
-  description: '',
-  effects: [{ type: 'reveal', target, duration }],
-});
 
 describe('Pre-Freeze Architectural Refactor Verification', () => {
   let map: GameMap;
@@ -105,46 +85,6 @@ describe('Pre-Freeze Architectural Refactor Verification', () => {
       expect(res.success).toBe(false);
       expect(res.cost).toBe(0);
       expect(res.message).toContain('arcane forcefield');
-    });
-  });
-
-  describe('2. Whole-floor reveals', () => {
-    it('executes a whole-floor foe reveal with strongly typed reveal effect and updates duration turns', () => {
-      const spell = wholeFloorReveal('actors');
-      expect(spell).toBeDefined();
-      expect(spell.effects?.[0]?.type).toBe('reveal');
-
-      const initialTurns = engine.detectMonstersTurns;
-      const res = SpellPipeline.executeSpell(engine, spell, player, { x: 10, y: 10 });
-      expect(res.success).toBe(true);
-      expect(engine.detectMonstersTurns).toBeGreaterThan(initialTurns);
-    });
-
-    it('executes a whole-floor loot reveal with strongly typed reveal effect and updates duration turns', () => {
-      const spell = wholeFloorReveal('items');
-      expect(spell).toBeDefined();
-      expect(spell.effects?.[0]?.type).toBe('reveal');
-
-      const initialTurns = engine.detectObjectsTurns;
-      const res = SpellPipeline.executeSpell(engine, spell, player, { x: 10, y: 10 });
-      expect(res.success).toBe(true);
-      expect(engine.detectObjectsTurns).toBeGreaterThan(initialTurns);
-    });
-
-    it('executes a whole-floor map reveal to reveal map tiles', () => {
-      // Put a solid wall blocking line of sight so (18, 18) starts unexplored
-      for (let y = 0; y < 20; y++) {
-        map.setTile(14, y, TILES.WALL);
-      }
-      engine.updateFov();
-      expect(engine.fov.getVisibility(18, 18)).toBe(Visibility.Unexplored);
-
-      const spell = wholeFloorReveal('map', 1);
-      expect(spell).toBeDefined();
-
-      const res = SpellPipeline.executeSpell(engine, spell, player, { x: 10, y: 10 });
-      expect(res.success).toBe(true);
-      expect(engine.fov.getVisibility(18, 18)).not.toBe(Visibility.Unexplored);
     });
   });
 

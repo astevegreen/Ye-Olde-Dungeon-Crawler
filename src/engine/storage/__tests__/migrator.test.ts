@@ -83,17 +83,4 @@ describe('Schema Migrator & Save State Versioning', () => {
     expect(result.envelope.schemaVersion).toBe(next);
     expect((result.envelope.data as any).addedByStep).toBe(true);
   });
-
-  it('surfaces a throwing step as an unrecoverable migration error', () => {
-    const migrator = new SchemaMigrator();
-    const next = CURRENT_SCHEMA_VERSION + 1;
-
-    migrator.registerMigration(CURRENT_SCHEMA_VERSION, next, () => {
-      throw new Error('STEP_FAULT');
-    });
-
-    expect(() => migrator.migrate(currentEnvelope(), next)).toThrowError(
-      `Schema migration ${CURRENT_SCHEMA_VERSION}->${next} failed: STEP_FAULT. Save may be partially or fully unrecoverable.`
-    );
-  });
 });

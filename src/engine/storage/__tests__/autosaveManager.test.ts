@@ -155,6 +155,55 @@ describe('AutosaveManager Background Persistence', () => {
       expect(autosaveManager.getAutosaveMetadata('preserved')?.floor).toBe(6);
     });
 
+    const other = (): CharacterProfile => ({ ...profile, id: 'prof-other', name: 'Other' });
+
+    it("keeps a hero's deeper run when another hero's autosave is displaced over it", () => {
+      autosaveAt(6); // Valkyrie on floor 6
+      autosaveAt(3); // Valkyrie retreats: floor 6 is preserved
+      autosaveAt(1, other()); // Other plays: floor 6 stays preserved
+      autosaveAt(2); // Valkyrie again: Other's floor 1 is displaced
+
+      expect(autosaveManager.getAutosaveMetadata('latest')).toMatchObject({ profileName: 'Valkyrie', floor: 2 });
+      expect(autosaveManager.getAutosaveMetadata('preserved')).toMatchObject({ profileName: 'Valkyrie', floor: 6 });
+    });
+
+    it("keeps the other hero's deeper run over a shallower preserved one", () => {
+      autosaveAt(2); // Valkyrie on floor 2
+      autosaveAt(9, other()); // Valkyrie's floor 2 is preserved
+      autosaveAt(1); // Valkyrie again: Other's floor 9 is displaced, and is the deeper
+
+      expect(autosaveManager.getAutosaveMetadata('latest')).toMatchObject({ profileName: 'Valkyrie', floor: 1 });
+      expect(autosaveManager.getAutosaveMetadata('preserved')).toMatchObject({ profileName: 'Other', floor: 9 });
+    });
+
+    it('drops a preserved run once its own hero autosaves as deep or deeper', () => {
+      autosaveAt(6);
+      autosaveAt(1, other()); // Valkyrie's floor 6 is preserved
+      autosaveAt(7); // Valkyrie passes floor 6: Other's floor 1 is the run worth keeping
+
+      expect(autosaveManager.getAutosaveMetadata('latest')).toMatchObject({ profileName: 'Valkyrie', floor: 7 });
+      expect(autosaveManager.getAutosaveMetadata('preserved')).toMatchObject({ profileName: 'Other', floor: 1 });
+    });
+
+    it('never loses the deepest floor in either slot, over many two-hero sequences', () => {
+      // A fixed linear congruential sequence: the same 400 autosaves on every run.
+      let state = 12345;
+      const next = (n: number) => {
+        state = (state * 1103515245 + 12345) % 2147483648;
+        return state % n;
+      };
+      const deepest = () =>
+        Math.max(
+          autosaveManager.getAutosaveMetadata('latest')?.floor ?? 0,
+          autosaveManager.getAutosaveMetadata('preserved')?.floor ?? 0
+        );
+      for (let i = 0; i < 400; i++) {
+        const before = deepest();
+        autosaveAt(1 + next(10), next(2) === 0 ? profile : other());
+        expect(deepest(), `autosave ${i}`).toBeGreaterThanOrEqual(before);
+      }
+    });
+
     it('still autosaves when the preserved copy cannot be written', () => {
       autosaveAt(6);
       const realSetItem = storage.setItem.bind(storage);

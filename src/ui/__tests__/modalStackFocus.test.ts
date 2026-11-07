@@ -14,13 +14,17 @@ class FakeEl {
   public attached = true;
   public tabIndex = 0;
   public style: Record<string, string> = {};
-  private readonly attrs = new Set<string>();
+  private readonly attrs = new Map<string, string>();
+  public readonly tag: string;
 
+  /** `button` makes it a <button>; a tag name gives that element (`div`, `input`, ...). */
   constructor(
     public readonly name: string,
     private readonly doc: FakeDoc,
-    public readonly focusable = false
-  ) {}
+    kind: boolean | string = false
+  ) {
+    this.tag = kind === true ? 'button' : kind === false ? 'div' : kind;
+  }
 
   public add(...kids: FakeEl[]): this {
     for (const k of kids) {
@@ -48,11 +52,12 @@ class FakeEl {
     return false;
   }
 
-  public querySelectorAll(): FakeEl[] {
+  /** Honours the selector the stack passes (its FOCUSABLE list), as far as that list goes. */
+  public querySelectorAll(selector: string): FakeEl[] {
     const out: FakeEl[] = [];
     const walk = (el: FakeEl) => {
       for (const k of el.children) {
-        if (k.focusable) out.push(k);
+        if (k.matches(selector)) out.push(k);
         walk(k);
       }
     };
@@ -60,12 +65,29 @@ class FakeEl {
     return out;
   }
 
+  /** `tag`, `[attr]` and `[attr="v"]`, each with any `:not(...)` of those, comma-separated. */
+  public matches(selector: string): boolean {
+    return selector.split(',').some((part) => {
+      const m = /^\s*([a-z]+)?((?:\[[^\]]+\])*)((?::not\([^)]*\))*)\s*$/i.exec(part);
+      if (!m) throw new Error(`FakeEl cannot match '${part}'`);
+      const [, tag, attrs, nots] = m;
+      if (tag && tag !== this.tag) return false;
+      if (!(attrs.match(/\[[^\]]+\]/g) ?? []).every((a) => this.hasAttr(a))) return false;
+      return !(nots.match(/:not\(([^)]*)\)/g) ?? []).some((n) => this.matches(n.slice(5, -1)));
+    });
+  }
+
+  private hasAttr(clause: string): boolean {
+    const [, name, value] = /^\[([\w-]+)(?:="([^"]*)")?\]$/.exec(clause)!;
+    return this.attrs.has(name) && (value === undefined || this.attrs.get(name) === value);
+  }
+
   public hasAttribute(name: string): boolean {
     return this.attrs.has(name);
   }
 
-  public setAttribute(name: string): void {
-    this.attrs.add(name);
+  public setAttribute(name: string, value = ''): void {
+    this.attrs.set(name, value);
   }
 
   public focus(): void {
@@ -226,6 +248,31 @@ describe('Modal stack focus', () => {
     expect(forward).toEqual(['buy', 'sell', 'leave', 'buy']);
     stack.handleKeyDown(tab(true));
     expect(doc.activeElement).toBe(rows[2]);
+  });
+
+  it('Tab skips disabled controls and tabindex -1, and stops on any other tabindex', () => {
+    const root = new FakeEl('shop', doc);
+    const buy = new FakeEl('buy', doc, true);
+    const off = new FakeEl('off', doc, true);
+    off.setAttribute('disabled');
+    const muted = new FakeEl('muted', doc);
+    muted.setAttribute('tabindex', '-1');
+    const field = new FakeEl('field', doc, 'input');
+    field.setAttribute('disabled');
+    const note = new FakeEl('note', doc);
+    note.setAttribute('tabindex', '0');
+    const plain = new FakeEl('plain', doc);
+    const leave = new FakeEl('leave', doc, true);
+    root.add(buy, off, muted, field, note, plain, leave);
+    doc.body.add(root);
+    stack.push(dialog('shop', root));
+
+    const visited = [tab(), tab(), tab(), tab()].map((e) => {
+      stack.handleKeyDown(e);
+      return doc.activeElement?.name;
+    });
+
+    expect(visited).toEqual(['buy', 'note', 'leave', 'buy']);
   });
 
   it("skips controls that aren't shown", () => {

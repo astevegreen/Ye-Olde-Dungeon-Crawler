@@ -34,7 +34,6 @@ import {
   shouldNotifyPlayer,
   BulkArchive,
   InMemoryAsyncStore,
-  isTacticalEffect,
   ChannelRuneOfReturnAction,
   loadReplayState,
   replayActionTrail,
@@ -65,6 +64,8 @@ import type { MeleeFxKind } from './rendering/fxRunner';
 import { InputHandler } from './rendering/input-handler';
 import { TitleScreen } from './ui/title-screen';
 import { DiagnosticModal } from './ui/diagnostic-modal';
+import { canPlayerAct, createPipelineErrorReporter, playEffectBatch } from './main/turnGate';
+import { toUIModal, type LegacyModal } from './main/modalAdapter';
 import { runAndExplain } from './ui/actionFeedback';
 import { FeedbackModal } from './ui/feedbackModal';
 import { SagaShareModal } from './ui/sagaShareModal';
@@ -313,30 +314,8 @@ window.addEventListener('DOMContentLoaded', () => {
    * Modal classes here predate UIModal and differ in shape (one exposes isOpen as a
    * method), so each is adapted rather than reshaped.
    */
-  const pushModal = (
-    id: string,
-    target: {
-      isOpen: boolean | (() => boolean);
-      handleKeyDown?: (e: KeyboardEvent) => boolean;
-      close: () => void;
-      focusRoot?: () => HTMLElement | null;
-    }
-  ): void => {
-    if (!inputHandler) return;
-    const openNow = () => (typeof target.isOpen === 'function' ? target.isOpen() : target.isOpen);
-    inputHandler.modalStack.push({
-      id,
-      get isOpen() {
-        return openNow();
-      },
-      set isOpen(value: boolean) {
-        if (!value) target.close();
-      },
-      handleKeyDown: (e: KeyboardEvent) => (openNow() ? (target.handleKeyDown?.(e) ?? false) : false),
-      close: () => target.close(),
-      // Forwarded, or Tab is trapped in a dialog it can't move through (R-ui-4).
-      focusRoot: target.focusRoot ? () => target.focusRoot!() : undefined,
-    });
+  const pushModal = (id: string, target: LegacyModal): void => {
+    inputHandler?.modalStack.push(toUIModal(id, target));
   };
 
   const popModal = (id: string): void => {
@@ -817,8 +796,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // The engine's result is read-only here (§7.2), so remember which failed result was already shown.
-  let lastReportedPipelineError: ActionResult | null = null;
+  // Remembers which failed result it already showed: the engine's result is read-only here (§7.2).
+  const pipelineErrorReporter = createPipelineErrorReporter((message) => diagnosticModal.showError(message));
   let lastObservedPlayerHp: number | null = null;
   // Last seen HP and tile of each monster, so a killing blow (the monster is already off
   // the map by render time) can still show its number where the monster fell.
@@ -978,10 +957,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /** Shows an action's isolated pipeline failure, once (ARCHITECTURE.md §4). */
   function reportPipelineError(result: ActionResult | null | undefined): void {
-    if (result?.pipelineError && result !== lastReportedPipelineError) {
-      lastReportedPipelineError = result;
-      diagnosticModal.showError(result.message ?? 'An unexpected error occurred; the action could not be completed.');
-    }
+    pipelineErrorReporter(result);
   }
 
   function reportRefreshError(err: Error, label: string): void {
@@ -1041,19 +1017,14 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     try {
       if (activeEngine && renderer && renderer.fxRunner.mode !== 'instant') {
-        const pending = activeEngine.consumePendingVisualEffects();
-        if (pending.length > 0) {
-          // Only tactical effects gate input (ARCHITECTURE.md §4); ambient ones play on
-          // through the non-blocking queue while the player acts.
-          const hasTactical = pending.some(isTacticalEffect);
-          // This batch's own hold: a later batch keeps input locked until it ends too.
-          const release = hasTactical ? inputHandler?.holdInput() : undefined;
-          try {
-            await renderer.fxRunner.playQueue(pending);
-          } finally {
-            release?.();
-          }
-        }
+        // Only tactical effects gate input (ARCHITECTURE.md §4); ambient ones play on
+        // through the non-blocking queue while the player acts.
+        const fx = renderer.fxRunner;
+        await playEffectBatch(
+          activeEngine.consumePendingVisualEffects(),
+          (effects) => fx.playQueue(effects),
+          inputHandler ? () => inputHandler!.holdInput() : undefined
+        );
       }
     } catch (err) {
       reportRefreshError(err instanceof Error ? err : new Error(String(err)), 'visual effects');
@@ -1348,14 +1319,7 @@ window.addEventListener('DOMContentLoaded', () => {
    * effect playback holding input, input enabled.
    */
   function playerCanAct(): boolean {
-    return (
-      !!activeEngine &&
-      !!inputHandler &&
-      inputHandler.enabled &&
-      !inputHandler.isInputLocked &&
-      inputHandler.modalStack.size === 0 &&
-      !activeEngine.isPaused
-    );
+    return canPlayerAct(activeEngine, inputHandler);
   }
 
   hudRestBtn?.addEventListener('click', () => {

@@ -49,8 +49,10 @@ describe('carrying old magic over to the three grimoires', () => {
     ]);
   });
 
+  // legacySaveFixtures.test.ts loads these under the shipping pack's grimoires; this is the
+  // second pack's small three-cell row, where most saves overflow into grimoires that open later.
   it.each(['glyphs-two-slots-one-doubled', 'grounded-slot', 'page-two-active', 'hybrid-steam-lance', 'blood-spells-volatile-corruption', 'detect-and-teleport', 'kill-rite-performed', 'attunement-channel'])(
-    '%s loads with every known spell in a slot, and plays a turn',
+    '%s loads under the fixture grimoires with every known spell in a slot, and plays a turn',
     (name) => {
       const engine = load(name);
       const { spellsKnown, grimoireState } = engine.player;

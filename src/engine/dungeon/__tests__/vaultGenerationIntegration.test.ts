@@ -1,38 +1,13 @@
-import { describe, it, expect } from 'vitest';
-import { DungeonGenerator } from '../dungeon-generator';
+import { describe, it, expect, vi } from 'vitest';
 import { DungeonArc } from '../../quest/dungeonArc';
-import { cotwManifest } from '../../../content/cotw/index';
 import { fixtureManifest, FIXTURE_VAULTS } from '../../../../tests/fixtures/fixture-pack';
 import { VaultStamper } from '../vaultStamp';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { PRNG } from '../prng';
+import type { Position } from '../../types';
 
 describe('Vault Generation Integration', () => {
-  it('stamps vaults using provided monsterCandidates and itemCandidates in DungeonGenerator', () => {
-    const generator = new DungeonGenerator({
-      width: 50,
-      height: 35,
-      floorNumber: 5,
-      seed: 4242,
-      spawnMonsters: false,
-      vaults: cotwManifest.vaults,
-      monsterCandidates: cotwManifest.monsters,
-      itemCandidates: cotwManifest.items,
-    });
-
-    const result = generator.generate();
-    expect(result.map).toBeDefined();
-    expect(result.rooms.length).toBeGreaterThan(0);
-
-    // Verify entities on map include monsters stamped from vault
-    const entities = result.map.getAllEntities();
-    expect(Array.isArray(entities)).toBe(true);
-    // In seed 4242 on floor 5, either a vault or standard rooms stamped
-    expect(result.map.isPassable(result.playerSpawn.x, result.playerSpawn.y)).toBe(true);
-    expect(result.map.isPassable(result.stairsDown.x, result.stairsDown.y)).toBe(true);
-  });
-
   it('validates the fixture pack\'s vault blueprints and stamps each cleanly', () => {
     expect(FIXTURE_VAULTS.length).toBeGreaterThanOrEqual(3);
     const vaultNames = FIXTURE_VAULTS.map((v) => v.name);
@@ -73,17 +48,49 @@ describe('Vault Generation Integration', () => {
     }
   });
 
-  it('integrates seamlessly with DungeonArc.generateFloor across two packs', () => {
-    // Generate floor 4 for CotW (< maxFloor)
-    const cotwFloor = DungeonArc.generateFloor(4, 10, cotwManifest.quest, cotwManifest, 1.0);
-    expect(cotwFloor.map).toBeDefined();
-    expect(cotwFloor.playerSpawn).toBeDefined();
-    expect(cotwFloor.stairsDown).toBeDefined();
-
-    // Generate floor 3 for the fixture pack (< maxFloor)
-    const fixtureFloor = DungeonArc.generateFloor(3, 10, fixtureManifest.quest, fixtureManifest, 1.0);
-    expect(fixtureFloor.map).toBeDefined();
-    expect(fixtureFloor.playerSpawn).toBeDefined();
-    expect(fixtureFloor.stairsDown).toBeDefined();
+  // The second pack proves floors don't depend on cotw (§1): on each of the fixture pack's
+  // floors, over several seeds, the stairs down are a real walk from where the hero arrives,
+  // and the pack's own vaults get stamped somewhere. The walk is the hero's: eight ways, doors
+  // opened on the way. (Four ways only, as monsters and spawn sites go, a few of these floors
+  // reach the stairs only by a diagonal squeeze past a vault pillar: docs/follow-ups.md.)
+  it("the fixture pack's floors connect the arrival to the stairs down, and stamp its vaults", () => {
+    const stamp = vi.spyOn(VaultStamper, 'stamp');
+    const maxFloor = fixtureManifest.quest!.maxFloor!;
+    expect(maxFloor).toBeGreaterThan(1);
+    for (let floor = 1; floor < maxFloor; floor++) {
+      for (const seed of [10, 11, 12, 13]) {
+        const where = `floor ${floor}, seed ${seed}`;
+        const f = DungeonArc.generateFloor(floor, seed, fixtureManifest.quest, fixtureManifest, 1.0);
+        expect(f.stairsDown, where).toBeDefined();
+        expect(f.map.getTile(f.stairsDown!.x, f.stairsDown!.y)?.type, where).toBe('stairs_down');
+        expect(heroCanWalk(f.map, f.playerSpawn, f.stairsDown!), where).toBe(true);
+      }
+    }
+    const stamped = stamp.mock.calls.map(([, blueprint]) => blueprint);
+    expect(stamped.length).toBeGreaterThan(0);
+    expect(stamped.every((v) => FIXTURE_VAULTS.includes(v))).toBe(true);
   });
 });
+
+/** Whether the hero can walk from `from` to `to`: eight-way steps over passable tiles and doors. */
+function heroCanWalk(map: GameMap, from: Position, to: Position): boolean {
+  const seen = new Set([`${from.x},${from.y}`]);
+  const queue: Position[] = [from];
+  for (let k = 0; k < queue.length; k++) {
+    const { x, y } = queue[k];
+    if (x === to.x && y === to.y) return true;
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const nx = x + dx;
+        const ny = y + dy;
+        const key = `${nx},${ny}`;
+        if (seen.has(key) || !map.inBounds(nx, ny)) continue;
+        const type = map.getTile(nx, ny)?.type;
+        if (!map.isPassable(nx, ny) && type !== 'door_closed') continue;
+        seen.add(key);
+        queue.push({ x: nx, y: ny });
+      }
+    }
+  }
+  return false;
+}

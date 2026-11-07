@@ -26,8 +26,7 @@ import type { Item, EquipmentSlot } from '../items/item';
 import type { WandItem, ScrollItem, PotionItem } from '../items/consumables';
 import type { Container } from '../items/container';
 import { deserializeGame } from '../storage/serializer';
-import { defaultMigrator } from '../storage/migrator';
-import { classifyLoadError, type LoadOutcome } from '../storage/loadResult';
+import { classifyLoadError, migrateForLoad, type LoadOutcome } from '../storage/loadResult';
 import { getItemById } from '../items/itemIndex';
 import { MovementAction } from '../actions/movement';
 import { WaitAction } from '../actions/wait';
@@ -349,7 +348,7 @@ export function loadReplayState(text: string, manifest?: GameContentManifest): L
     const envelope = asRecord(payload.save);
     const saveData =
       envelope && typeof envelope.schemaVersion === 'number' && envelope.data
-        ? (defaultMigrator.migrate(JSON.stringify(envelope)).envelope.data as SaveData)
+        ? (migrateForLoad(envelope).data as SaveData)
         : (payload.save as SaveData);
     const { engine, profile } = deserializeGame(saveData, manifest);
     // God mode is no part of a save; the checkpoint carries it, or the replayed hero is mortal.

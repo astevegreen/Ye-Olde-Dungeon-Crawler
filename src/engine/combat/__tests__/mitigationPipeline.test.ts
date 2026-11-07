@@ -3,19 +3,30 @@ import { calculateAspectModifier, resolveCombatMitigation } from '../mitigationP
 import { Item } from '../../items/item';
 import { Actor } from '../../entities/actor';
 import { Player } from '../../entities/player';
+import { Monster } from '../../entities/monster';
 import { GameEngine } from '../../engine';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 
 describe('Mitigation Pipeline & Aspect Alignment', () => {
-  it('leaves gear as it was: nothing wears out', () => {
+  it('leaves gear as it was: nothing wears out, striking or struck', () => {
     const player = new Player({ id: 'p1', name: 'Hero', position: { x: 5, y: 5 } });
     const sword = new Item({ id: 'sword', name: 'Sword', category: 'weapon', slot: 'mainHand', weight: 1000, bulk: 500, stats: { attackBonus: 5 } });
+    const mail = new Item({ id: 'mail', name: 'Mail', category: 'armor', slot: 'torso', weight: 1000, bulk: 500, stats: { defenseBonus: 3 } });
     player.inventory.paperdoll.equip(sword, 'mainHand');
+    player.inventory.paperdoll.equip(mail, 'torso');
     const foe = new Actor({ id: 'foe', name: 'Foe', type: 'monster', faction: 'hostile', position: { x: 6, y: 5 }, stats: { hp: 30, maxHp: 30, attack: 4, defense: 0 } });
     const engine = new GameEngine({ map: new GameMap(12, 12, TILES.FLOOR), player: new Player({ id: 'seed-holder', name: 'Seed', position: { x: 1, y: 1 } }), seed: 7 });
-    for (let i = 0; i < 50; i++) resolveCombatMitigation(player, foe, 10, engine);
-    expect(sword.effectiveStats.attackBonus).toBe(5);
+    const before = { sword: { ...sword.effectiveStats }, mail: { ...mail.effectiveStats } };
+
+    for (let i = 0; i < 50; i++) {
+      resolveCombatMitigation(player, foe, 10, engine);
+      resolveCombatMitigation(foe, player, 10, engine);
+    }
+
+    expect({ sword: sword.effectiveStats, mail: mail.effectiveStats }).toEqual(before);
+    expect(player.inventory.paperdoll.getItem('mainHand')).toBe(sword);
+    expect(player.inventory.paperdoll.getItem('torso')).toBe(mail);
   });
 
   it('calculates aspect alignment bonuses for radiant vs corrupt/undead', () => {
@@ -23,11 +34,6 @@ describe('Mitigation Pipeline & Aspect Alignment', () => {
     const radiantVsCorrupt = calculateAspectModifier('aspect_radiant', 'aspect_corrupt');
     expect(radiantVsCorrupt.multiplier).toBe(1.5);
     expect(radiantVsCorrupt.flatBonus).toBe(3);
-
-    // Radiant vs Undead faction tag
-    const radiantVsUndead = calculateAspectModifier('aspect_radiant', undefined, ['undead']);
-    expect(radiantVsUndead.multiplier).toBe(1.5);
-    expect(radiantVsUndead.flatBonus).toBe(3);
 
     // Corrupt vs Radiant
     const corruptVsRadiant = calculateAspectModifier('aspect_corrupt', 'aspect_radiant');
@@ -78,5 +84,32 @@ describe('Mitigation Pipeline & Aspect Alignment', () => {
     const result = resolveCombatMitigation(player, corruptZombie, 10, engine);
     // 10 base * 1.5 + 3 = 18 damage
     expect(result.finalDamage).toBe(18);
+  });
+
+  // Undead and demon are monster tags in content (e.g. a draugr's `tags: ['draugr', 'undead']`),
+  // not factions or definition ids, so the bonus has to read the defender's tags.
+  it.each(['undead', 'demon'])('a radiant blade deals half again plus 3 to a monster tagged %s', (tag) => {
+    const player = new Player({ id: 'p1', name: 'Hero', position: { x: 5, y: 5 } });
+    const blade = new Item({ id: 'sun', name: 'Sunblade', category: 'weapon', slot: 'mainHand', weight: 1200, bulk: 600, aspectState: 'aspect_radiant', stats: { attackBonus: 4 } });
+    player.inventory.paperdoll.equip(blade, 'mainHand');
+    const foe = new Monster({
+      id: 'foe', name: 'Foe', position: { x: 6, y: 5 }, stats: { hp: 25, maxHp: 25, attack: 4, defense: 0 },
+      definitionId: 'barrow_wight', tags: [tag], aiType: 'melee', xpValue: 1, lootTable: [],
+    });
+    const engine = new GameEngine({ map: new GameMap(12, 12, TILES.FLOOR), player: new Player({ id: 'seed-holder', name: 'Seed', position: { x: 1, y: 1 } }), seed: 7 });
+
+    expect(resolveCombatMitigation(player, foe, 10, engine).finalDamage).toBe(18);
+  });
+
+  it('gives an untagged monster no radiant bonus', () => {
+    const player = new Player({ id: 'p1', name: 'Hero', position: { x: 5, y: 5 } });
+    player.inventory.paperdoll.equip(new Item({ id: 'sun', name: 'Sunblade', category: 'weapon', slot: 'mainHand', weight: 1200, bulk: 600, aspectState: 'aspect_radiant', stats: { attackBonus: 4 } }), 'mainHand');
+    const foe = new Monster({
+      id: 'foe', name: 'Foe', position: { x: 6, y: 5 }, stats: { hp: 25, maxHp: 25, attack: 4, defense: 0 },
+      definitionId: 'wolf', tags: ['beast'], aiType: 'melee', xpValue: 1, lootTable: [],
+    });
+    const engine = new GameEngine({ map: new GameMap(12, 12, TILES.FLOOR), player: new Player({ id: 'seed-holder', name: 'Seed', position: { x: 1, y: 1 } }), seed: 7 });
+
+    expect(resolveCombatMitigation(player, foe, 10, engine).finalDamage).toBe(10);
   });
 });

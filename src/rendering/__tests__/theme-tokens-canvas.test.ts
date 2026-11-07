@@ -50,6 +50,50 @@ function createMockCanvasContext() {
   } as unknown as CanvasRenderingContext2D;
 }
 
+/** Records every fill and stroke colour the context draws with, as "r,g,b" where it can. */
+function recordColours(ctx: CanvasRenderingContext2D): Set<string> {
+  const used = new Set<string>();
+  const take = (style: unknown) => {
+    const c = rgbOf(String(style));
+    if (c) used.add(c);
+  };
+  for (const fn of ['fill', 'fillRect', 'fillText', 'arc'] as const) {
+    (ctx[fn] as ReturnType<typeof vi.fn>).mockImplementation(() => take(ctx.fillStyle));
+  }
+  for (const fn of ['stroke', 'strokeRect'] as const) {
+    (ctx[fn] as ReturnType<typeof vi.fn>).mockImplementation(() => take(ctx.strokeStyle));
+  }
+  return used;
+}
+
+function rgbOf(colour: string): string | null {
+  const rgba = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(colour);
+  if (rgba) return `${rgba[1]},${rgba[2]},${rgba[3]}`;
+  const hex = /^#([0-9a-f]{6})(?:[0-9a-f]{2})?$/i.exec(colour) ?? /^#([0-9a-f]{3})$/i.exec(colour);
+  if (!hex) return null;
+  const h = hex[1].length === 3 ? [...hex[1]].map((ch) => ch + ch).join('') : hex[1];
+  const n = parseInt(h, 16);
+  return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
+}
+
+/**
+ * The fixture pack's theme, with the roles the overlays draw in (look, marker ink, info) set
+ * to colours no default has, so a drawing in them can only have come from the pack.
+ */
+const OVERLAY_THEME = { ...FIXTURE_THEME_TOKENS, look: '#123456', markerInk: '#654321', info: '#0a1b2c' };
+
+/** The overlay theme's roles whose colour differs from the default theme's. */
+function packOnlyColours(): Map<string, string> {
+  const pack = resolveThemeTokens(OVERLAY_THEME) as unknown as Record<string, string>;
+  const base = DEFAULT_THEME_TOKENS as unknown as Record<string, string>;
+  const out = new Map<string, string>();
+  for (const [role, colour] of Object.entries(pack)) {
+    const c = rgbOf(colour);
+    if (c && c !== rgbOf(base[role] ?? '')) out.set(c, role);
+  }
+  return out;
+}
+
 function createMockCanvas(ctx: CanvasRenderingContext2D) {
   return {
     getContext: () => ctx,
@@ -216,12 +260,12 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
   });
 
   describe('Canvas Overlays Theming', () => {
-    it('renders TargetingOverlay with themed colors without throwing', () => {
+    it("draws the TargetingOverlay in the pack's theme roles", () => {
       const ctx = createMockCanvasContext();
       const engine = createTestEngine({
         id: 'fixture',
         name: 'Fixture Pack',
-        theme: FIXTURE_THEME_TOKENS,
+        theme: OVERLAY_THEME,
       });
       const mockCamera = {
         worldToScreen: () => ({ x: 100, y: 100 }),
@@ -234,16 +278,18 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
       } as unknown as SpellDefinition;
       targeting.startTargeting({ key: '', type: 'spell', id: spellDef.id, name: spellDef.name, spellDef }, engine);
       expect(targeting.mode).toBe('reticle');
+      const used = recordColours(ctx);
       expect(() => targeting.render(ctx, 960, 600, engine, mockCamera, 32, 0, 0)).not.toThrow();
-      expect(ctx.fillRect).toHaveBeenCalled();
+      const packRoles = [...used].filter((c) => packOnlyColours().has(c)).map((c) => packOnlyColours().get(c));
+      expect(packRoles, `drew with ${[...used].join(' | ')}`).not.toEqual([]);
     });
 
-    it('renders InspectOverlay with themed colors without throwing', () => {
+    it("draws the InspectOverlay in the pack's theme roles", () => {
       const ctx = createMockCanvasContext();
       const engine = createTestEngine({
         id: 'fixture',
         name: 'Fixture Pack',
-        theme: FIXTURE_THEME_TOKENS,
+        theme: OVERLAY_THEME,
       });
 
       const inspect = new InspectOverlay();
@@ -252,8 +298,10 @@ describe('ThemeTokens and Canvas Renderer Integration', () => {
         worldToScreen: () => ({ x: 100, y: 100 }),
       } as any;
 
+      const used = recordColours(ctx);
       expect(() => inspect.render(ctx, 960, 600, engine, mockCamera, 32, 0, 0)).not.toThrow();
-      expect(ctx.fillRect).toHaveBeenCalled();
+      const packRoles = [...used].filter((c) => packOnlyColours().has(c)).map((c) => packOnlyColours().get(c));
+      expect(packRoles, `drew with ${[...used].join(' | ')}`).not.toEqual([]);
     });
 
     it('draws the explored floor (map viewer and minimap) in the pack roles', () => {

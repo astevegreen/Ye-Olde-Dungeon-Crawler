@@ -22,7 +22,7 @@ const CORRUPT_VS_RADIANT_FLAT_BONUS = 2;
 /**
  * Evaluates tagged aspect matchups between an attacker's weapon and defender's aspect/faction.
  * Generalized system replacing binary curse checks:
- * - aspect_radiant vs aspect_corrupt or undead/demon: +50% multiplier + 3 flat damage
+ * - aspect_radiant vs aspect_corrupt or an undead/demon tag, faction or definition id: +50% multiplier + 3 flat damage
  * - aspect_corrupt vs aspect_radiant: +50% multiplier + 2 flat damage
  * - neutral or unaligned: 1.0x multiplier
  */
@@ -82,7 +82,9 @@ export function resolveCombatMitigation(
 
   const attackerAspect = weapon?.aspectState;
   const defenderAspect = armor?.aspectState ?? defender.aspectState;
-  const defenderFactions = [defender.faction, defender.definitionId].filter(
+  // A pack marks undead or demons with monster tags, so the defender's tags count alongside
+  // its faction and definition id.
+  const defenderFactions = [defender.faction, defender.definitionId, ...defender.tags].filter(
     (f): f is string => typeof f === 'string' && f.length > 0
   );
 

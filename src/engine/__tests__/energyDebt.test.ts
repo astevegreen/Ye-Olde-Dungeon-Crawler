@@ -52,6 +52,7 @@ describe('energy debt: an action dearer than the energy banked costs time', () =
 
     expect(plain.actions()).toBe(9);
     // Each slowed action costs 150 energy at speed 100: about 6 actions in 9 hero turns.
+    expect(slowed.actions()).toBeGreaterThanOrEqual(5);
     expect(slowed.actions()).toBeLessThanOrEqual(7);
   });
 
@@ -83,5 +84,6 @@ describe('energy debt: an action dearer than the energy banked costs time', () =
     }
     expect(firstCost).toBe(150);
     expect(engine.scheduler.ticks - ticksBefore).toBeGreaterThanOrEqual(14);
+    expect(engine.scheduler.ticks - ticksBefore).toBeLessThanOrEqual(16);
   });
 });

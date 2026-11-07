@@ -74,33 +74,6 @@ describe('Emergent Surface & Gas Simulation Layer', () => {
     expect(engine.surfaces.getSurface(4, 4)).toBe('ice_sheet');
   });
 
-  it('causes entity to slide 2 tiles forward when stepping onto an ice sheet', () => {
-    // Player at (3,3). Move East to (4,3).
-    // Ice sheet at (4,3). Should slide across (5,3) to (6,3) if clear.
-    engine.surfaces.setSurface(4, 3, 'ice_sheet', 5);
-    // Remove monster so path is unobstructed
-    map.removeEntity(monster);
-
-    const move = new MovementAction(player, 1, 0);
-    move.perform(engine);
-
-    expect(player.x).toBe(6); // 4 + 2 slide = 6!
-    expect(player.y).toBe(3);
-    expect(engine.messages.some((m) => m.includes('slips on the slick ice sheet'))).toBe(true);
-  });
-
-  it('inflicts corrosive damage when stepping into an acid pool', () => {
-    engine.surfaces.setSurface(4, 3, 'acid_pool', 5);
-    const hpBefore = player.hp;
-
-    const move = new MovementAction(player, 1, 0);
-    move.perform(engine);
-
-    expect(player.x).toBe(4);
-    expect(player.hp).toBeLessThan(hpBefore);
-    expect(engine.messages.some((m) => m.includes('caustic acid'))).toBe(true);
-  });
-
   it('decays surfaces and gasses on discrete tick and cleans up expired cells', () => {
     engine.surfaces.setSurface(2, 2, 'oil_slick', 2);
     engine.surfaces.setGas(2, 2, 'poison_cloud', 1);

@@ -64,7 +64,9 @@ describe('R-pipe-17 · presentation callbacks and the forced pass are isolated',
   });
 
   it('a turn\'s FOV update that throws doesn\'t stop the monsters moving', () => {
-    const { engine, player } = setup();
+    const { engine, player, goblin } = setup();
+    goblin.aiState = 'hunting'; // awake, so it steps toward the hero this turn
+    const start = { x: goblin.x, y: goblin.y };
     const real = engine.updateFov.bind(engine);
     let once = true;
     vi.spyOn(engine, 'updateFov').mockImplementation(() => {
@@ -78,6 +80,7 @@ describe('R-pipe-17 · presentation callbacks and the forced pass are isolated',
 
     expect(() => engine.handlePlayerAction(new WaitAction(player))).not.toThrow();
     expect(engine.turnCount).toBe(turn + 1);
+    expect({ x: goblin.x, y: goblin.y }).not.toEqual(start);
   });
 
   it('a throwing onStateChanged subscriber does not escape a death or a victory', () => {

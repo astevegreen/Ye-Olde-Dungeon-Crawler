@@ -1,5 +1,5 @@
 import { PRNG } from '../dungeon/prng';
-import { classifyLoadError, MISSING_SAVE, type LoadOutcome } from './loadResult';
+import { classifyLoadError, migrateForLoad, MISSING_SAVE, SaveLoadError, type LoadOutcome } from './loadResult';
 import { DungeonGenerator } from '../dungeon/dungeon-generator';
 import { TownMapGenerator } from '../town/townMap';
 import { InventoryManager } from '../inventory/inventory-manager';
@@ -9,6 +9,7 @@ import { ItemFactory } from '../items/factory';
 import type { Merchant } from '../economy/merchant';
 import type { GameMap } from '../grid/map';
 import { serializeGame, deserializeGame } from './serializer';
+import { activateRegistries, activeRegistries } from '../registries';
 import { beginPrologue } from '../quest/prologue';
 import type { CharacterProfile, RosterManifest, SaveData, StorageAdapter } from './types';
 import { CharacterRoller } from '../character/characterRoller';
@@ -435,7 +436,7 @@ export class ProfileManager {
     }
 
     try {
-      const { envelope } = defaultMigrator.migrate(raw);
+      const envelope = migrateForLoad(raw);
       const effectiveManifest = manifest ?? this.defaultManifest ?? DEFAULT_HEADLESS_MANIFEST;
       const result = deserializeGame(envelope.data, effectiveManifest);
 
@@ -493,24 +494,39 @@ export class ProfileManager {
   }
 
   /**
-   * Validates and imports an external save payload into the local roster.
+   * Validates and imports an external save payload into the local roster. Everything is
+   * checked before anything is written: a save that would not load (unreadable, below the
+   * version floor, from a newer engine, or failing to deserialize) throws a `SaveLoadError`
+   * with its typed reason and a player-facing message, and leaves the roster and every save
+   * as they were.
    */
   public importHero(jsonString: string): CharacterProfile {
     let envelope: VersionedSaveEnvelope<SaveData>;
     try {
-      const migrationResult = defaultMigrator.migrate(jsonString);
-      envelope = migrationResult.envelope as VersionedSaveEnvelope<SaveData>;
-    } catch {
-      throw new Error('Invalid JSON save file format.');
+      envelope = migrateForLoad(jsonString) as VersionedSaveEnvelope<SaveData>;
+    } catch (err) {
+      throw asImportError(err);
     }
 
     const parsed = envelope.data;
-    if (!parsed.profile || !parsed.player || !parsed.map) {
+    if (!parsed?.profile || !parsed.player || !parsed.map) {
       throw new Error('Incomplete save data: missing profile, player, or map.');
     }
     // A dead hero's state is never loadable (§5).
     if (Number(parsed.player.hp) <= 0) {
       throw new Error('This hero has fallen: a fallen hero cannot be restored.');
+    }
+    // It must load as it stands, or it would become a roster entry (and the active hero)
+    // that fails on Continue. A copy, so the trial load cannot touch what is stored. A
+    // successful load activates the throwaway engine's registries; the live game, which may
+    // save next (a mid-game import), gets its own back either way.
+    const live = activeRegistries();
+    try {
+      deserializeGame(structuredClone(parsed), this.defaultManifest ?? DEFAULT_HEADLESS_MANIFEST);
+    } catch (err) {
+      throw asImportError(err);
+    } finally {
+      activateRegistries(live);
     }
 
     // Ensure imported profile has a valid unique ID if collision occurs
@@ -571,4 +587,11 @@ export class ProfileManager {
   public triggerHeroDownload(profileId: string, adapter: DownloadAdapter): void {
     this.triggerCotwDownload(profileId, adapter);
   }
+}
+
+/** A failed import as a `SaveLoadError` whose message is the player-facing sentence for its reason. */
+function asImportError(err: unknown): SaveLoadError {
+  const failure = classifyLoadError(err);
+  if (failure.reason === 'missing') return new SaveLoadError('corrupt', failure.message);
+  return new SaveLoadError(failure.reason, failure.message);
 }

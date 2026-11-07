@@ -158,6 +158,7 @@ describe('the floor-50 grimoire, resolved (dry run)', () => {
   // The dry-run page says half a turn; the stat catalog's ¾ → ⅔ → ½ gives ⅔ at two steps.
   it('Paralyze, two steps out, casts in ⅔ of a turn and borrows only from Cold Ray (F43)', () => {
     expect(of('Paralyze').stats.castTimeFraction).toBeCloseTo(2 / 3);
+    expect(of('Paralyze').lends.length).toBeGreaterThan(0);
     expect(of('Paralyze').lends.every((l) => l.from.length === 1 && l.from[0].x === 1)).toBe(true);
   });
 

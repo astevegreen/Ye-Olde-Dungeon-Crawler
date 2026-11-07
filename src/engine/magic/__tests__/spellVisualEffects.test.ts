@@ -88,6 +88,17 @@ describe('Visual Effect Queue & Declarative FX Engine', () => {
     }
   });
 
+  it('gives each instant-mode Magic Arrow cast exactly one effect, none carried over from the last cast', () => {
+    const { engine, player } = createCorridorEngine();
+
+    for (let i = 0; i < 2; i++) {
+      player.mana = 100;
+      const result = new CastSpellAction(player, 'magic_arrow', 8, 3).perform(engine);
+      expect(result.success).toBe(true);
+      expect(result.effects?.map((e) => e.type), `cast ${i + 1}`).toEqual(['projectile']);
+    }
+  });
+
   it('tags each effect with the art it plays: the spell\'s own, else its element\'s', () => {
     const { engine, player } = createCorridorEngine();
     const cold = new CastSpellAction(player, 'cold_ray', 8, 3).perform(engine);
@@ -241,18 +252,5 @@ describe('Visual Effect Queue & Declarative FX Engine', () => {
     expect(consumed.length).toBeGreaterThanOrEqual(1);
     expect(consumed[0].type).toBe('projectile');
     expect(engine.pendingVisualEffects.length).toBe(0);
-  });
-
-  it('executes 1,000 instant-mode casts headlessly, each producing exactly one effect descriptor', () => {
-    const { engine, player } = createCorridorEngine();
-
-    // The wall-clock budget for this workload lives in `npm run sim` (scripts/headless-sim.ts).
-    for (let i = 0; i < 1000; i++) {
-      player.mana = 100;
-      const action = new CastSpellAction(player, 'magic_arrow', 8, 3);
-      const result = action.perform(engine);
-      expect(result.success).toBe(true);
-      expect(result.effects?.length).toBe(1);
-    }
   });
 });

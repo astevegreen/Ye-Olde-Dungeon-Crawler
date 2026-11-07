@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { GameMap } from '../../grid/map';
 import { TILES } from '../../grid/tile';
 import { VaultStamper, type VaultBlueprint } from '../vaultStamp';
@@ -86,44 +86,30 @@ describe('Vault / Prefab Stamp Injector', () => {
     expect(deep.some((id) => id === 'giant_rat' || id === 'kobold')).toBe(false);
   });
 
+  // The generator only stamps the vaults it is given: without COTW_VAULTS this once passed on
+  // pillars and water from ordinary rooms. It now counts the stamps themselves.
   it('injects vaults into procedural dungeon generator on floors >= 3', () => {
-    let vaultsEncountered = 0;
-
+    const stamp = vi.spyOn(VaultStamper, 'stamp');
     for (let seed = 2000; seed < 2020; seed++) {
-      const generator = new DungeonGenerator({
-        width: 50,
-        height: 35,
-        floorNumber: 5, // Unlocks Sunken Cistern & Colonnade Arena
-        seed,
-        spawnMonsters: false,
-      });
-
-      const result = generator.generate();
-      // Look for tactical tiles characteristic of vaults (shallow_water, pillar, iron_bars, chasm)
-      let tacticalTileFound = false;
-      for (let y = 0; y < result.map.height; y++) {
-        for (let x = 0; x < result.map.width; x++) {
-          const t = result.map.getTile(x, y);
-          if (
-            t &&
-            (t.type === 'shallow_water' ||
-              t.type === 'pillar' ||
-              t.type === 'iron_bars' ||
-              t.type === 'chasm')
-          ) {
-            tacticalTileFound = true;
-            break;
-          }
-        }
-        if (tacticalTileFound) break;
-      }
-
-      if (tacticalTileFound) {
-        vaultsEncountered++;
-      }
+      new DungeonGenerator({ width: 50, height: 35, floorNumber: 5, seed, spawnMonsters: false, vaults: COTW_VAULTS }).generate();
     }
 
-    expect(vaultsEncountered).toBeGreaterThan(0);
+    expect(stamp.mock.calls.length).toBeGreaterThan(0);
+    for (const [, blueprint] of stamp.mock.calls) {
+      expect(COTW_VAULTS).toContain(blueprint);
+      expect(blueprint.minFloor ?? 1).toBeLessThanOrEqual(5);
+    }
+  });
+
+  it('stamps no vault when given none, or none deep enough', () => {
+    const stamp = vi.spyOn(VaultStamper, 'stamp');
+    const deepOnly = COTW_VAULTS.filter((v) => (v.minFloor ?? 1) > 2);
+    expect(deepOnly.length).toBeGreaterThan(0);
+    for (let seed = 2000; seed < 2010; seed++) {
+      new DungeonGenerator({ width: 50, height: 35, floorNumber: 5, seed, spawnMonsters: false }).generate();
+      new DungeonGenerator({ width: 50, height: 35, floorNumber: 2, seed, spawnMonsters: false, vaults: deepOnly }).generate();
+    }
+    expect(stamp).not.toHaveBeenCalled();
   });
 });
 

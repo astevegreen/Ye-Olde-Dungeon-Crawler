@@ -108,20 +108,38 @@ describe('R-rend-5 · the game’s function keys never reach the browser (Help t
 });
 
 describe('R-rend-10 · a key pressed while effects lock input never presses the focused HUD button', () => {
-  it.each(['Space', 'Enter', 'ArrowUp', 'Numpad5'])('%s is dropped and preventDefaulted while locked', (code) => {
+  afterEach(() => vi.useRealTimers());
+
+  // An arrow waits in the chord buffer before it moves, so the press is played out (key up,
+  // buffer window over) before the lock lets go: destroying the handler at once would drop
+  // the buffered step whether or not the lock had.
+  const press = (code: string, locked: boolean) => {
+    vi.useFakeTimers();
     const engine = new GameEngine({ map: new GameMap(20, 20), player: new Player({ position: { x: 10, y: 10 } }) });
     const acted = vi.spyOn(engine, 'handlePlayerAction');
     const ih = new InputHandler(engine, () => {}, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, new SettingsManager(new MemoryStorage()));
     ih.enabled = true;
-    const release = ih.holdInput();
+    const release = locked ? ih.holdInput() : () => {};
     const prevented = vi.fn();
 
     ih.handleKeyDown({ ...ev(code), preventDefault: prevented } as KeyboardEvent);
+    ih.handleKeyUp(ev(code));
+    vi.advanceTimersByTime(1000);
     release();
+    vi.advanceTimersByTime(1000);
     ih.destroy();
+    return { acted, prevented };
+  };
+
+  it.each(['Space', 'Enter', 'ArrowUp', 'Numpad5'])('%s is dropped and preventDefaulted while locked', (code) => {
+    const { acted, prevented } = press(code, true);
 
     expect(acted).not.toHaveBeenCalled();
     expect(prevented).toHaveBeenCalled();
+  });
+
+  it.each(['ArrowUp', 'Numpad5'])('%s acts when the same press comes unlocked', (code) => {
+    expect(press(code, false).acted).toHaveBeenCalled();
   });
 });
 

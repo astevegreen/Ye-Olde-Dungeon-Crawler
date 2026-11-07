@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterAll } from 'vitest';
 import {
   BspDungeonGenerator,
   CellularAutomataGenerator,
@@ -10,6 +10,9 @@ import type { QuestArcDefinition } from '../types/manifest';
 import type { Position } from '../types';
 
 describe('Pluggable Dungeon Generation Strategy', () => {
+  // The registry is process-wide: the strategy a test adds must not outlive this file.
+  afterAll(() => DungeonGeneratorRegistry.unregister('custom-arena'));
+
   function isReachable(
     map: { isPassable: (x: number, y: number) => boolean; inBounds: (x: number, y: number) => boolean; getTile?: (x: number, y: number) => any },
     start: Position,
@@ -119,12 +122,18 @@ describe('Pluggable Dungeon Generation Strategy', () => {
       },
     };
 
+    const bsp = vi.spyOn(DungeonGeneratorRegistry.get('bsp')!, 'generate');
+    const cavern = vi.spyOn(DungeonGeneratorRegistry.get('cavern')!, 'generate');
+
     const floor1 = DungeonArc.generateFloor(1, 1111, customQuestArc as QuestArcDefinition);
-    expect(floor1.map).toBeDefined();
+    expect(bsp).toHaveBeenCalled();
+    expect(cavern).not.toHaveBeenCalled();
     expect(isReachable(floor1.map, floor1.playerSpawn, floor1.stairsDown!)).toBe(true);
 
+    bsp.mockClear();
     const floor2 = DungeonArc.generateFloor(2, 2222, customQuestArc as QuestArcDefinition);
-    expect(floor2.map).toBeDefined();
+    expect(cavern).toHaveBeenCalled();
+    expect(bsp).not.toHaveBeenCalled();
     expect(isReachable(floor2.map, floor2.playerSpawn, floor2.stairsDown!)).toBe(true);
   });
 });

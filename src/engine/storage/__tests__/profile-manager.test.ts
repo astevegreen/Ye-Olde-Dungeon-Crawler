@@ -1,9 +1,12 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ProfileManager, MemoryStorage } from '../profile-manager';
+import { SaveLoadError } from '../loadResult';
+import { CURRENT_SCHEMA_VERSION } from '../migrator';
 import { Container } from '../../items/container';
 import { Item } from '../../items/item';
 import { ItemFactory } from '../../items/factory';
 import { createTestKobold } from '../../__fixtures__/testHelpers';
+import { activateRegistries, activeRegistries, type EngineRegistries } from '../../registries';
 
 describe('Multi-Character Profile Save Manager', () => {
   let storage: MemoryStorage;
@@ -191,6 +194,71 @@ describe('Multi-Character Profile Save Manager', () => {
     expect(loaded).not.toBeNull();
     expect(loaded?.engine.player.name).toBe('Ragnar');
     expect(loaded?.engine.player.hp).toBe(28); // 35 - 7
+  });
+
+  // A mid-game import (main.ts) saves the live engine next. Left active, the trial load's
+  // registries would have that save read a discarded engine's item index (R-stor-7).
+  it("leaves the live engine's registries active after an import, loaded or refused", () => {
+    const { profile, engine: away } = manager.createCharacter('Ragnar');
+    manager.saveCharacter(away, profile);
+    const payload = manager.exportHero(profile.id);
+
+    const home = new ProfileManager(new MemoryStorage());
+    const { engine: live } = home.createCharacter('Sigrid');
+    activateRegistries(live.registries);
+    const sameAsLive = (when: string) => {
+      const now = activeRegistries();
+      for (const key of Object.keys(live.registries) as (keyof EngineRegistries)[]) {
+        expect(now[key], `${when}: ${key}`).toBe(live.registries[key]);
+      }
+    };
+
+    home.importHero(payload);
+    sameAsLive('after a loaded import');
+
+    const corrupt = JSON.parse(payload);
+    corrupt.data.player.inventory = 5;
+    expect(() => home.importHero(JSON.stringify(corrupt))).toThrow(SaveLoadError);
+    sameAsLive('after a refused import');
+  });
+
+  describe('an import that cannot be loaded changes nothing', () => {
+    const exported = (mutate: (envelope: any) => void): string => {
+      const { profile, engine } = manager.createCharacter('Ragnar');
+      manager.saveCharacter(engine, profile);
+      const envelope = JSON.parse(manager.exportHero(profile.id));
+      mutate(envelope);
+      return JSON.stringify(envelope);
+    };
+
+    it.each([
+      ['a malformed map', (e: any) => { e.data.map = { width: 'x' }; }, 'corrupt'],
+      ['an inventory that is not one', (e: any) => { e.data.player.inventory = 5; }, 'corrupt'],
+      ['a save below the version floor', (e: any) => { e.schemaVersion = CURRENT_SCHEMA_VERSION - 1; }, 'migration-failed'],
+      ['a save from a newer engine', (e: any) => { e.schemaVersion = CURRENT_SCHEMA_VERSION + 1; }, 'newer-than-engine'],
+    ])('refuses %s with a typed reason, and keeps the roster and saves as they were', (_label, mutate, reason) => {
+      const payload = exported(mutate);
+      const homeStorage = new MemoryStorage();
+      const home = new ProfileManager(homeStorage);
+      const { profile: resident, engine } = home.createCharacter('Sigrid');
+      home.saveCharacter(engine, resident);
+      const writes = vi.spyOn(homeStorage, 'setItem');
+      const removals = vi.spyOn(homeStorage, 'removeItem');
+
+      let thrown: unknown;
+      try {
+        home.importHero(payload);
+      } catch (err) {
+        thrown = err;
+      }
+
+      expect(thrown).toBeInstanceOf(SaveLoadError);
+      expect((thrown as SaveLoadError).reason).toBe(reason);
+      expect(writes).not.toHaveBeenCalled();
+      expect(removals).not.toHaveBeenCalled();
+      expect(home.listProfiles().map((p) => p.id)).toEqual([resident.id]);
+      expect(home.getManifest().activeProfileId).toBe(resident.id);
+    });
   });
 
   // The pack slot and `primaryPack` are the same container, saved twice. Loading used to

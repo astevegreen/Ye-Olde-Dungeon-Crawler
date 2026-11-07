@@ -134,4 +134,26 @@ describe('Multi-Denomination Currency & Physical Coinage System', () => {
     expect(gold.valueInCp).toBe(copper.valueInCp);
     expect(gold.totalBulk()).toBe(copper.totalBulk() / 100);
   });
+
+  it.each([
+    ['NaN', Number.NaN],
+    ['Infinity', Number.POSITIVE_INFINITY],
+    ['a negative cost', -100],
+    ['a fractional cost', 12.5],
+  ])('refuses %s and leaves the purse as it was', (_label, cost) => {
+    addCurrencyToPlayer(player, { copper: 5, silver: 3, gold: 2 });
+    const before = getPlayerCurrencyBreakdown(player);
+
+    const result = deductCurrencyFromPlayer(player, cost);
+
+    expect(result.success).toBe(false);
+    expect(getPlayerTotalCp(player)).toBe(235);
+    expect(getPlayerCurrencyBreakdown(player)).toEqual(before);
+  });
+
+  it('takes nothing for a cost of zero', () => {
+    addCurrencyToPlayer(player, { copper: 5, silver: 0, gold: 1 });
+    expect(deductCurrencyFromPlayer(player, 0).success).toBe(true);
+    expect(getPlayerTotalCp(player)).toBe(105);
+  });
 });

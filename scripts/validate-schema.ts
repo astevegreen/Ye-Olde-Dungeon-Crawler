@@ -10,6 +10,8 @@
  *    serialize -> JSON -> deserialize unchanged. JSON is in the loop because saves
  *    are persisted as strings, so a value that cannot round-trip through JSON is
  *    just as lost as one the serializer drops.
+ * 3. Content predicates: every pack's predicates use types the engine knows, since an
+ *    unknown one fails closed in play.
  */
 import { SchemaMigrator, defaultMigrator, CURRENT_SCHEMA_VERSION } from '../src/engine/storage/migrator';
 import { serializeGame, deserializeGame } from '../src/engine/storage/serializer';
@@ -19,6 +21,9 @@ import { TILES } from '../src/engine/grid/tile';
 import { Player } from '../src/engine/entities/player';
 import { Item } from '../src/engine/items/item';
 import type { TileDefinition } from '../src/engine/types';
+import { findUnknownPredicates } from '../src/engine/predicates/predicateValidation';
+import { cotwManifest } from '../src/content/cotw';
+import { fixtureManifest } from '../tests/fixtures/fixture-pack';
 
 const failures: string[] = [];
 
@@ -147,11 +152,20 @@ check('prng next draw resumes stream', restored.prng.next(), nextDrawBefore);
 check('custom tile round-trip type', restored.map.getTile(CUSTOM_TILE_POS.x, CUSTOM_TILE_POS.y)?.type, 'custom_validator_crystal');
 check('custom tile round-trip glyph', restored.map.getTile(CUSTOM_TILE_POS.x, CUSTOM_TILE_POS.y)?.glyph, '💎');
 
-// --------------------------------------------------------------- 3. verdict
+// ----------------------------------------------------------- 3. content predicates
+// An unknown predicate type fails closed in play (it locks its choice or stock), so every
+// shipped pack, and the fixture pack that proves pack-neutrality, uses known types only.
+console.log('\nContent predicates:');
+for (const [name, manifest] of [['cotw', cotwManifest], ['fixture pack', fixtureManifest]] as const) {
+  const unknown = findUnknownPredicates(manifest, name);
+  check(`${name}: unknown predicate types`, unknown.join(', '), '');
+}
+
+// --------------------------------------------------------------- 4. verdict
 if (failures.length > 0) {
   console.error(`\n❌ Schema validation failed (${failures.length}):`);
   for (const f of failures) console.error(`  - ${f}`);
   process.exit(1);
 }
-console.log(`\n✅ Schema validation passed: v${CURRENT_SCHEMA_VERSION} migration machinery, plus surface, ground item, PRNG, and content tile round-tripping.`);
+console.log(`\n✅ Schema validation passed: v${CURRENT_SCHEMA_VERSION} migration machinery, plus surface, ground item, PRNG, and content tile round-tripping, and known predicate types in every pack.`);
 process.exit(0);

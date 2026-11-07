@@ -121,6 +121,7 @@ describe('Whole-turn failure isolation: monster turns', () => {
   });
 
   it('keeps other monsters acting after one monster turn fails', () => {
+    allowIsolatedFailures();
     const { engine, player } = buildEngine({
       aiStrategies: [
         {
@@ -132,13 +133,17 @@ describe('Whole-turn failure isolation: monster turns', () => {
         },
       ],
     });
-    addMonster(engine, 'a-faulty', { x: 12, y: 12 }, { aiRoutineId: THROWING_ROUTINE });
+    // In the hero's sight, so its routine runs (and throws) rather than hunting by memory.
+    addMonster(engine, 'a-faulty', { x: 6, y: 6 }, { aiRoutineId: THROWING_ROUTINE });
     const healthy = addMonster(engine, 'b-healthy', { x: 9, y: 2 });
     const startDistance = chebyshev(healthy, player);
+    const failuresBefore = engine.actionPipeline.caughtExceptionCount;
 
     engine.handlePlayerAction(new WaitAction(player));
     engine.handlePlayerAction(new WaitAction(player));
 
+    expect(engine.actionPipeline.caughtExceptionCount).toBeGreaterThan(failuresBefore);
+    expect(lastMonsterTurnError().summary).toContain('AI_ROUTINE_FAULT');
     expect(chebyshev(healthy, player)).toBeLessThan(startDistance);
   });
 });

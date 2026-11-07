@@ -60,7 +60,12 @@ describe('a spell that lays ground or gas on its tiles', () => {
     map.addEntity(foe);
     const before = engine.messages.length;
     cast('rime_patch', 14, 10);
+    // It landed under the foe (so the silence below is not just a missed cast)...
+    expect(engine.surfaces.getSurface(14, 10)).toBe('ice_sheet');
+    // ...and has done nothing to it yet.
     expect(foe.position).toEqual({ x: 14, y: 10 });
+    expect(foe.hp).toBe(50);
+    expect(foe.statusManager.getAll()).toEqual([]);
     expect(engine.messages.slice(before).some((l) => l.includes('slips'))).toBe(false);
   });
 });

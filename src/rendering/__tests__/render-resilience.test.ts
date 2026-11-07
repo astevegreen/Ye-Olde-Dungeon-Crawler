@@ -80,25 +80,32 @@ describe('Render & Engine Defensive Resilience Tests', () => {
       expect(fov.getVisibility(100, 100)).toBe(Visibility.Unexplored);
     });
 
-    it('safely ignores undefined or NaN coordinates in setVisibility without throwing', () => {
+    it('ignores undefined or NaN coordinates in setVisibility, marking no cell', () => {
       const fov = new FovManager(20, 20);
-      expect(() => {
-        fov.setVisibility(undefined as any, undefined as any, Visibility.Visible);
-        fov.setVisibility(5, undefined as any, Visibility.Visible);
-        fov.setVisibility(NaN, 5, Visibility.Visible);
-      }).not.toThrow();
+      fov.setVisibility(undefined as any, undefined as any, Visibility.Visible);
+      fov.setVisibility(5, undefined as any, Visibility.Visible);
+      fov.setVisibility(NaN, 5, Visibility.Visible);
+
+      // NaN as an index would have written a stray property or cell 0; nothing moved.
+      for (let y = 0; y < 20; y++) for (let x = 0; x < 20; x++) expect(fov.getVisibility(x, y), `${x},${y}`).toBe(Visibility.Unexplored);
+      fov.setVisibility(5, 5, Visibility.Visible);
+      expect(fov.getVisibility(5, 5)).toBe(Visibility.Visible);
     });
   });
 
   describe('Camera undefined target resilience', () => {
-    it('safely handles undefined or malformed target in update', () => {
+    it('keeps its view where it was for an undefined or malformed target', () => {
       const camera = new Camera(20, 15);
-      expect(() => {
-        camera.update(undefined as any, 50, 50);
-        camera.update(null as any, 50, 50);
-        camera.update({} as any, 50, 50);
-        camera.update({ x: undefined as any, y: 5 }, 50, 50);
-      }).not.toThrow();
+      camera.update({ x: 30, y: 30 }, 50, 50);
+      const view = { x: camera.startX, y: camera.startY };
+      expect(view).toEqual({ x: 20, y: 23 });
+
+      camera.update(undefined as any, 50, 50);
+      camera.update(null as any, 50, 50);
+      camera.update({} as any, 50, 50);
+      camera.update({ x: undefined as any, y: 5 }, 50, 50);
+
+      expect({ x: camera.startX, y: camera.startY }).toEqual(view);
     });
 
     it('returns null for worldToScreen or screenToWorld with undefined or NaN', () => {

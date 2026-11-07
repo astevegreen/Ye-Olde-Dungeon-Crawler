@@ -219,9 +219,6 @@ describe('Item Containment Scalar ID Normalization & Serialization Hardening', (
       circularObj.child.parent = circularObj;
       circularObj.self = circularObj;
 
-      // Standard JSON.stringify MUST throw
-      expect(() => JSON.stringify(circularObj)).toThrow(TypeError);
-
       // safeJsonStringify MUST NOT throw and should replace with "[Circular]"
       let safeStr = '';
       expect(() => {
@@ -252,9 +249,6 @@ describe('Item Containment Scalar ID Normalization & Serialization Hardening', (
         regularNumber: 42,
         undefProp: undefined,
       };
-
-      // Standard JSON.stringify throws on BigInt
-      expect(() => JSON.stringify(complexData)).toThrow(TypeError);
 
       const safe = safeJsonStringify(complexData);
       expect(safe).toContain('"bigNumber":"9007199254741091"');

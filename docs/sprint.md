@@ -287,6 +287,20 @@ design sketch and the backlog survey of 24 Oct, the playtest logs (`C:/Antigravi
   #69 option 1). Question: approve R4 option 1.
 - **K5** SonarCloud complexity: split the worst S3776 functions outside `scripts/sprint/`, starting with
   `scripts/lib/soak-report.ts:173` (77). Question: is this worth sprint time.
+- **K6** The 24 test files that assign `globalThis.document`/`window` by hand use `vi.stubGlobal` instead
+  (`vite.config.ts` already unstubs after each test), so no test's global leaks into the next file
+  (6 Nov test-suite audit).
+- **K7** One round-trip table with a `roundTrip()` helper for the six `src/engine/storage/__tests__/*RoundTrip.test.ts`
+  files, each case a row; no case dropped (6 Nov test-suite audit).
+- **K8** A shared sprite-sheet helper for the sprite tests in `src/rendering/__tests__/` that each build their
+  own fake sheet (6 Nov test-suite audit).
+- **K9** The gameplay specs that test logic only, no layout, run in Chromium alone (`playwright.config.ts`
+  per-project `testMatch`); four were named by the 6 Nov audit. A rail change: it gets the rail audit.
+- **K10** Soak-shaped unit tests (`src/engine/__tests__/chaosSimulation.test.ts` and its kind) move to the
+  `tooling` Vitest project (`vite.config.ts`), so `npm test` stays fast. A rail change: the rail audit.
+- **K11** The 19 hand-built fake DOMs in the UI tests share happy-dom, a new dev dependency: it is a real DOM
+  where the fakes miss `classList`, focus and events, and one environment replaces 19 partial ones. One
+  file at a time, each still passing (6 Nov test-suite audit).
 
 ### research (decides nothing; first line of each report: "Proposal, not a rule")
 

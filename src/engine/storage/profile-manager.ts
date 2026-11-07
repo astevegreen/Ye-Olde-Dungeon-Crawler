@@ -522,7 +522,7 @@ export class ProfileManager {
     // save next (a mid-game import), gets its own back either way.
     const live = activeRegistries();
     try {
-      deserializeGame(structuredClone(parsed),this.defaultManifest ?? DEFAULT_HEADLESS_MANIFEST);
+      deserializeGame(structuredClone(parsed), this.defaultManifest ?? DEFAULT_HEADLESS_MANIFEST);
     } catch (err) {
       throw asImportError(err);
     } finally {

@@ -34,3 +34,4 @@ Complete
 - pre-push (all browsers): 110 passed, 16 skipped
 - deploy run 42301076478: green; deploy 5m34s, browsers 4m46s (WebKit tests 3m13s)
 - second look: not run (agy unavailable); merged on the owner's authority
+Resumed: 2026-11-07 15:37 UTC

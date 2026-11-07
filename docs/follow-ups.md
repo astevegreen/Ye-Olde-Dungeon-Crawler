@@ -23,6 +23,10 @@ it. Sessions add to it by day; sprint lanes file follow-up issues instead. Movin
 - `declaredVersion` (`src/engine/storage/loadResult.ts:66-70`) reads `{}`, `[]` or an envelope with a non-numeric
   `schemaVersion` and no timestamp as version 0, so they fail as `migration-failed` instead of `corrupt`.
   [7 Nov 2026, agy's second look on #110]
+- `DungeonGenerator.isReachable` (`src/engine/dungeon/dungeon-generator.ts:524`) exempts a vault's whole rect and
+  checks only its `@` connectors, so a blueprint with no `@` passes walled off; and where every room is a vault
+  (`:308`, `joinable` falls back to `rooms`) a connector can join its own vault again. A stamp-time check that a
+  blueprint has an `@` closes the first. [7 Nov 2026, agy's second look on cb0bb7ef]
 
 ## Content (cotw pack)
 

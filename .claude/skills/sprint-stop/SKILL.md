@@ -1,6 +1,6 @@
 ---
 name: sprint-stop
-description: End the YODC sprint's window now and switch its supervisor, its wake and its waiting sessions off; sessions already running finish the task in hand. Run only as /sprint-stop.
+description: Ends the YODC sprint window now; run only as /sprint-stop.
 disable-model-invocation: true
 model: sonnet
 hooks:

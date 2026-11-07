@@ -1,6 +1,6 @@
 ---
 name: sprint-integrate
-description: The YODC sprint's single integrator. Lands reviewed sprint branches on main, up to three per push, pushes, watches CI. Run only as /sprint-integrate, from a session the sprint supervisor started.
+description: Lands reviewed YODC sprint branches on main; run only as /sprint-integrate from the supervisor.
 disable-model-invocation: true
 model: sonnet
 hooks:

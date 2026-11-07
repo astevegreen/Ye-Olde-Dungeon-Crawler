@@ -1,6 +1,6 @@
 ---
 name: sprint-supervisor
-description: Supervisor of the YODC sprint in docs/sprint.md, run hourly, 2 minutes after a usage limit resets, and whenever a sprint session stops. Starts and restarts the lane, plan and integrate sessions. Run only from the "YODC sprint supervisor" and "YODC sprint supervisor wake" scheduled tasks.
+description: Supervises the YODC sprint; run only from the sprint supervisor scheduled tasks.
 disable-model-invocation: true
 argument-hint: "[dry-run]"
 model: sonnet

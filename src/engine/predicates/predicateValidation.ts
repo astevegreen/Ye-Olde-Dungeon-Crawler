@@ -26,6 +26,8 @@ const PREDICATE_KEYS = new Set(['predicate', 'when']);
  * Walks a content manifest (or any part of one) and returns the path of every object under a
  * predicate field that `evaluatePredicate` does not know. Content checks run it over each
  * pack, so a misspelled predicate type fails the gate instead of locking a choice in play.
+ * A shop's stock exists only once its `initialInventory()` factory runs (`MerchantConfig`), so
+ * the walk calls it and checks the items it builds; the town calls it the same way.
  */
 export function findUnknownPredicates(root: unknown, rootPath = 'manifest'): string[] {
   const found: string[] = [];
@@ -35,8 +37,12 @@ export function findUnknownPredicates(root: unknown, rootPath = 'manifest'): str
     seen.add(value);
     for (const [key, child] of Object.entries(value)) {
       const childPath = Array.isArray(value) ? `${path}[${key}]` : `${path}.${key}`;
-      if (PREDICATE_KEYS.has(key) && child && typeof child === 'object' && !Array.isArray(child)) {
+      if (PREDICATE_KEYS.has(key) && child && typeof child === 'object') {
         if (!isKnownPredicate(child)) found.push(childPath);
+        continue;
+      }
+      if (key === 'initialInventory' && typeof child === 'function') {
+        visit((child as () => unknown)(), `${childPath}()`);
         continue;
       }
       visit(child, childPath);

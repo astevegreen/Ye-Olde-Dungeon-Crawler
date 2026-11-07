@@ -28,4 +28,20 @@ describe('predicate validation', () => {
 
     expect(findUnknownPredicates(content, 'pack')).toEqual(['pack.choices[1].predicate', 'pack.choices[1].options[0].when']);
   });
+
+  // An array where a predicate goes is no predicate: the evaluator fails closed on it.
+  it('names a predicate field holding an array', () => {
+    expect(findUnknownPredicates({ endings: [{ when: [{ type: 'hasFlag', flag: 'a' }] }] }, 'pack')).toEqual(['pack.endings[0].when']);
+  });
+
+  // A shop's stock is built by its `initialInventory()` factory, so its items' predicates are on
+  // no object the manifest holds; an unknown one would lock that stock for good in play.
+  it("names an unknown predicate on a shop's stock", () => {
+    const stock = () => [
+      { id: 'torch', predicate: { type: 'hasFlag', flag: 'dark' } },
+      { id: 'broth', predicate: { type: 'hasFlagg', flag: 'lit' } },
+    ];
+    const content = { town: { npcs: [{ merchantConfig: { id: 'olaf', initialInventory: stock, predicate: { type: 'hasFlag', flag: 'open' } } }] } };
+    expect(findUnknownPredicates(content, 'pack')).toEqual(['pack.town.npcs[0].merchantConfig.initialInventory()[1].predicate']);
+  });
 });

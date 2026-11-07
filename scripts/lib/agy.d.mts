@@ -59,7 +59,12 @@ export const API_NOTE: string;
 /** askModel's `api` for an audit that reads the whole repository: refuses. */
 export const NO_API: ApiAsk;
 /** The repo's rules, the task and the material's text; throws when there is no material or it is truncated. */
-export function apiPrompt(prompt: string, read?: (file: string) => string, context?: readonly string[]): string;
+export function apiPrompt(
+  prompt: string,
+  read?: (file: string) => string,
+  context?: readonly string[],
+  list?: (dir: string) => string[],
+): string;
 export interface ApiReply {
   status: number;
   text: string;

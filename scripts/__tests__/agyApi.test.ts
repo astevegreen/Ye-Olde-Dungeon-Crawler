@@ -73,7 +73,7 @@ describe('the Gemini API fallback', () => {
   });
 
   it('gives the API the rules agy reads by itself, and they exist', () => {
-    expect(CONTEXT).toEqual(['.agents/rules/project-rules.md']);
+    expect(CONTEXT).toEqual(['ARCHITECTURE.md', '.agents/rules/project-rules.md']);
     for (const file of CONTEXT) expect(existsSync(path.join(import.meta.dirname, '..', '..', file))).toBe(true);
   });
 
@@ -202,5 +202,17 @@ describe('the Gemini API fallback', () => {
     const r = postApi('https://127.0.0.1:9/v1beta/models/x:generateContent', { contents: [] }, 'test-key');
     expect(r.status).toBe(0);
     expect(r.text).toMatch(/ECONNREFUSED/);
+  });
+});
+
+describe('the rules context', () => {
+  it('reads a rules folder as its .md files, in name order', () => {
+    const list = (dir: string) => (dir === '.agents/rules/' ? ['b.md', 'notes.txt', 'a.md'] : []);
+    const text = apiPrompt(buildPrompt('Review this.', material), read, ['ARCHITECTURE.md', '.agents/rules/'], list);
+    expect([...text.matchAll(/^## (.+)$/gm)].map((m) => m[1])).toEqual([
+      'ARCHITECTURE.md',
+      '.agents/rules/a.md',
+      '.agents/rules/b.md',
+    ]);
   });
 });

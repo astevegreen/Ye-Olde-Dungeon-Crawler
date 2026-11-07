@@ -3,7 +3,7 @@
 // change all three. Types: agy.d.mts.
 // Where agy is not installed (a cloud session), the Gemini models are asked through the Gemini API instead.
 import { spawnSync } from 'node:child_process';
-import { readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -155,7 +155,8 @@ export function askModel(run, prompt, model, extra = [], api = geminiApi()) {
 export const API = 'https://generativelanguage.googleapis.com/v1beta/models';
 export const API_MODELS = { [ARGON]: 'gemini-4-argon', [FLASH]: 'gemini-3.8-flash' };
 const REPO = path.resolve(import.meta.dirname, '..', '..');
-export const CONTEXT = ['.agents/rules/project-rules.md'];
+// The files the review prompts judge against, which agy reads by itself; a folder (ending in /) is its .md files.
+export const CONTEXT = ['ARCHITECTURE.md', '.agents/rules/project-rules.md'];
 
 const API_HEADLESS =
   'You are answering through the Gemini API: you cannot read files or run commands, so this prompt is ' +
@@ -171,14 +172,22 @@ const stop = (message) => Object.assign(new Error(message), { stop: true });
 
 // A buildPrompt prompt rewritten for the API: the repo's rules first, told it can read nothing, and the material
 // file's text in place of its path. Material that leaves part of the change on disk, or none at all, is refused.
-export function apiPrompt(prompt, read = (file) => readFileSync(file, 'utf8'), context = CONTEXT) {
+export function apiPrompt(
+  prompt,
+  read = (file) => readFileSync(file, 'utf8'),
+  context = CONTEXT,
+  list = (dir) => readdirSync(path.join(REPO, dir)),
+) {
   const text = prompt.startsWith(HEADLESS) ? API_HEADLESS + prompt.slice(HEADLESS.length) : prompt;
   const m = MATERIAL.exec(text);
   if (!m) throw stop('the Gemini API cannot read the repository, and this audit gave it no material');
   const material = read(m[1]);
   if (material.includes(TRUNCATED))
     throw stop('the Gemini API cannot read the rest of a truncated diff from disk, so it would review part of it');
-  const rules = context.map((file) => `## ${file}\n\n${read(path.join(REPO, file)).trim()}\n`).join('\n');
+  const files = context.flatMap((f) =>
+    f.endsWith('/') ? list(f).filter((n) => n.endsWith('.md')).sort().map((n) => f + n) : [f],
+  );
+  const rules = files.map((file) => `## ${file}\n\n${read(path.join(REPO, file)).trim()}\n`).join('\n');
   return `# The repository's rules\n\n${rules}\n# The task\n\n${text.slice(0, m.index)}\n\n# The material, in full\n\n${material}\n`;
 }
 

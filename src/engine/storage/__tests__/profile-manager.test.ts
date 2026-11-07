@@ -6,6 +6,7 @@ import { Container } from '../../items/container';
 import { Item } from '../../items/item';
 import { ItemFactory } from '../../items/factory';
 import { createTestKobold } from '../../__fixtures__/testHelpers';
+import { activateRegistries, activeRegistries, type EngineRegistries } from '../../registries';
 
 describe('Multi-Character Profile Save Manager', () => {
   let storage: MemoryStorage;
@@ -193,6 +194,32 @@ describe('Multi-Character Profile Save Manager', () => {
     expect(loaded).not.toBeNull();
     expect(loaded?.engine.player.name).toBe('Ragnar');
     expect(loaded?.engine.player.hp).toBe(28); // 35 - 7
+  });
+
+  // A mid-game import (main.ts) saves the live engine next. Left active, the trial load's
+  // registries would have that save read a discarded engine's item index (R-stor-7).
+  it("leaves the live engine's registries active after an import, loaded or refused", () => {
+    const { profile, engine: away } = manager.createCharacter('Ragnar');
+    manager.saveCharacter(away, profile);
+    const payload = manager.exportHero(profile.id);
+
+    const home = new ProfileManager(new MemoryStorage());
+    const { engine: live } = home.createCharacter('Sigrid');
+    activateRegistries(live.registries);
+    const sameAsLive = (when: string) => {
+      const now = activeRegistries();
+      for (const key of Object.keys(live.registries) as (keyof EngineRegistries)[]) {
+        expect(now[key], `${when}: ${key}`).toBe(live.registries[key]);
+      }
+    };
+
+    home.importHero(payload);
+    sameAsLive('after a loaded import');
+
+    const corrupt = JSON.parse(payload);
+    corrupt.data.player.inventory = 5;
+    expect(() => home.importHero(JSON.stringify(corrupt))).toThrow(SaveLoadError);
+    sameAsLive('after a refused import');
   });
 
   describe('an import that cannot be loaded changes nothing', () => {

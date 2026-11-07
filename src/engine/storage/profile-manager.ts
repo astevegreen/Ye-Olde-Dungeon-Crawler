@@ -9,6 +9,7 @@ import { ItemFactory } from '../items/factory';
 import type { Merchant } from '../economy/merchant';
 import type { GameMap } from '../grid/map';
 import { serializeGame, deserializeGame } from './serializer';
+import { activateRegistries, activeRegistries } from '../registries';
 import { beginPrologue } from '../quest/prologue';
 import type { CharacterProfile, RosterManifest, SaveData, StorageAdapter } from './types';
 import { CharacterRoller } from '../character/characterRoller';
@@ -516,11 +517,16 @@ export class ProfileManager {
       throw new Error('This hero has fallen: a fallen hero cannot be restored.');
     }
     // It must load as it stands, or it would become a roster entry (and the active hero)
-    // that fails on Continue. A copy, so the trial load cannot touch what is stored.
+    // that fails on Continue. A copy, so the trial load cannot touch what is stored. A
+    // successful load activates the throwaway engine's registries; the live game, which may
+    // save next (a mid-game import), gets its own back either way.
+    const live = activeRegistries();
     try {
       deserializeGame(JSON.parse(JSON.stringify(parsed)) as SaveData, this.defaultManifest ?? DEFAULT_HEADLESS_MANIFEST);
     } catch (err) {
       throw asImportError(err);
+    } finally {
+      activateRegistries(live);
     }
 
     // Ensure imported profile has a valid unique ID if collision occurs

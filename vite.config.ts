@@ -95,7 +95,8 @@ export default defineConfig(({ mode }) => {
       },
       rollupOptions: {
         output: {
-          inlineDynamicImports: true,
+          // Vite 8 minifies with Rolldown, which ignores `esbuild.keepNames`: keep class names here.
+          keepNames: true,
         },
       },
     },

@@ -138,4 +138,37 @@ describe('report relay', () => {
     expect(validatePayload({ ...bug, screenshot: 'data:text/html;base64,AAAA' }).ok).toBe(false);
     expect(composeIssue({ type: 'feature', title: 't', labels: [], body: 'idea' }).comment).toBeUndefined();
   });
+
+  it('holds every limit at its edge, and refuses what is not a report', () => {
+    expect(validatePayload({ ...bug, body: 'x'.repeat(LIMITS.body) }).ok).toBe(true);
+    expect(validatePayload({ ...bug, report: 'x'.repeat(LIMITS.report) }).ok).toBe(true);
+    expect(validatePayload({ ...bug, report: 'x'.repeat(LIMITS.report + 1) }).ok).toBe(false);
+    expect(validatePayload({ ...bug, report: 42 }).ok).toBe(false);
+    // Base64 carries three bytes in four characters.
+    const shot = (bytes: number) => `data:image/png;base64,${'A'.repeat((bytes * 4) / 3)}`;
+    expect(validatePayload({ ...bug, screenshot: shot(LIMITS.screenshotBytes - (LIMITS.screenshotBytes % 3)) }).ok).toBe(true);
+    expect(validatePayload({ ...bug, screenshot: shot(LIMITS.screenshotBytes + 3 - (LIMITS.screenshotBytes % 3)) }).ok).toBe(false);
+    expect(validatePayload({ ...bug, screenshot: 7 }).ok).toBe(false);
+
+    const long = validatePayload({ ...bug, title: `  ${'t'.repeat(LIMITS.title + 50)}  ` });
+    expect(long.ok && long.payload.title).toBe('t'.repeat(LIMITS.title));
+    expect(validatePayload({ ...bug, title: '   ' }).ok).toBe(false);
+    expect(validatePayload({ ...bug, title: 3 }).ok).toBe(false);
+    expect(validatePayload({ ...bug, body: undefined }).ok).toBe(false);
+    const noLabels = validatePayload({ ...bug, labels: 'bug' });
+    expect(noLabels.ok && noLabels.payload.labels).toEqual([]);
+
+    for (const raw of [null, undefined, 'a report', 7, []]) expect(validatePayload(raw).ok, JSON.stringify(raw)).toBe(false);
+  });
+
+  it('answers a body that is not JSON with a 400, filing nothing', async () => {
+    const github = mockGitHub();
+    for (const body of ['{"type":"bug",', 'not json', '']) {
+      const request = new Request('https://relay.example.workers.dev/report', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: ORIGIN }, body });
+      const response = await handleRequest(request, env());
+      expect(response.status, body).toBe(400);
+      expect(await response.json()).toEqual({ ok: false, error: 'body must be JSON' });
+    }
+    expect(github).not.toHaveBeenCalled();
+  });
 });

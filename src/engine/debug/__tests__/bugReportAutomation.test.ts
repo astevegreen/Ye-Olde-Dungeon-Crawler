@@ -8,6 +8,8 @@ import { MovementAction } from '../../actions/movement';
 import { WaitAction } from '../../actions/wait';
 import { ProfileManager, MemoryStorage } from '../../storage/profile-manager';
 import { loadReplayState, replayActionTrail } from '../replay';
+import { CURRENT_SCHEMA_VERSION } from '../../storage/migrator';
+import { serializeGame } from '../../storage/serializer';
 import { cotwManifest } from '../../../content/cotw';
 
 function fingerprint(engine: GameEngine): string {
@@ -196,5 +198,23 @@ describe('Bug report replay', () => {
   it('rejects text with nothing loadable in it', () => {
     const loaded = loadReplayState('just some words', cotwManifest);
     expect(loaded.ok).toBe(false);
+  });
+
+  // §5: the current version is the oldest readable one, and a newer save is never mis-decoded;
+  // a report's save is held to the same gate as the profile and autosave loaders.
+  it.each([
+    ['below the version floor', CURRENT_SCHEMA_VERSION - 1, 'migration-failed'],
+    ['from a newer engine', CURRENT_SCHEMA_VERSION + 1, 'newer-than-engine'],
+  ] as const)('refuses a save %s with its reason, loading nothing', (_label, schemaVersion, reason) => {
+    const pm = new ProfileManager(new MemoryStorage());
+    const { engine } = pm.createCharacter('Gate', { manifest: cotwManifest, seed: 7 });
+    const data = serializeGame(engine);
+    const envelope = { schemaVersion, contentManifestId: cotwManifest.id, timestamp: 1, profile: data.profile, data };
+    const loadable = loadReplayState(JSON.stringify({ ...envelope, schemaVersion: CURRENT_SCHEMA_VERSION }), cotwManifest);
+    expect(loadable.ok).toBe(true);
+
+    const loaded = loadReplayState(JSON.stringify(envelope), cotwManifest);
+    expect(loaded.ok).toBe(false);
+    expect(loaded.ok ? undefined : loaded.reason).toBe(reason);
   });
 });

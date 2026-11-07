@@ -71,6 +71,8 @@ export interface DungeonResult {
   forcedVaultPlaced?: boolean;
 }
 
+const FOUR_WAYS = [[0, -1], [0, 1], [-1, 0], [1, 0]] as const;
+
 export class DungeonGenerator {
   private prng: PRNG;
   private width: number;
@@ -293,11 +295,16 @@ export class DungeonGenerator {
       graph.addEdge(i - 1, i);
     }
 
-    // Connect vault entrance connectors outward to nearest room centers
+    // Connect vault entrance connectors outward to the nearest ordinary room's center. A vault is
+    // a room too, and the nearest center to a connector is often its own vault's, a corridor that
+    // never leaves it: the vault and whatever its doors open onto were sealed off.
+    const ordinaryRooms = rooms.filter((_, idx) => !vaultRoomIndices.has(idx));
+    // With no ordinary room (every room a vault), any room will do, as for spawn and exit below.
+    const joinable = ordinaryRooms.length > 0 ? ordinaryRooms : rooms;
     for (const conn of allConnectors) {
-      let nearestRoom = rooms[0];
+      let nearestRoom = joinable[0];
       let minDist = Infinity;
-      for (const rm of rooms) {
+      for (const rm of joinable) {
         const d = Math.hypot(rm.centerX - conn.x, rm.centerY - conn.y);
         if (d < minDist) {
           minDist = d;
@@ -316,15 +323,13 @@ export class DungeonGenerator {
 
     // 6. Room Cover & Architecture Decoration (Pillars, Colonnades, Partitions)
     if (this.enableDecoration) {
-      const nonVaultRooms = rooms.filter((_, idx) => !vaultRoomIndices.has(idx));
-      RoomDecorator.decorateRooms(map, nonVaultRooms, this.prng, this.floorNumber ?? 1, this.roomDecoration);
+      RoomDecorator.decorateRooms(map, ordinaryRooms, this.prng, this.floorNumber ?? 1, this.roomDecoration);
     }
 
     // Spawn and exit go in ordinary rooms, never a vault: the forced vault is always
     // rooms[0], and its center is authored content (an altar, a guarded dais) that the
     // up-stairs would overwrite, with the player spawning inside the guarded chamber.
-    const ordinaryRooms = rooms.filter((_, idx) => !vaultRoomIndices.has(idx));
-    const spawnCandidates = ordinaryRooms.length > 0 ? ordinaryRooms : rooms;
+    const spawnCandidates = joinable;
     const firstRoom = spawnCandidates[0];
     const playerSpawn: Position = {
       x: firstRoom.centerX,
@@ -481,45 +486,40 @@ export class DungeonGenerator {
     }
   }
 
-  // Four-way, as monsters and spawn sites reach: a monster cuts a corner only past an open side
+  // Whether the stairs, and every other passable tile, are a walk from the arrival. Four-way, as
+  // monsters and spawn sites reach: a monster cuts a corner only past an open side
   // (ai/pathfinding.ts), which connects exactly what four-way steps do, and SpawnSiteFilter walks
-  // four ways. An eight-way check accepted floors whose stairs only the hero could reach, by a
-  // diagonal squeeze between a vault pillar and a wall.
+  // four ways. Eight ways accepted floors whose stairs only the hero could reach, by a diagonal
+  // squeeze between a vault pillar and a wall; checking the stairs alone accepted floors with a
+  // vault, or the room its doors open onto, sealed off. Closed and secret doors are walked
+  // through: the one opens, the other is found.
   private isReachable(map: GameMap, start: Position, target: Position): boolean {
+    const walkable = (x: number, y: number): boolean => {
+      const tile = map.getTile(x, y);
+      return !!tile && (tile.passable || tile.type === 'door_closed' || tile.type === 'secret_door');
+    };
+    const index = (x: number, y: number): number => y * map.width + x;
+    const visited = new Uint8Array(map.width * map.height);
     const queue: Position[] = [start];
-    const visited = new Set<string>();
-    visited.add(`${start.x},${start.y}`);
-
-    const directions = [
-      { dx: 0, dy: -1 },
-      { dx: 0, dy: 1 },
-      { dx: -1, dy: 0 },
-      { dx: 1, dy: 0 },
-    ];
-
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      if (current.x === target.x && current.y === target.y) {
-        return true;
-      }
-
-      for (const dir of directions) {
-        const nx = current.x + dir.dx;
-        const ny = current.y + dir.dy;
-        const key = `${nx},${ny}`;
-
-        if (map.inBounds(nx, ny) && !visited.has(key)) {
-          const tile = map.getTile(nx, ny);
-          // Closed doors are interactable/passable for reachability check
-          if (tile && (tile.passable || tile.type === 'door_closed')) {
-            visited.add(key);
-            queue.push({ x: nx, y: ny });
-          }
-        }
+    visited[index(start.x, start.y)] = 1;
+    for (let k = 0; k < queue.length; k++) {
+      const { x, y } = queue[k];
+      for (const [dx, dy] of FOUR_WAYS) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (!map.inBounds(nx, ny) || visited[index(nx, ny)] || !walkable(nx, ny)) continue;
+        visited[index(nx, ny)] = 1;
+        queue.push({ x: nx, y: ny });
       }
     }
 
-    return false;
+    if (!visited[index(target.x, target.y)]) return false;
+    for (let y = 0; y < map.height; y++) {
+      for (let x = 0; x < map.width; x++) {
+        if (!visited[index(x, y)] && map.getTile(x, y)?.passable) return false;
+      }
+    }
+    return true;
   }
 
   private createFallbackDungeon(): DungeonResult {

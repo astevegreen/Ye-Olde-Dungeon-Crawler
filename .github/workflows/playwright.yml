@@ -4,12 +4,40 @@ on:
   pull_request:
     branches: [ main, master ]
   workflow_call:
+
+# A newer push to a pull request cancels its older run. A run called from deploy.yml (a push to
+# main) never cancels: github.event_name is the caller's `push` there.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  # The bundle is built once; every browser job downloads it instead of building its own.
+  build:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: actions/setup-node@v7
+      with:
+        node-version: '24'
+        cache: 'npm'
+    - name: Install dependencies
+      run: npm ci
+    - name: Build single-file bundle
+      run: npm run build
+    - uses: actions/upload-artifact@v7
+      with:
+        name: dist
+        path: dist/
+        retention-days: 1
+
   # One job per browser, side by side, each installing only its own browser (Playwright's
   # sharding advice for CI). Each keeps one worker: Firefox and WebKit time out under more
   # parallelism (playwright.config.ts).
   browser:
     name: browser (${{ matrix.project }})
+    needs: build
     timeout-minutes: 60
     runs-on: ubuntu-latest
     strategy:
@@ -22,12 +50,25 @@ jobs:
     - uses: actions/setup-node@v7
       with:
         node-version: '24'
+        cache: 'npm'
     - name: Install dependencies
       run: npm ci
-    - name: Install Playwright Browsers
+    - uses: actions/download-artifact@v8
+      with:
+        name: dist
+        path: dist/
+    - name: Cache Playwright browser
+      id: pw-cache
+      uses: actions/cache@v6
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ matrix.project }}-${{ hashFiles('package-lock.json') }}
+    - name: Install Playwright browser and system dependencies
+      if: steps.pw-cache.outputs.cache-hit != 'true'
       run: npx playwright install --with-deps ${{ matrix.project }}
-    - name: Build single-file bundle
-      run: npm run build
+    - name: Install system dependencies (browser cached)
+      if: steps.pw-cache.outputs.cache-hit == 'true'
+      run: npx playwright install-deps ${{ matrix.project }}
     - name: Run Playwright tests
       run: npx playwright test --project=${{ matrix.project }}
     - uses: actions/upload-artifact@v7

@@ -16,6 +16,7 @@ env:
 
 jobs:
   scope:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     outputs:
       ships: ${{ steps.scope.outputs.ships }}
@@ -35,6 +36,7 @@ jobs:
     uses: ./.github/workflows/playwright.yml
 
   build:
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

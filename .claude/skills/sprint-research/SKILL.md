@@ -1,6 +1,6 @@
 ---
 name: sprint-research
-description: The YODC sprint's research lane. Runs soaks of today's build and a read-only bug hunt over the sprint's changes, and reports findings and options; changes no code. Run only as /sprint-research, from a session the sprint supervisor started.
+description: The YODC sprint's read-only research lane; run only as /sprint-research from the supervisor.
 disable-model-invocation: true
 model: sonnet
 hooks:

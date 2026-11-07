@@ -1,6 +1,6 @@
 ---
 name: sprint-plan
-description: Writes specs for the next backlog items of one YODC sprint lane. Run only as /sprint-plan <lane>, from a session the sprint supervisor started, or by the owner on the planning day.
+description: Writes specs for a YODC sprint lane; run only as /sprint-plan <lane>.
 disable-model-invocation: true
 argument-hint: "<story|lore|ux|fixes|tooling>"
 model: opus

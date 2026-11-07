@@ -1,6 +1,6 @@
 ---
 name: sprint-lane
-description: Coordinator for one lane of the YODC sprint. Run only as /sprint-lane <lane>, from a session the sprint supervisor started.
+description: Coordinates one lane of the YODC sprint; run only as /sprint-lane <lane> from the supervisor.
 disable-model-invocation: true
 argument-hint: "<story|lore|ux|fixes|tooling>"
 model: sonnet

@@ -1,6 +1,7 @@
 ---
 name: sprint-status
-description: Sprint status in at most 8 lines, read from the sprint log's status block. Use when the owner asks how the sprint is going, whether it is running, or what waits on them.
+description: YODC sprint status in at most 8 lines; run only as /sprint-status.
+disable-model-invocation: true
 model: sonnet
 ---
 Read the status block: the body of the sprint log issue named in `docs/sprint.md`

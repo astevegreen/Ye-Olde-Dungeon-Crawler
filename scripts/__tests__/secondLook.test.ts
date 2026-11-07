@@ -37,6 +37,15 @@ describe('the rails a change can loosen', () => {
     }
     expect(railFiles(['scripts/headless-sim.ts', 'scripts/validate-schema.ts', 'scripts/watch-ci.ts', 'scripts/lib/deploy-outcome.ts'])).toHaveLength(4);
   });
+  it('names the Vitest setup every test runs under, and the tests that are gates', () => {
+    // A setup file decides what every test starts from and which isolated failures fail it; packNeutralSource.test.ts
+    // enforces ARCHITECTURE.md §3's pack-neutral presentation. Loosening either hides a failure like loosening a check.
+    const config = fs.readFileSync(path.join(ROOT, 'vite.config.ts'), 'utf-8');
+    const setup = [...config.matchAll(/setupFiles:\s*\[([^\]]*)\]/g)].flatMap((m) => [...m[1]!.matchAll(/'\.\/([^']+)'/g)].map((s) => s[1]!));
+    expect(setup.length).toBeGreaterThan(0);
+    const gates = [...setup, 'tests/setup/isolatedFailures.ts', 'src/ui/__tests__/packNeutralSource.test.ts'];
+    expect(railFiles(gates)).toEqual(gates);
+  });
   it('leaves game code, docs, content skills and the lockfile to the ordinary second look', () => {
     expect(
       railFiles(['src/engine/engine.ts', 'CLAUDE.md', 'docs/sprint.md', '.claude/skills/add-content/SKILL.md', '.agents/skills/commit-review/SKILL.md', 'package-lock.json', 'e2e/gameplay.spec.ts']),

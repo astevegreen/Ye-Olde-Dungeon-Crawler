@@ -8,7 +8,8 @@ import { ARGON, FLASH, OPUS, modelName } from './agy.mjs';
 // The rails: what a change could loosen to hide its own failure. Hooks and guards, the sprint skills and agents
 // that wire them, git hooks, CI, the gates with their allowlists and configs and the scripts package.json runs
 // for them, the review itself with the rules agy reviews against (`.agents/rules/`, this repo's GEMINI.md), and
-// the sprint's queue and push lock. Path prefixes from the repository root.
+// the sprint's queue and push lock, the Vitest setup every test runs under, and the tests that are gates. Path
+// prefixes from the repository root.
 export const RAILS = [
   '.claude/settings',
   '.claude/hooks/',
@@ -42,6 +43,8 @@ export const RAILS = [
   'e2e/tsconfig.json',
   'vite.config.ts',
   'playwright.config.ts',
+  'tests/setup/',
+  'src/ui/__tests__/packNeutralSource.test.ts',
 ];
 
 export const railFiles = (files) => files.filter((f) => RAILS.some((r) => f.startsWith(r)));

@@ -250,7 +250,8 @@ process.stdin.on("data", (d) => (input += d)).on("end", () => {
   const done = (status, text) => {
     if (sent) return;
     sent = true;
-    process.stdout.write(JSON.stringify({ status, text }));
+    // Exit once the answer is out, so nothing left open (such as the tunnel) holds the child until the time limit.
+    process.stdout.write(JSON.stringify({ status, text }), () => process.exit(0));
   };
   const target = new URL(url);
   const headers = { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY };
@@ -277,8 +278,13 @@ process.stdin.on("data", (d) => (input += d)).on("end", () => {
   const hostPort = target.hostname + ":" + (target.port || 443);
   const connect = http.request({ host: p.hostname, port: p.port || 80, method: "CONNECT", path: hostPort, headers: { host: hostPort, ...auth } });
   connect.on("connect", (res, socket) => {
+    // A cut tunnel reaches the request through its TLS socket. This listener only keeps a stray error on the raw
+    // socket (as when the tunnel sat unused and the proxy cut it) from crashing the child with no answer.
+    socket.on("error", () => {});
     if (res.statusCode !== 200) return done(0, "the proxy refused the tunnel (" + res.statusCode + ")");
-    send({ agent: false, createConnection: () => tls.connect({ socket, servername: target.hostname }) });
+    // No agent: only then does node:https use createConnection. (agent: false makes a new agent that ignores it
+    // and goes direct, leaving the tunnel idle until the proxy cuts it.)
+    send({ createConnection: () => tls.connect({ socket, servername: target.hostname }) });
   });
   connect.on("error", (e) => done(0, "the proxy could not be reached: " + e.message));
   connect.end();
@@ -299,7 +305,10 @@ export function postApi(url, body, key, spawn = spawnSync) {
   try {
     return JSON.parse(r.stdout);
   } catch {
-    return { status: 0, text: (r.stderr || 'the request gave no answer').trim() };
+    // A crash prints a stack: its "Error: ..." line says why, where the first line is only where it was thrown.
+    const stderr = (r.stderr || '').trim();
+    const why = stderr.split('\n').find((line) => /^\w*Error\b/.test(line));
+    return { status: 0, text: why ?? (stderr || 'the request gave no answer') };
   }
 }
 

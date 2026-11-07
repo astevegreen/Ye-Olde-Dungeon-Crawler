@@ -6,9 +6,9 @@ on:
   workflow_call:
 
 # A newer push to a pull request cancels its older run. A run called from deploy.yml (a push to
-# main) never cancels: github.event_name is the caller's `push` there.
+# main) gets its own group (run id), so it neither waits nor cancels: github.event_name is the caller's `push` there.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:

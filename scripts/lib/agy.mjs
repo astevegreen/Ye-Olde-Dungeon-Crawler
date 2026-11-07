@@ -150,45 +150,72 @@ export function askModel(run, prompt, model, extra = [], api = geminiApi()) {
 }
 
 // The Gemini API, for a session without agy (in the cloud). It has the Gemini models only, under their own ids;
-// Claude's are passed over. It reads no files and runs nothing, so the material goes inside the prompt.
+// Claude's are passed over. It reads no files and runs nothing, so the prompt carries what agy would have read
+// by itself (the repo's rules for Gemini, CONTEXT) and the material, and its answer says it saw only those.
 export const API = 'https://generativelanguage.googleapis.com/v1beta/models';
 export const API_MODELS = { [ARGON]: 'gemini-4-argon', [FLASH]: 'gemini-3.8-flash' };
+const REPO = path.resolve(import.meta.dirname, '..', '..');
+export const CONTEXT = ['.agents/rules/project-rules.md'];
 
 const API_HEADLESS =
-  'You are answering through the Gemini API: you cannot read files or run commands, so the material in this ' +
-  'prompt is everything you have. Where you would need a file it does not include, say so rather than guess.';
+  'You are answering through the Gemini API: you cannot read files or run commands, so this prompt is ' +
+  'everything you have: the repository rules, then the task, then its material. Where you would need a file ' +
+  'it does not include, say so rather than guess.';
 const MATERIAL = /\nThe material is in (.+)\. Read all of it before answering\.\n$/;
+const TRUNCATED = '(diff truncated; read the rest from disk)';
+export const API_NOTE =
+  '_Answered through the Gemini API, which cannot read the repository: this review saw only the material._';
 
-// A buildPrompt prompt rewritten for the API: told it can read nothing, with the material file's text in place of
-// its path. With no material there is nothing to review (a whole-repo audit), so it throws rather than ask.
-export function apiPrompt(prompt, read = (file) => readFileSync(file, 'utf8')) {
+// An error that would fail the same way on every model, so askFirstAvailable stops instead of passing it on.
+const stop = (message) => Object.assign(new Error(message), { stop: true });
+
+// A buildPrompt prompt rewritten for the API: the repo's rules first, told it can read nothing, and the material
+// file's text in place of its path. Material that leaves part of the change on disk, or none at all, is refused.
+export function apiPrompt(prompt, read = (file) => readFileSync(file, 'utf8'), context = CONTEXT) {
   const text = prompt.startsWith(HEADLESS) ? API_HEADLESS + prompt.slice(HEADLESS.length) : prompt;
   const m = MATERIAL.exec(text);
-  if (!m) throw new Error('the Gemini API cannot read the repository, and this audit gave it no material');
-  return `${text.slice(0, m.index)}\n\nThe material follows, in full.\n\n${read(m[1])}\n`;
+  if (!m) throw stop('the Gemini API cannot read the repository, and this audit gave it no material');
+  const material = read(m[1]);
+  if (material.includes(TRUNCATED))
+    throw stop('the Gemini API cannot read the rest of a truncated diff from disk, so it would review part of it');
+  const rules = context.map((file) => `## ${file}\n\n${read(path.join(REPO, file)).trim()}\n`).join('\n');
+  return `# The repository's rules\n\n${rules}\n# The task\n\n${text.slice(0, m.index)}\n\n# The material, in full\n\n${material}\n`;
 }
 
-// Reads one generateContent reply ({ status, text }) and returns the answer, or throws why not, in words
-// askFirstAvailable sorts: a 429 passes to the next model; a project with no credit, or a bad key, stops the review.
+// For an audit that must read the repository (a whole-repo audit): askModel's `api`, refusing.
+export const NO_API = () => {
+  throw stop('the Gemini API cannot read the repository, which this audit reads');
+};
+
+// Reads one generateContent reply ({ status, text }) and returns the answer, or throws why not. By status: busy
+// (429, 5xx) or a model the API lacks (404) passes to the next model; anything else (no credit, a bad key, a
+// refused request) stops the review. Only a reply that finished (STOP) is an answer: any other ending is cut off.
 export function parseApiReply({ status, text }) {
   let out;
   try {
     out = JSON.parse(text);
   } catch {
-    throw new Error(`the Gemini API could not be reached (${status || 'no answer'}): ${text.trim().split('\n')[0]}`);
+    if (/ran out of time/.test(text)) throw new Error(text.trim());
+    throw stop(`the Gemini API could not be reached (${status || 'no answer'}): ${text.trim().split('\n')[0]}`);
   }
-  if (status === 402) throw new Error(`the Gemini API project has no credit left: ${out.error?.message ?? ''}`.trim());
-  if (out.error) throw new Error(`the Gemini API answered ${status}: ${out.error.message}`);
+  if (out.error) {
+    const said = out.error.message ?? '';
+    if (status === 429 || status >= 500) throw new Error(`the Gemini API is overloaded (${status}): ${said}`);
+    if (status === 404) throw new Error(`this model is not on the Gemini API (404): ${said}`);
+    if (status === 402) throw stop(`the Gemini API project has no credit left: ${said}`);
+    throw stop(`the Gemini API refused the request (${status}): ${said}`);
+  }
   const reply = out.candidates?.[0];
-  const answer = (reply?.content?.parts ?? [])
+  const why = out.promptFeedback?.blockReason ?? reply?.finishReason ?? 'none';
+  if (why === 'MAX_TOKENS') throw new Error('the model ran out of room before finishing its answer');
+  if (why !== 'STOP') throw stop(`the model gave no finished answer (Gemini API reason ${why})`);
+  const answer = (reply.content?.parts ?? [])
     .filter((p) => !p.thought)
     .map((p) => p.text ?? '')
     .join('')
     .trim();
-  if (reply?.finishReason === 'MAX_TOKENS') throw new Error('the model ran out of room before finishing its answer');
-  if (answer) return answer;
-  const why = out.promptFeedback?.blockReason ?? reply?.finishReason ?? 'none';
-  throw new Error(`the model gave no answer (Gemini API reason ${why})`);
+  if (!answer) throw stop('the model gave no answer (Gemini API reason STOP)');
+  return answer;
 }
 
 // The audits run synchronously, so the request goes from a child node and this waits for it. The key reaches the
@@ -212,8 +239,8 @@ process.stdin.on('data', (d) => (input += d)).on('end', () => {
 });`;
 const API_TIMEOUT_MS = 10 * 60_000;
 
-export function postApi(url, body, key) {
-  const r = spawnSync(process.execPath, ['-e', POST], {
+export function postApi(url, body, key, spawn = spawnSync) {
+  const r = spawn(process.execPath, ['-e', POST], {
     input: JSON.stringify({ url, body, timeout: API_TIMEOUT_MS }),
     env: { ...process.env, GEMINI_API_KEY: key },
     encoding: 'utf8',
@@ -229,17 +256,18 @@ export function postApi(url, body, key) {
   }
 }
 
-// Returns how askModel asks a model through the Gemini API, or null when GEMINI_API_KEY is not set.
-export function geminiApi(key = process.env.GEMINI_API_KEY, post = postApi, read = undefined) {
+// Returns how askModel asks a model through the Gemini API, or null when GEMINI_API_KEY is not set. The answer
+// ends with API_NOTE, so whoever reads the review knows it saw only the material.
+export function geminiApi(key = process.env.GEMINI_API_KEY, post = postApi, read = undefined, context = CONTEXT) {
   if (!key) return null;
   return (prompt, model) => {
     const id = API_MODELS[model];
     if (!id) throw new Error('this model is not on the Gemini API');
     const body = {
-      contents: [{ role: 'user', parts: [{ text: apiPrompt(prompt, read) }] }],
+      contents: [{ role: 'user', parts: [{ text: apiPrompt(prompt, read, context) }] }],
       generationConfig: { thinkingConfig: { thinkingLevel: EFFORT }, maxOutputTokens: 65_536 },
     };
-    return parseApiReply(post(`${API}/${id}:generateContent`, body, key));
+    return `${parseApiReply(post(`${API}/${id}:generateContent`, body, key))}\n\n${API_NOTE}`;
   };
 }
 
@@ -312,6 +340,7 @@ export function askFirstAvailable(models, ask, store = quotaFile(), now = Date.n
     try {
       return { model, response: ask(model), passed };
     } catch (err) {
+      if (err.stop) throw new Error(`${modelName(model)}: ${err.message}`, { cause: err });
       const why = PASS_ON.find(([pattern]) => pattern.test(err.message))?.[1];
       if (USED_UP.test(err.message)) {
         const reset = resetsAt(err.message, now());

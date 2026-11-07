@@ -13,6 +13,8 @@ import {
   getTileDefinition,
 } from '../../../engine';
 import { DungeonArc } from '../../../engine/quest/dungeonArc';
+import { BspDungeonGenerator } from '../../../engine/dungeon/generator';
+import { COTW_VAULTS } from '../vaults';
 import {
   altarMark,
   rescueCaptiveVillager,
@@ -20,6 +22,7 @@ import {
   HOSTAGE_VILLAGERS,
   SIPHON_ALTAR_TILE,
   SIPHON_RITUAL_FLOOR,
+  SIPHON_VAULT_ID,
 } from '../hostageRitual';
 import { cotwManifest } from '../index';
 import { COTW_QUEST } from '../quest';
@@ -474,6 +477,51 @@ describe('Hostage Ritual (Siphon Altar of Járnviðr)', () => {
           expect(npc!.name).toBe(v.name);
         }
       }
+    });
+
+    /** How many open tiles no four-way walk from the arrival reaches (doors walked through). */
+    function sealedTiles(floor: { map: GameMap; playerSpawn: { x: number; y: number } }): number {
+      const { map: m, playerSpawn: start } = floor;
+      const seen = new Set<string>([`${start.x},${start.y}`]);
+      const queue = [start];
+      for (let k = 0; k < queue.length; k++) {
+        for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+          const x = queue[k].x + dx;
+          const y = queue[k].y + dy;
+          const tile = m.getTile(x, y);
+          if (!tile || seen.has(`${x},${y}`)) continue;
+          if (!tile.passable && tile.type !== 'door_closed' && tile.type !== 'secret_door') continue;
+          seen.add(`${x},${y}`);
+          queue.push({ x, y });
+        }
+      }
+      let sealed = 0;
+      for (let y = 0; y < m.height; y++) {
+        for (let x = 0; x < m.width; x++) if (m.getTile(x, y)?.passable && !seen.has(`${x},${y}`)) sealed++;
+      }
+      return sealed;
+    }
+
+    // A layout that gives up falls back to rooms and corridors (engine/dungeon/generator.ts). The
+    // altar's middle cell sits behind bars with no way in, by design; a floor check that refused
+    // every sealed tile kept the vault only where a corridor had cut the bars open.
+    it('stamps the siphon vault on rooms-and-corridors floors with its barred cell left sealed', () => {
+      let barred = 0;
+      for (let seed = 1; seed <= 20; seed++) {
+        const floor = new BspDungeonGenerator().generate({
+          width: 57,
+          height: 40,
+          seed,
+          floorNumber: SIPHON_RITUAL_FLOOR,
+          vaults: COTW_VAULTS,
+          forcedVaultId: SIPHON_VAULT_ID,
+          registries: engine.registries,
+        });
+        expect(tilesOfType(floor.map, SIPHON_ALTAR_TILE), `seed ${seed}`).toBe(1);
+        if (sealedTiles(floor) > 0) barred++;
+      }
+      // A corridor still cuts through the bars on some seeds; most keep the cell sealed.
+      expect(barred).toBeGreaterThanOrEqual(10);
     });
 
     it('never stamps the scripted-only vault on neighbouring floors', () => {

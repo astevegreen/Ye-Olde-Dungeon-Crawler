@@ -81,6 +81,8 @@ export class DungeonGenerator {
   private minRoomSize: number;
   private maxRoomSize: number;
   private spawnMonsters: boolean;
+  // The vaults the last tryGenerate stamped, for isReachable: their rects and entrance connectors.
+  private stampedVaults: { rects: RectRoom[]; connectors: Position[] } = { rects: [], connectors: [] };
   public floorNumber?: number;
   public vaults: VaultBlueprint[];
   public monsterCandidates: MonsterDefinition[];
@@ -161,6 +163,8 @@ export class DungeonGenerator {
     const monsters: Monster[] = [];
     const vaultRoomIndices = new Set<number>();
     const allConnectors: Position[] = [];
+    const vaultRects: RectRoom[] = [];
+    this.stampedVaults = { rects: vaultRects, connectors: allConnectors };
 
     // Attempts to fit `blueprint` into an unoccupied spot (25 tries), stamp it, and
     // register its room/connectors. Shared by the random vault pass and the forced-
@@ -208,6 +212,7 @@ export class DungeonGenerator {
         );
         vaultRoomIndices.add(rooms.length);
         rooms.push(vRoom);
+        vaultRects.push(vRoom);
         allConnectors.push(...stamped.connectors);
         if (blueprint.id === this.forcedVaultId) {
           forcedVaultChestSpawns = stamped.chestSpawns;
@@ -492,7 +497,8 @@ export class DungeonGenerator {
   // four ways. Eight ways accepted floors whose stairs only the hero could reach, by a diagonal
   // squeeze between a vault pillar and a wall; checking the stairs alone accepted floors with a
   // vault, or the room its doors open onto, sealed off. Closed and secret doors are walked
-  // through: the one opens, the other is found.
+  // through: the one opens, the other is found. Inside a vault only its entrances must be
+  // reached: a vault may seal part of itself on purpose (the Siphon Altar's barred cages).
   private isReachable(map: GameMap, start: Position, target: Position): boolean {
     const walkable = (x: number, y: number): boolean => {
       const tile = map.getTile(x, y);
@@ -514,9 +520,13 @@ export class DungeonGenerator {
     }
 
     if (!visited[index(target.x, target.y)]) return false;
+    const { rects, connectors } = this.stampedVaults;
+    if (connectors.some((c) => !visited[index(c.x, c.y)])) return false;
+    const inVault = (x: number, y: number): boolean =>
+      rects.some((r) => x >= r.x1 && x <= r.x2 && y >= r.y1 && y <= r.y2);
     for (let y = 0; y < map.height; y++) {
       for (let x = 0; x < map.width; x++) {
-        if (!visited[index(x, y)] && map.getTile(x, y)?.passable) return false;
+        if (!visited[index(x, y)] && map.getTile(x, y)?.passable && !inVault(x, y)) return false;
       }
     }
     return true;

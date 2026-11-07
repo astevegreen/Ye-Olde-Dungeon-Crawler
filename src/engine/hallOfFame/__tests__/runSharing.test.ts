@@ -87,6 +87,21 @@ describe('Run Sharing & Saga Exchange System', () => {
     expect(Leaderboard.decodeRunShare(Leaderboard.encodeRunShare(crafted))).toBeNull();
   });
 
+  // The checksum is anyone's to recompute, so a code whose score its own xp, gold and depth don't
+  // give is a forgery: a fallen hero scores exactly that, a victorious one that plus the pack's
+  // victory bonus, which the code doesn't carry, so never less.
+  it('rejects a code whose score its own xp, gold and depth do not give', () => {
+    const base = Leaderboard.calculateScore(1234, 56789, 7, false);
+    const fallen = { ...testEntry, status: 'fallen', xp: 1234, goldCp: 56789, deepestFloor: 7 } as HallOfFameEntry;
+    expect(Leaderboard.decodeRunShare(Leaderboard.encodeRunShare({ ...fallen, score: base }))?.score).toBe(base);
+    expect(Leaderboard.decodeRunShare(Leaderboard.encodeRunShare({ ...fallen, score: base + 1 }))).toBeNull();
+    expect(Leaderboard.decodeRunShare(Leaderboard.encodeRunShare({ ...fallen, score: 9_999_999 }))).toBeNull();
+
+    const won = { ...fallen, status: 'victorious' } as HallOfFameEntry;
+    expect(Leaderboard.decodeRunShare(Leaderboard.encodeRunShare({ ...won, score: base + 5000 }))?.score).toBe(base + 5000);
+    expect(Leaderboard.decodeRunShare(Leaderboard.encodeRunShare({ ...won, score: base - 1 }))).toBeNull();
+  });
+
   // R-econ-23: the entry's id is the sharer's hero profile id, hero_<creation time>_<random>.
   const payloadOf = (code: string) =>
     JSON.parse(base64ToUtf8(code.slice('SAGA1_'.length).replace(/-/g, '+').replace(/_/g, '/')));

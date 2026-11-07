@@ -195,6 +195,13 @@ export class Leaderboard {
         return null;
       }
 
+      // The score must be the one its own fields give: exactly, for a fallen hero; for a
+      // victorious one, never less, as the pack's victory bonus isn't in the code.
+      const base = Leaderboard.calculateScore(entry.xp, entry.goldCp, entry.deepestFloor, false);
+      if (entry.status === 'fallen' ? entry.score !== base : entry.score < base) {
+        return null;
+      }
+
       return {
         id: inscriptionId(entry),
         heroName: entry.heroName,

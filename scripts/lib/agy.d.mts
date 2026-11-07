@@ -58,7 +58,7 @@ export const CONTEXT: readonly string[];
 export const API_NOTE: string;
 /** askModel's `api` for an audit that reads the whole repository: refuses. */
 export const NO_API: ApiAsk;
-/** askModel's `api` for what an audit reviews: NO_API for a whole-repo audit, else the default. */
+/** askModel's `api` for what an audit reviews: NO_API for a whole-repo or spec audit, else the default. */
 export function apiFor(kind: Reviewed['kind']): ApiAsk | undefined;
 /** The repo's rules, the task and the material's text; throws when there is no material or it is truncated. */
 export function apiPrompt(

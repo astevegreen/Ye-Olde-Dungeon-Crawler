@@ -1,5 +1,6 @@
 // The Gemini API fallback in agy.mjs: used only where agy is not installed (a cloud session) and a key is set.
 import { describe, expect, it } from 'vitest';
+import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
 import {
@@ -246,13 +247,26 @@ describe('the Gemini API fallback, round two', () => {
     expect(late.stop).toBeUndefined();
   });
 
-  it("uses the environment's proxy in the child", () => {
-    let env: Record<string, string | undefined> = {};
-    postApi(`${API}/x:generateContent`, {}, 'k', (_cmd, _args, opts) => {
-      env = opts.env;
-      return { stdout: JSON.stringify({ status: 200, text: '{}' }) };
-    });
-    expect(env.NODE_USE_ENV_PROXY).toBe('1');
+  it('tunnels through HTTPS_PROXY, as cloud sessions require', async () => {
+    // A proxy in its own process (postApi blocks this one) that refuses every tunnel and prints its port.
+    const refusing =
+      'const s = require("node:http").createServer();' +
+      's.on("connect", (req, sock) => sock.end("HTTP/1.1 407 Proxy Authentication Required\\r\\n\\r\\n"));' +
+      's.listen(0, () => console.log(s.address().port));';
+    const proxy = spawn(process.execPath, ['-e', refusing], { stdio: ['ignore', 'pipe', 'inherit'] });
+    const port = await new Promise<string>((resolve) => proxy.stdout.once('data', (d) => resolve(String(d).trim())));
+    const before = process.env.HTTPS_PROXY;
+    try {
+      process.env.HTTPS_PROXY = `http://127.0.0.1:${port}`;
+      expect(postApi(`${API}/x:generateContent`, {}, 'k')).toEqual({
+        status: 0,
+        text: 'the proxy refused the tunnel (407)',
+      });
+    } finally {
+      if (before === undefined) delete process.env.HTTPS_PROXY;
+      else process.env.HTTPS_PROXY = before;
+      proxy.kill();
+    }
   });
 
   it('uses the API by default exactly when GEMINI_API_KEY is set', () => {
@@ -271,11 +285,18 @@ describe('the Gemini API fallback, round two', () => {
     }
   });
 
-  it('refuses a whole-repo audit on the API, and the audit script asks apiFor by kind', () => {
+  it('refuses whole-repo and spec audits on the API, and the audit script asks apiFor by kind', () => {
     expect(apiFor('repo')).toBe(NO_API);
+    expect(apiFor('spec')).toBe(NO_API);
     expect(apiFor('change')).toBeUndefined();
-    expect(apiFor('spec')).toBeUndefined();
     const script = readFileSync(path.join(import.meta.dirname, '..', 'gemini-audit.mjs'), 'utf8');
     expect(script).toMatch(/apiFor\(what\.kind\)/);
+  });
+});
+
+describe('an error inside a 200 reply', () => {
+  it('is sorted by its own code', () => {
+    const busy = { status: 200, text: JSON.stringify({ error: { code: 503, message: 'The model is overloaded.' } }) };
+    expect(() => parseApiReply(busy)).toThrow(/overloaded \(503\)/);
   });
 });

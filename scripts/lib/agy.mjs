@@ -198,8 +198,9 @@ export const NO_API = () => {
   throw stop('the Gemini API cannot read the repository, which this audit reads');
 };
 
-// askModel's `api` for what an audit reviews (pickDepth's kind): a whole-repo audit never goes to the API.
-export const apiFor = (kind) => (kind === 'repo' ? NO_API : undefined);
+// askModel's `api` for what an audit reviews (pickDepth's kind). A whole-repo audit and a spec audit read files the
+// API cannot, so they wait for agy; only a change, whose diff is the material, goes to the API.
+export const apiFor = (kind) => (kind === 'repo' || kind === 'spec' ? NO_API : undefined);
 
 // Reads one generateContent reply ({ status, text }) and returns the answer, or throws why not. By status: busy
 // (429, 5xx) passes to the next model; anything else (no credit, a bad key, a wrong model id, a
@@ -215,10 +216,11 @@ export function parseApiReply({ status, text }) {
   }
   if (out.error) {
     const said = out.error.message ?? '';
-    if (status === 429 || status >= 500) throw new Error(`the Gemini API is overloaded (${status}): ${said}`);
-    if (status === 404) throw stop(`the Gemini API has no model by that id (404): ${said}`);
-    if (status === 402) throw stop(`the Gemini API project has no credit left: ${said}`);
-    throw stop(`the Gemini API refused the request (${status}): ${said}`);
+    const code = out.error.code ?? status;
+    if (code === 429 || code >= 500) throw new Error(`the Gemini API is overloaded (${code}): ${said}`);
+    if (code === 404) throw stop(`the Gemini API has no model by that id (404): ${said}`);
+    if (code === 402) throw stop(`the Gemini API project has no credit left: ${said}`);
+    throw stop(`the Gemini API refused the request (${code}): ${said}`);
   }
   const reply = out.candidates?.[0];
   const why = out.promptFeedback?.blockReason ?? reply?.finishReason ?? 'none';
@@ -235,29 +237,58 @@ export function parseApiReply({ status, text }) {
 
 // The audits run synchronously, so the request goes from a child node and this waits for it. The key reaches the
 // child in its environment, never on its command line. node:https rather than fetch, whose 5-minute wait for
-// headers is shorter than a deep review.
+// headers is shorter than a deep review; it tunnels through HTTPS_PROXY itself, which node:https alone ignores.
 const POST = `
-const https = require('node:https');
-let input = '';
-process.stdin.on('data', (d) => (input += d)).on('end', () => {
+const http = require("node:http");
+const https = require("node:https");
+const tls = require("node:tls");
+let input = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (d) => (input += d)).on("end", () => {
   const { url, body, timeout } = JSON.parse(input);
-  const done = (status, text) => process.stdout.write(JSON.stringify({ status, text }));
-  const headers = { 'content-type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY };
-  const req = https.request(url, { method: 'POST', headers, timeout }, (res) => {
-    let text = '';
-    res.setEncoding('utf8');
-    res.on('data', (d) => (text += d)).on('end', () => done(res.statusCode, text)).on('error', (e) => done(0, e.message));
+  let sent = false;
+  const done = (status, text) => {
+    if (sent) return;
+    sent = true;
+    process.stdout.write(JSON.stringify({ status, text }));
+  };
+  const target = new URL(url);
+  const headers = { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY };
+  const send = (options) => {
+    const req = https.request(url, { method: "POST", headers, timeout, ...options }, (res) => {
+      let text = "";
+      res.setEncoding("utf8");
+      res.on("data", (d) => (text += d)).on("end", () => done(res.statusCode, text)).on("error", (e) => done(0, e.message));
+    });
+    req.on("timeout", () => req.destroy(new Error("the model ran out of time before finishing its answer")));
+    req.on("error", (e) => done(0, e.message));
+    req.end(JSON.stringify(body));
+  };
+  const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
+  const skip = (process.env.NO_PROXY || process.env.no_proxy || "").split(",").map((s) => s.trim().replace(/^\\./, ""));
+  const direct = ["localhost", "127.0.0.1", "::1"].includes(target.hostname) ||
+    skip.some((s) => s === "*" || (s && (target.hostname === s || target.hostname.endsWith("." + s))));
+  if (!proxy || direct) return send({});
+  // Through the proxy, as cloud sessions require: a CONNECT tunnel, then TLS to the API inside it.
+  const p = new URL(proxy);
+  const auth = p.username
+    ? { "proxy-authorization": "Basic " + Buffer.from(decodeURIComponent(p.username) + ":" + decodeURIComponent(p.password)).toString("base64") }
+    : {};
+  const hostPort = target.hostname + ":" + (target.port || 443);
+  const connect = http.request({ host: p.hostname, port: p.port || 80, method: "CONNECT", path: hostPort, headers: { host: hostPort, ...auth } });
+  connect.on("connect", (res, socket) => {
+    if (res.statusCode !== 200) return done(0, "the proxy refused the tunnel (" + res.statusCode + ")");
+    send({ agent: false, createConnection: () => tls.connect({ socket, servername: target.hostname }) });
   });
-  req.on('timeout', () => req.destroy(new Error('the model ran out of time before finishing its answer')));
-  req.on('error', (e) => done(0, e.message));
-  req.end(JSON.stringify(body));
+  connect.on("error", (e) => done(0, "the proxy could not be reached: " + e.message));
+  connect.end();
 });`;
 const API_TIMEOUT_MS = 10 * 60_000;
 
 export function postApi(url, body, key, spawn = spawnSync) {
   const r = spawn(process.execPath, ['-e', POST], {
     input: JSON.stringify({ url, body, timeout: API_TIMEOUT_MS }),
-    env: { ...process.env, GEMINI_API_KEY: key, NODE_USE_ENV_PROXY: '1' },
+    env: { ...process.env, GEMINI_API_KEY: key },
     encoding: 'utf8',
     windowsHide: true,
     maxBuffer: 64 * 1024 * 1024,

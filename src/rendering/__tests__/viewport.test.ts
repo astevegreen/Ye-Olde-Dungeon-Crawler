@@ -337,4 +337,27 @@ describe('ViewportManager adaptive virtual size', () => {
 
     delete (globalThis as any).window;
   });
+
+  // On a high-DPI screen the backing buffer holds a physical pixel per device pixel while the
+  // CSS size stays put, and the context scales virtual units onto the physical buffer; a
+  // buffer at CSS size there draws blurred.
+  it.each([1, 1.5, 2, 3])('sizes the backing buffer at device pixel ratio %s and scales the context to it', (dpr) => {
+    vi.stubGlobal('window', { devicePixelRatio: dpr, matchMedia: () => ({ addEventListener: () => {} }) });
+    try {
+      const { canvas, dummyCtx } = createMockCanvas();
+      const vp = new ViewportManager(canvas, dummyCtx, { virtualWidth: 960, virtualHeight: 600 });
+      vp.recalculate(1920, 1080);
+
+      expect(vp.dpr).toBe(dpr);
+      expect(canvas.style.width).toBe('1728px');
+      expect(canvas.style.height).toBe('1080px');
+      expect(canvas.width).toBe(Math.floor(1728 * dpr));
+      expect(canvas.height).toBe(Math.floor(1080 * dpr));
+      const [sx, sy] = dummyCtx.scale.mock.calls.at(-1);
+      expect(sx).toBeCloseTo((1728 * dpr) / 960, 6);
+      expect(sy).toBeCloseTo((1080 * dpr) / 600, 6);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

@@ -75,13 +75,6 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_REPORT_RELAY_URL': JSON.stringify(process.env.REPORT_RELAY_URL ?? ''),
     },
     base: './',
-    // Keep class names through minification: the action pipeline reports
-    // `action.constructor.name` as the hook-matching actionType (`ActionPipeline.executeWithHooks`
-    // in src/engine/actions/actionPipeline.ts; action hooks in docs/architecture/content-extensibility.md),
-    // so content hooks filtering on e.g. 'MovementAction' match only if names survive.
-    esbuild: {
-      keepNames: true,
-    },
     build: {
       emptyOutDir: false,
       // SOURCEMAP=hidden (the deploy workflow) writes .map files with no reference from the
@@ -95,7 +88,11 @@ export default defineConfig(({ mode }) => {
       },
       rollupOptions: {
         output: {
-          // Vite 8 minifies with Rolldown, which ignores `esbuild.keepNames`: keep class names here.
+          // Keep class names through minification: the action pipeline reports
+          // `action.constructor.name` as the hook-matching actionType (`ActionPipeline.executeWithHooks`
+          // in src/engine/actions/actionPipeline.ts; action hooks in docs/architecture/content-extensibility.md),
+          // so content hooks filtering on e.g. 'MovementAction' match only if names survive.
+          // e2e/gameplay.spec.ts fails on the built bundle if they don't.
           keepNames: true,
         },
       },

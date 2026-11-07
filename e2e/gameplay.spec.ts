@@ -44,7 +44,7 @@ async function embarkNewHero(page: Page): Promise<void> {
 test('a new hero moves, the map owns the keyboard, and save & continue restores the run', async ({ page }) => {
   await embarkNewHero(page);
 
-  // Moving spends a turn, and the pipeline sees the real class name (esbuild keepNames).
+  // Moving spends a turn, and the pipeline sees the real class name (build keepNames, vite.config.ts).
   const start = await state(page);
   await page.keyboard.press('ArrowRight');
   await expect.poll(async () => (await state(page)).turn).toBeGreaterThan(start.turn);

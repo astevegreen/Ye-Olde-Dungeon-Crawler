@@ -10,7 +10,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ORDER, askFirstAvailable, askModel, buildPrompt, byLine, diffStats, pickDepth } from './lib/agy.mjs';
+import { NO_API, ORDER, askFirstAvailable, askModel, buildPrompt, byLine, diffStats, pickDepth } from './lib/agy.mjs';
 import { RAILS, RAIL_MODELS, railFiles, verdict } from './lib/second-look.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -46,13 +46,14 @@ function change(range) {
 }
 
 // Asks agy with one prompt file and the material, trying the models in order; { answer, model, by } or { error }.
-function ask(promptFile, material, pick, models, tmp) {
+// api: askModel's `api` (the Gemini API where agy is not installed); the rail audit passes NO_API.
+function ask(promptFile, material, pick, models, tmp, api = undefined) {
   const file = path.join(tmp, `${path.basename(promptFile, '.md')}-material.md`);
   writeFileSync(file, material);
   const prompt = buildPrompt(readFileSync(path.join(ROOT, 'scripts', promptFile), 'utf8'), file);
   try {
     const answer = askFirstAvailable(models, (model) =>
-      askModel((args) => run('agy', args), prompt, model, ['--add-dir', tmp]),
+      askModel((args) => run('agy', args), prompt, model, ['--add-dir', tmp], api),
     );
     return { answer: answer.response, model: answer.model, by: byLine({ ...answer, ...pick }) };
   } catch (err) {
@@ -76,7 +77,9 @@ function secondLook(request, { railsOnly, range }, tmp) {
   const out = [];
   let rail = null;
   if (rails.length) {
-    // Every rail change gets the deep review, whatever its size, from Argon, Opus or Flash, never Sonnet.
+    // Every rail change gets the deep review, whatever its size, from Argon, Opus or Flash, never Sonnet. Never
+    // through the Gemini API, which sees only the diff and the rules files: rails wait for agy (owner, 7 Nov:
+    // "Rails wait for the PC").
     const pick = pickDepth({ kind: 'change', ...stats }, RAILS);
     rail = ask(
       'rail-audit.md',
@@ -84,6 +87,7 @@ function secondLook(request, { railsOnly, range }, tmp) {
       pick,
       RAIL_MODELS,
       tmp,
+      NO_API,
     );
     out.push(rail.error ? `Rail audit not run: ${rail.error}` : `Rail audit by ${rail.by}\n\n${rail.answer}`);
   }

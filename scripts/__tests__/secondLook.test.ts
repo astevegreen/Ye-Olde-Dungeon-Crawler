@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { ARGON, FLASH, OPUS, SONNET } from '../lib/agy.mjs';
+import { ARGON, FLASH, NO_API, OPUS, SONNET, askModel } from '../lib/agy.mjs';
 import { RAILS, RAIL_MODELS, blockers, loosens, railFiles, verdict } from '../lib/second-look.mjs';
 
 const ROOT = path.resolve(__dirname, '../..');
@@ -118,5 +118,17 @@ describe('the verdict', () => {
       why: 'the rail audit came from Claude Sonnet 5.5 (high), and only Argon, Opus or Flash may give it; a change to .githooks/pre-push is never pushed unaudited',
     });
     expect(verdict({ rails, rail: { answer: 'LOOSENS: no' } }).verdict).toBe('retry');
+  });
+});
+
+// Owner, 7 Nov 2026: "Rails wait for the PC". Where agy is not installed (a cloud session), the rail audit refuses
+// the Gemini API, which sees only the diff and the rules files, so the rail change waits for a run that answers.
+describe('the rail audit and the Gemini API', () => {
+  it('never sends a rail audit to the API, even with a key; the ordinary second look may', () => {
+    const noAgy = () => ({ error: Object.assign(new Error('spawn agy ENOENT'), { code: 'ENOENT' }) });
+    expect(() => askModel(noAgy, 'audit', ARGON, [], NO_API)).toThrow(/cannot read the repository/);
+    const script = fs.readFileSync(path.join(ROOT, 'scripts', 'second-look.mjs'), 'utf-8');
+    expect(script).toMatch(/'rail-audit\.md',[\s\S]*?RAIL_MODELS,\s*tmp,\s*NO_API,\s*\)/);
+    expect(script).not.toMatch(/'second-look\.md',[^;]*NO_API/);
   });
 });

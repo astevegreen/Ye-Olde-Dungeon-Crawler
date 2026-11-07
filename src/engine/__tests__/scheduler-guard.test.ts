@@ -1,6 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { EnergyScheduler } from '../scheduler';
 import { Entity } from '../entities/entity';
+import { GameEngine } from '../engine';
+import { GameMap } from '../grid/map';
+import { TILES } from '../grid/tile';
+import { Player } from '../entities/player';
+import { Monster } from '../entities/monster';
 
 class MockEntity extends Entity {
   constructor(id: string, speed: number) {
@@ -66,5 +71,39 @@ describe('Scheduler Zero-Division & Circuit-Breaker Guards', () => {
     expect(actor).toBeNull();
     expect(e.energy).toBe(energyBefore);
     expect(Number.isFinite(e.energy)).toBe(true);
+  });
+});
+
+// The engine's own breaker: a monster whose turns never spend its energy (a zero-cost action, a
+// status that refunds it) would hold the world forever, so one advance stops after its cap and
+// hands the turn back instead of hanging the game.
+describe('advanceWorldUntilPlayerTurn caps one advance', () => {
+  function stuckWorld() {
+    const map = new GameMap(10, 10, TILES.FLOOR);
+    const player = new Player({ id: 'hero', name: 'Hero', position: { x: 1, y: 1 } });
+    const monster = new Monster({
+      id: 'stuck', name: 'Stuck', position: { x: 8, y: 8 }, stats: { hp: 5, maxHp: 5, attack: 1, defense: 0 },
+      definitionId: 'stuck', tags: [], aiType: 'melee', xpValue: 1, lootTable: [],
+    });
+    map.addEntity(monster);
+    const engine = new GameEngine({ map, player, seed: 1 });
+    player.energy = 0;
+    monster.energy = 1000;
+    // Its turns spend nothing: it is ready again at once.
+    const turns = vi.spyOn(engine as unknown as { processMonsterAction(e: Entity): void }, 'processMonsterAction').mockImplementation(() => {});
+    return { engine, monster, turns };
+  }
+
+  it('stops after the cap it is given', () => {
+    const { engine, monster, turns } = stuckWorld();
+    expect(engine.scheduler.getEntities()).toContain(monster);
+    engine.advanceWorldUntilPlayerTurn(50);
+    expect(turns).toHaveBeenCalledTimes(50);
+  });
+
+  it('stops after 5,000 turns by default', () => {
+    const { engine, turns } = stuckWorld();
+    engine.advanceWorldUntilPlayerTurn();
+    expect(turns).toHaveBeenCalledTimes(5000);
   });
 });

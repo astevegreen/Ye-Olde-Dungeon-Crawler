@@ -58,6 +58,18 @@ export class SaveLoadError extends Error {
   }
 }
 
+type SaveRecord = { schemaVersion?: unknown; data?: unknown; timestamp?: unknown };
+
+/**
+ * The schema version a stored save declares: its `schemaVersion`; undefined for an envelope
+ * shape without one (the migrator rejects it); 0 for a bare save, as `SchemaMigrator` reads it.
+ */
+function declaredVersion(record: SaveRecord): number | undefined {
+  if (typeof record.schemaVersion === 'number') return record.schemaVersion;
+  if (record.data && record.timestamp) return undefined;
+  return 0;
+}
+
 /**
  * Runs a stored save through the migrator, throwing a `SaveLoadError` whose reason comes from
  * the save itself: its version above the engine's is `newer-than-engine`; a version below it
@@ -81,9 +93,7 @@ export function migrateForLoad(
   if (!input || typeof input !== 'object') {
     throw new SaveLoadError('corrupt', 'Invalid save payload: expected an object.');
   }
-  const record = input as { schemaVersion?: unknown; data?: unknown; timestamp?: unknown };
-  const version =
-    typeof record.schemaVersion === 'number' ? record.schemaVersion : record.data && record.timestamp ? undefined : 0;
+  const version = declaredVersion(input as SaveRecord);
   if (version !== undefined && version > targetVersion) {
     throw new SaveLoadError('newer-than-engine', `Save schema version ${version} is newer than engine version ${targetVersion}.`);
   }

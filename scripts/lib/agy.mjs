@@ -156,12 +156,13 @@ export const API = 'https://generativelanguage.googleapis.com/v1beta/models';
 export const API_MODELS = { [ARGON]: 'gemini-4-argon', [FLASH]: 'gemini-3.8-flash' };
 const REPO = path.resolve(import.meta.dirname, '..', '..');
 // The files the review prompts judge against, which agy reads by itself; a folder (ending in /) is its .md files.
-export const CONTEXT = ['ARCHITECTURE.md', '.agents/rules/project-rules.md'];
+export const CONTEXT = ['ARCHITECTURE.md', '.agents/rules/'];
 
 const API_HEADLESS =
   'You are answering through the Gemini API: you cannot read files or run commands, so this prompt is ' +
-  'everything you have: the repository rules, then the task, then its material. Where you would need a file ' +
-  'it does not include, say so rather than guess.';
+  'everything you have: the repository rules, then the task, then its material. A change you cannot judge ' +
+  'without a file this prompt does not include is never passed: report it, naming the file, as a blocking ' +
+  'finding in the format the task asks for (for a rail audit, as a loosening).';
 const MATERIAL = /\nThe material is in (.+)\. Read all of it before answering\.\n$/;
 const TRUNCATED = '(diff truncated; read the rest from disk)';
 export const API_NOTE =

@@ -69,11 +69,12 @@ describe('the Gemini API fallback', () => {
     expect(text).toMatch(/^# The repository's rules\n\n## \.agents\/rules\/project-rules\.md\n\nStart each finding/);
     expect(text).toMatch(/# The task\n\nYou are answering through the Gemini API: you cannot read files or run/);
     expect(text).not.toMatch(/You are running headless|each file read takes|The material is in/);
+    expect(text).toMatch(/is never passed: report it, naming the file, as a blocking finding/);
     expect(text).toMatch(/Review this change\.\n\n# The material, in full\n\ndiff --git a\/x b\/x\n\+one line\n$/);
   });
 
   it('gives the API the rules agy reads by itself, and they exist', () => {
-    expect(CONTEXT).toEqual(['ARCHITECTURE.md', '.agents/rules/project-rules.md']);
+    expect(CONTEXT).toEqual(['ARCHITECTURE.md', '.agents/rules/']);
     for (const file of CONTEXT) expect(existsSync(path.join(import.meta.dirname, '..', '..', file))).toBe(true);
   });
 

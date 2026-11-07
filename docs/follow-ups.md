@@ -25,4 +25,10 @@ it. Sessions add to it by day; sprint lanes file follow-up issues instead. Movin
 - Tests the audit found missing (6 Nov 2026, test-suite audit): the rail list in `scripts/second-look.mjs` omits `tests/setup/sharedState.ts` and `packNeutralSource.test.ts` (a rail change: needs the rail audit); a viewport device-pixel-ratio test (`src/rendering/viewport.ts`); `validatePayload` cases in `relay/src/__tests__/relay.test.ts`; `decodeRunShare` rejecting a tampered score; BSP sealed-region checks in `dungeon-generator.ts`; a cap on how far one action may advance the world (`engine.ts`).
 - `src/engine/__tests__/scheduler-guard.test.ts:20` and `src/engine/__tests__/inspect.test.ts:43` were proposed for deletion but no other test covers zero-speed scheduling or a zero-cost inspect; kept (6 Nov 2026, test-suite audit).
 
+- `scripts/lib/agy.mjs` is 408 lines: its Gemini API half (`apiPrompt`, `parseApiReply`, the HTTPS post,
+  `geminiApi`) belongs in its own file, split the same way in all three repos. [7 Nov 2026, Gemini API fallback]
+- The "(diff truncated; read the rest from disk)" line is written in `scripts/second-look.mjs` and matched by
+  `TRUNCATED` in `scripts/lib/agy.mjs`: one shared constant would stop a reworded marker from sending part of a diff to
+  the API. [7 Nov 2026, Gemini API fallback]
+
 ## Docs

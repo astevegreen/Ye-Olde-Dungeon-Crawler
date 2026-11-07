@@ -126,6 +126,7 @@ export function createScaledItem(
       value: scaledValue,
       minFloor: def.minFloor,
       tier: def.tier,
+      predicate: def.predicate,
     });
   }
 
@@ -146,6 +147,7 @@ export function createScaledItem(
       value: scaledValue,
       minFloor: def.minFloor,
       tier: def.tier,
+      predicate: def.predicate,
     });
   }
 
@@ -168,6 +170,7 @@ export function createScaledItem(
       value: scaledValue,
       minFloor: def.minFloor,
       tier: def.tier,
+      predicate: def.predicate,
     });
   }
 

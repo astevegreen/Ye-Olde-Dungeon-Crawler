@@ -226,3 +226,19 @@ describe('loot weight (ItemDefinition.lootWeight)', () => {
     }
   });
 });
+
+// A shop gates stock with its item's predicate (Merchant.getAvailableStock), so every kind of
+// item the factory builds keeps it: a potion, scroll or wand that dropped it was always on sale.
+describe('createScaledItem keeps the definition predicate', () => {
+  const predicate = { type: 'hasFlag', flag: 'stock_unlocked' } as const;
+  const kinds = ['potion', 'scroll', 'wand', 'container', undefined] as const;
+  it.each(kinds)('on an item of type %s', (itemType) => {
+    const def = COTW_ITEMS.find((d) =>
+      itemType === undefined
+        ? !d.itemType && d.category !== 'container'
+        : d.itemType === itemType && (d.potionConfig ?? d.scrollConfig ?? d.wandConfig ?? d.containerConfig)
+    );
+    expect(def, String(itemType)).toBeDefined();
+    expect(createScaledItem({ ...def!, predicate }, 'gated', 1, () => 0.5).predicate).toEqual(predicate);
+  });
+});

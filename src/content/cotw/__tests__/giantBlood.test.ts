@@ -88,4 +88,16 @@ describe("Giant's Blood heritage buff (Act 1, replaces the old permafrost/obsidi
     expect(engine.messages.filter((m) => m.includes('gutters out'))).toHaveLength(1);
     expect(engine.messages.filter((m) => m.includes('blood of Thrym stirs'))).toHaveLength(0);
   });
+
+  // Each tier's floor, the band edges, and the floors after it fades: the old hazard dealt damage over time.
+  it.each([1, 3, 10, 18, 25, 26, 34, 40])('never deals damage on floor %i, the old damage-over-time hazard gone', (floor) => {
+    const { engine, player } = buildEngine(floor);
+    const startHp = player.hp;
+
+    for (let i = 0; i < 30; i++) {
+      engine.handlePlayerAction(new WaitAction(player));
+    }
+
+    expect(player.hp).toBe(startHp);
+  });
 });

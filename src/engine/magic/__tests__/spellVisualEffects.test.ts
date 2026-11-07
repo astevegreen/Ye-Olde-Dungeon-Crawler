@@ -88,6 +88,17 @@ describe('Visual Effect Queue & Declarative FX Engine', () => {
     }
   });
 
+  it('gives each instant-mode Magic Arrow cast exactly one effect, none carried over from the last cast', () => {
+    const { engine, player } = createCorridorEngine();
+
+    for (let i = 0; i < 2; i++) {
+      player.mana = 100;
+      const result = new CastSpellAction(player, 'magic_arrow', 8, 3).perform(engine);
+      expect(result.success).toBe(true);
+      expect(result.effects?.map((e) => e.type), `cast ${i + 1}`).toEqual(['projectile']);
+    }
+  });
+
   it('tags each effect with the art it plays: the spell\'s own, else its element\'s', () => {
     const { engine, player } = createCorridorEngine();
     const cold = new CastSpellAction(player, 'cold_ray', 8, 3).perform(engine);

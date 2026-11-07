@@ -106,6 +106,20 @@ describe('Castle of the Winds Monster Roster (37 entries)', () => {
     expect(MonsterRegistry.get('nidhogg')).toBeDefined();
     expect(MonsterRegistry.get('hoarfrost_skraeling')).toBeDefined();
   });
+
+  // The wandering bands are drawn from the classic monsters of legacy.ts; the spawner drops an
+  // id it cannot find without a word, so a renamed or removed one would empty its band.
+  it('names in every floor-encounter band only monsters the pack defines', () => {
+    const bands = Object.entries(cotwManifest.quest?.floorEncounters ?? {});
+    expect(bands.length).toBeGreaterThan(0);
+    const spawnable = new Set(cotwManifest.monsters.map((m) => m.id));
+    for (const [floor, band] of bands) {
+      for (const id of band.monsterIds) {
+        expect(spawnable.has(id), `floor ${floor}: ${id}`).toBe(true);
+        expect(COTW_BESTIARY[id], `floor ${floor}: ${id}`).toBeDefined();
+      }
+    }
+  });
 });
 
 describe('bosses resist Grið and Draugr-call', () => {

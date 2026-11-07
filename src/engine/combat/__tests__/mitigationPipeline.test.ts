@@ -112,4 +112,21 @@ describe('Mitigation Pipeline & Aspect Alignment', () => {
 
     expect(resolveCombatMitigation(player, foe, 10, engine).finalDamage).toBe(10);
   });
+
+  // The tags reach the corrupt branch too (970e715): no pack tags a monster `radiant` today,
+  // but one that does gives a corrupt weapon its bonus against it.
+  it.each([
+    [['radiant'], 17],
+    [['beast'], 10],
+  ] as const)('a corrupt blade against a monster tagged %j deals %i from 10', (tags, damage) => {
+    const player = new Player({ id: 'p1', name: 'Hero', position: { x: 5, y: 5 } });
+    player.inventory.paperdoll.equip(new Item({ id: 'rot', name: 'Rotblade', category: 'weapon', slot: 'mainHand', weight: 1200, bulk: 600, aspectState: 'aspect_corrupt', stats: { attackBonus: 4 } }), 'mainHand');
+    const foe = new Monster({
+      id: 'foe', name: 'Foe', position: { x: 6, y: 5 }, stats: { hp: 25, maxHp: 25, attack: 4, defense: 0 },
+      definitionId: 'sun_warden', tags: [...tags], aiType: 'melee', xpValue: 1, lootTable: [],
+    });
+    const engine = new GameEngine({ map: new GameMap(12, 12, TILES.FLOOR), player: new Player({ id: 'seed-holder', name: 'Seed', position: { x: 1, y: 1 } }), seed: 7 });
+
+    expect(resolveCombatMitigation(player, foe, 10, engine).finalDamage).toBe(damage);
+  });
 });

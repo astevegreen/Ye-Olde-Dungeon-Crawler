@@ -481,6 +481,10 @@ export class DungeonGenerator {
     }
   }
 
+  // Four-way, as monsters and spawn sites reach: a monster cuts a corner only past an open side
+  // (ai/pathfinding.ts), which connects exactly what four-way steps do, and SpawnSiteFilter walks
+  // four ways. An eight-way check accepted floors whose stairs only the hero could reach, by a
+  // diagonal squeeze between a vault pillar and a wall.
   private isReachable(map: GameMap, start: Position, target: Position): boolean {
     const queue: Position[] = [start];
     const visited = new Set<string>();
@@ -491,10 +495,6 @@ export class DungeonGenerator {
       { dx: 0, dy: 1 },
       { dx: -1, dy: 0 },
       { dx: 1, dy: 0 },
-      { dx: -1, dy: -1 },
-      { dx: 1, dy: -1 },
-      { dx: -1, dy: 1 },
-      { dx: 1, dy: 1 },
     ];
 
     while (queue.length > 0) {

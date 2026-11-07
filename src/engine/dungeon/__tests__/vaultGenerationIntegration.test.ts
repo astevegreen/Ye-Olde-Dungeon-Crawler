@@ -50,20 +50,21 @@ describe('Vault Generation Integration', () => {
 
   // The second pack proves floors don't depend on cotw (§1): on each of the fixture pack's
   // floors, over several seeds, the stairs down are a real walk from where the hero arrives,
-  // and the pack's own vaults get stamped somewhere. The walk is the hero's: eight ways, doors
-  // opened on the way. (Four ways only, as monsters and spawn sites go, a few of these floors
-  // reach the stairs only by a diagonal squeeze past a vault pillar: docs/follow-ups.md.)
+  // and the pack's own vaults get stamped somewhere. The walk is four-way, doors opened on the
+  // way: monsters cut a corner only past an open side (pathfinding.ts) and spawn sites reach
+  // four ways (spawnSites.ts), so a floor the hero crosses only by a diagonal squeeze between a
+  // vault pillar and a wall is one they can't (floor 3 seed 11 and floor 4 seeds 1 and 11 were).
   it("the fixture pack's floors connect the arrival to the stairs down, and stamp its vaults", () => {
     const stamp = vi.spyOn(VaultStamper, 'stamp');
     const maxFloor = fixtureManifest.quest!.maxFloor!;
     expect(maxFloor).toBeGreaterThan(1);
     for (let floor = 1; floor < maxFloor; floor++) {
-      for (const seed of [10, 11, 12, 13]) {
+      for (const seed of [1, 10, 11, 12, 13]) {
         const where = `floor ${floor}, seed ${seed}`;
         const f = DungeonArc.generateFloor(floor, seed, fixtureManifest.quest, fixtureManifest, 1.0);
         expect(f.stairsDown, where).toBeDefined();
         expect(f.map.getTile(f.stairsDown!.x, f.stairsDown!.y)?.type, where).toBe('stairs_down');
-        expect(heroCanWalk(f.map, f.playerSpawn, f.stairsDown!), where).toBe(true);
+        expect(fourWayWalk(f.map, f.playerSpawn, f.stairsDown!), where).toBe(true);
       }
     }
     const stamped = stamp.mock.calls.map(([, blueprint]) => blueprint);
@@ -72,24 +73,22 @@ describe('Vault Generation Integration', () => {
   });
 });
 
-/** Whether the hero can walk from `from` to `to`: eight-way steps over passable tiles and doors. */
-function heroCanWalk(map: GameMap, from: Position, to: Position): boolean {
+/** Whether `to` is a four-way walk from `from` over passable tiles and doors. */
+function fourWayWalk(map: GameMap, from: Position, to: Position): boolean {
   const seen = new Set([`${from.x},${from.y}`]);
   const queue: Position[] = [from];
   for (let k = 0; k < queue.length; k++) {
     const { x, y } = queue[k];
     if (x === to.x && y === to.y) return true;
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dy = -1; dy <= 1; dy++) {
-        const nx = x + dx;
-        const ny = y + dy;
-        const key = `${nx},${ny}`;
-        if (seen.has(key) || !map.inBounds(nx, ny)) continue;
-        const type = map.getTile(nx, ny)?.type;
-        if (!map.isPassable(nx, ny) && type !== 'door_closed') continue;
-        seen.add(key);
-        queue.push({ x: nx, y: ny });
-      }
+    for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as const) {
+      const nx = x + dx;
+      const ny = y + dy;
+      const key = `${nx},${ny}`;
+      if (seen.has(key) || !map.inBounds(nx, ny)) continue;
+      const type = map.getTile(nx, ny)?.type;
+      if (!map.isPassable(nx, ny) && type !== 'door_closed') continue;
+      seen.add(key);
+      queue.push({ x: nx, y: ny });
     }
   }
   return false;

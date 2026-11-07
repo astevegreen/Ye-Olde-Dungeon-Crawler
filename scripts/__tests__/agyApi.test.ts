@@ -1,6 +1,6 @@
 // The Gemini API fallback in agy.mjs: used only where agy is not installed (a cloud session) and a key is set.
 import { describe, expect, it } from 'vitest';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
 import {
   API,
@@ -9,6 +9,7 @@ import {
   CONTEXT,
   FLASH,
   NO_API,
+  apiFor,
   OPUS,
   SONNET,
   apiPrompt,
@@ -113,15 +114,15 @@ describe('the Gemini API fallback', () => {
     expect(() => parseReply({ error: { code: 'ENOENT' } })).toThrow('GEMINI_API_KEY is not set');
   });
 
-  it("passes a busy model, a 5xx and a model the API lacks on; Claude's models cost no request", () => {
+  it("passes a busy model, and a 5xx, even as a page, on; Claude's models cost no request", () => {
     const { post, sent } = posts(
       failed(429, 'Resource has been exhausted (e.g. check quota).'),
-      failed(404, 'models/gemini-3.8-flash is not found'),
+      { status: 503, text: '<html>Service Unavailable</html>' },
     );
     const ask = viaApi(post, buildPrompt('Review this spec.', material));
     expect(() => askFirstAvailable([ARGON, OPUS, FLASH, SONNET], ask, memory(), () => NOW)).toThrow(
       'no model answered: Gemini 4 Argon (high) was too busy; Claude Opus 5.5 (high) is not on the Gemini API; ' +
-        'Gemini 3.8 Flash (high) is not on the Gemini API; Claude Sonnet 5.5 (high) is not on the Gemini API',
+        'Gemini 3.8 Flash (high) was too busy; Claude Sonnet 5.5 (high) is not on the Gemini API',
     );
     expect(sent).toHaveLength(2);
     expect(() => parseApiReply(failed(503, 'The model is overloaded.'))).toThrow(/overloaded \(503\)/);
@@ -215,5 +216,66 @@ describe('the rules context', () => {
       '.agents/rules/a.md',
       '.agents/rules/b.md',
     ]);
+  });
+});
+
+describe('the Gemini API fallback, round two', () => {
+  it('counts the cut-off marker only on a line of its own, not quoted inside a diff line', () => {
+    const quoted = reader(`${DIFF}\n+const TRUNCATED = '... (diff truncated; read the rest from disk)';\n`);
+    expect(apiPrompt(buildPrompt('Review this.', material), quoted, [])).toMatch(/\+const TRUNCATED/);
+  });
+
+  it('passes on a 5xx page that is not JSON, and stops on a wrong model id (404)', () => {
+    const caught = (f: () => unknown) => {
+      try {
+        f();
+      } catch (err) {
+        return err as Error & { stop?: boolean };
+      }
+      throw new Error('did not throw');
+    };
+    const page = caught(() => parseApiReply({ status: 503, text: '<html>Service Unavailable</html>' }));
+    expect(page.message).toMatch(/overloaded \(503\)/);
+    expect(page.stop).toBeUndefined();
+    const wrong = caught(() => parseApiReply(failed(404, 'models/gemini-4-argon is not found')));
+    expect(wrong.message).toMatch(/no model by that id \(404\)/);
+    expect(wrong.stop).toBe(true);
+    const timedOut = () => ({ error: Object.assign(new Error('t'), { code: 'ETIMEDOUT' }) });
+    const late = caught(() => parseApiReply(postApi(`${API}/x:generateContent`, {}, 'k', timedOut)));
+    expect(late.message).toMatch(/ran out of time/);
+    expect(late.stop).toBeUndefined();
+  });
+
+  it("uses the environment's proxy in the child", () => {
+    let env: Record<string, string | undefined> = {};
+    postApi(`${API}/x:generateContent`, {}, 'k', (_cmd, _args, opts) => {
+      env = opts.env;
+      return { stdout: JSON.stringify({ status: 200, text: '{}' }) };
+    });
+    expect(env.NODE_USE_ENV_PROXY).toBe('1');
+  });
+
+  it('uses the API by default exactly when GEMINI_API_KEY is set', () => {
+    const before = process.env.GEMINI_API_KEY;
+    try {
+      delete process.env.GEMINI_API_KEY;
+      expect(() => askModel(missing, buildPrompt('Audit the repo.'), FLASH)).toThrow(/agy is not installed/);
+      process.env.GEMINI_API_KEY = 'test-key';
+      // No material, so the API refuses before any request: proof the default reached it.
+      expect(() => askModel(missing, buildPrompt('Audit the repo.'), FLASH)).toThrow(
+        /Gemini API cannot read the repository/,
+      );
+    } finally {
+      if (before === undefined) delete process.env.GEMINI_API_KEY;
+      else process.env.GEMINI_API_KEY = before;
+    }
+  });
+
+  it('refuses a whole-repo audit on the API, and the audit script asks apiFor by kind', () => {
+    expect(apiFor('repo')).toBe(NO_API);
+    expect(apiFor('change')).toBeUndefined();
+    expect(apiFor('spec')).toBeUndefined();
+    const script = readFileSync(path.join(import.meta.dirname, '..', 'gemini-audit.mjs'), 'utf8');
+    expect(script).toMatch(/apiFor\(what\.kind\)/);
   });
 });

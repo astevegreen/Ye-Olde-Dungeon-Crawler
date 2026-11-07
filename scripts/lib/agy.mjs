@@ -164,7 +164,8 @@ const API_HEADLESS =
   'without a file this prompt does not include is never passed: report it, naming the file, as a blocking ' +
   'finding in the format the task asks for (for a rail audit, as a loosening).';
 const MATERIAL = /\nThe material is in (.+)\. Read all of it before answering\.\n$/;
-const TRUNCATED = '(diff truncated; read the rest from disk)';
+// The line the callers put where they cut a long diff; inside a diff line (+, - or space first) it is not a cut.
+const TRUNCATED = /^\.\.\. \(diff truncated; read the rest from disk\)$/m;
 export const API_NOTE =
   '_Answered through the Gemini API, which cannot read the repository: this review saw only the material._';
 
@@ -183,7 +184,7 @@ export function apiPrompt(
   const m = MATERIAL.exec(text);
   if (!m) throw stop('the Gemini API cannot read the repository, and this audit gave it no material');
   const material = read(m[1]);
-  if (material.includes(TRUNCATED))
+  if (TRUNCATED.test(material))
     throw stop('the Gemini API cannot read the rest of a truncated diff from disk, so it would review part of it');
   const files = context.flatMap((f) =>
     f.endsWith('/') ? list(f).filter((n) => n.endsWith('.md')).sort().map((n) => f + n) : [f],
@@ -197,8 +198,11 @@ export const NO_API = () => {
   throw stop('the Gemini API cannot read the repository, which this audit reads');
 };
 
+// askModel's `api` for what an audit reviews (pickDepth's kind): a whole-repo audit never goes to the API.
+export const apiFor = (kind) => (kind === 'repo' ? NO_API : undefined);
+
 // Reads one generateContent reply ({ status, text }) and returns the answer, or throws why not. By status: busy
-// (429, 5xx) or a model the API lacks (404) passes to the next model; anything else (no credit, a bad key, a
+// (429, 5xx) passes to the next model; anything else (no credit, a bad key, a wrong model id, a
 // refused request) stops the review. Only a reply that finished (STOP) is an answer: any other ending is cut off.
 export function parseApiReply({ status, text }) {
   let out;
@@ -206,12 +210,13 @@ export function parseApiReply({ status, text }) {
     out = JSON.parse(text);
   } catch {
     if (/ran out of time/.test(text)) throw new Error(text.trim());
+    if (status === 429 || status >= 500) throw new Error(`the Gemini API is overloaded (${status})`);
     throw stop(`the Gemini API could not be reached (${status || 'no answer'}): ${text.trim().split('\n')[0]}`);
   }
   if (out.error) {
     const said = out.error.message ?? '';
     if (status === 429 || status >= 500) throw new Error(`the Gemini API is overloaded (${status}): ${said}`);
-    if (status === 404) throw new Error(`this model is not on the Gemini API (404): ${said}`);
+    if (status === 404) throw stop(`the Gemini API has no model by that id (404): ${said}`);
     if (status === 402) throw stop(`the Gemini API project has no credit left: ${said}`);
     throw stop(`the Gemini API refused the request (${status}): ${said}`);
   }
@@ -241,7 +246,7 @@ process.stdin.on('data', (d) => (input += d)).on('end', () => {
   const req = https.request(url, { method: 'POST', headers, timeout }, (res) => {
     let text = '';
     res.setEncoding('utf8');
-    res.on('data', (d) => (text += d)).on('end', () => done(res.statusCode, text));
+    res.on('data', (d) => (text += d)).on('end', () => done(res.statusCode, text)).on('error', (e) => done(0, e.message));
   });
   req.on('timeout', () => req.destroy(new Error('the model ran out of time before finishing its answer')));
   req.on('error', (e) => done(0, e.message));
@@ -252,12 +257,13 @@ const API_TIMEOUT_MS = 10 * 60_000;
 export function postApi(url, body, key, spawn = spawnSync) {
   const r = spawn(process.execPath, ['-e', POST], {
     input: JSON.stringify({ url, body, timeout: API_TIMEOUT_MS }),
-    env: { ...process.env, GEMINI_API_KEY: key },
+    env: { ...process.env, GEMINI_API_KEY: key, NODE_USE_ENV_PROXY: '1' },
     encoding: 'utf8',
     windowsHide: true,
     maxBuffer: 64 * 1024 * 1024,
     timeout: API_TIMEOUT_MS + 60_000,
   });
+  if (r.error?.code === 'ETIMEDOUT') return { status: 0, text: 'the model ran out of time before finishing its answer' };
   if (r.error) return { status: 0, text: r.error.message };
   try {
     return JSON.parse(r.stdout);

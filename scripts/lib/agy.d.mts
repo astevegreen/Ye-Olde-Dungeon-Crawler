@@ -35,8 +35,36 @@ export interface AgyRun {
   error?: { code?: string; message?: string };
 }
 export function parseReply(run: AgyRun): string;
-/** One model's answer; a run cut off for a refused command or a time-out is resumed once. */
-export function askModel(run: (args: string[]) => AgyRun, prompt: string, model: string, extra?: string[]): string;
+/** How a model is asked through the Gemini API where agy is not installed. */
+export type ApiAsk = (prompt: string, model: string) => string;
+/**
+ * One model's answer; a run cut off for a refused command or a time-out is resumed once. Where agy is not
+ * installed, `api` (by default the Gemini API when GEMINI_API_KEY is set, else null) asks instead.
+ */
+export function askModel(
+  run: (args: string[]) => AgyRun,
+  prompt: string,
+  model: string,
+  extra?: string[],
+  api?: ApiAsk | null,
+): string;
+
+export const API: string;
+/** The Gemini API's id for each agy model it has; Claude's models are not on it. */
+export const API_MODELS: Record<string, string>;
+/** A buildPrompt prompt with the material's text in place of its path; throws when there is no material. */
+export function apiPrompt(prompt: string, read?: (file: string) => string): string;
+export interface ApiReply {
+  status: number;
+  text: string;
+}
+export function parseApiReply(reply: ApiReply): string;
+export function postApi(url: string, body: unknown, key: string): ApiReply;
+export function geminiApi(
+  key?: string,
+  post?: (url: string, body: unknown, key: string) => ApiReply,
+  read?: (file: string) => string,
+): ApiAsk | null;
 
 export function resetsAt(message: string, now: number): Date;
 export interface QuotaStore {

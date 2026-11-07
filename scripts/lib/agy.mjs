@@ -1,6 +1,8 @@
 // How the second look talks to agy: which model reviews what, what every prompt starts with, and how a reply is
 // read. The same rules are in terminal-dusk/tools/gemini/agy.mjs and blockchain-technology-course/tools/agy.mjs:
 // change all three. Types: agy.d.mts.
+// Where agy is not installed (a cloud session), the Gemini models are asked through the Gemini API instead.
+import { spawnSync } from 'node:child_process';
 import { readFileSync, renameSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -73,7 +75,10 @@ export function buildPrompt(text, materialFile) {
 
 // Reads one `agy -p ... --output-format json` run (a spawnSync result) and returns the model's answer, or throws why not.
 export function parseReply(r) {
-  if (r.error) throw new Error(r.error.code === 'ENOENT' ? 'agy is not installed' : r.error.message);
+  if (r.error)
+    throw new Error(
+      r.error.code === 'ENOENT' ? 'agy is not installed, and GEMINI_API_KEY is not set for the Gemini API' : r.error.message,
+    );
   let out;
   try {
     out = JSON.parse(r.stdout);
@@ -130,15 +135,112 @@ const agyArgs = (prompt, model, extra, timeout = TIMEOUT) => [
 // adds flags such as --add-dir. A model can be cut off with no answer though it read everything: by trying a
 // command (Opus ended a rail audit on `echo blocked`, 28 Oct), or by running out of time (Flash on a 401-line deep
 // review, 5 Nov). Either way its conversation is resumed once, told why, so the reading is not thrown away.
-export function askModel(run, prompt, model, extra = []) {
+// Where agy is not installed and GEMINI_API_KEY is set, `api` asks the model instead (see geminiApi).
+export function askModel(run, prompt, model, extra = [], api = geminiApi()) {
+  const first = run(agyArgs(prompt, model, extra));
+  if (first.error?.code === 'ENOENT' && api) return api(prompt, model);
   try {
-    return parseReply(run(agyArgs(prompt, model, extra)));
+    return parseReply(first);
   } catch (err) {
     if (!err.conversation) throw err;
     const resume = [...extra, '--conversation', err.conversation];
     if (err.timedOut) return parseReply(run(agyArgs(LATE, model, resume, RESUME_TIMEOUT)));
     return parseReply(run(agyArgs(REFUSED, model, resume)));
   }
+}
+
+// The Gemini API, for a session without agy (in the cloud). It has the Gemini models only, under their own ids;
+// Claude's are passed over. It reads no files and runs nothing, so the material goes inside the prompt.
+export const API = 'https://generativelanguage.googleapis.com/v1beta/models';
+export const API_MODELS = { [ARGON]: 'gemini-4-argon', [FLASH]: 'gemini-3.8-flash' };
+
+const API_HEADLESS =
+  'You are answering through the Gemini API: you cannot read files or run commands, so the material in this ' +
+  'prompt is everything you have. Where you would need a file it does not include, say so rather than guess.';
+const MATERIAL = /\nThe material is in (.+)\. Read all of it before answering\.\n$/;
+
+// A buildPrompt prompt rewritten for the API: told it can read nothing, with the material file's text in place of
+// its path. With no material there is nothing to review (a whole-repo audit), so it throws rather than ask.
+export function apiPrompt(prompt, read = (file) => readFileSync(file, 'utf8')) {
+  const text = prompt.startsWith(HEADLESS) ? API_HEADLESS + prompt.slice(HEADLESS.length) : prompt;
+  const m = MATERIAL.exec(text);
+  if (!m) throw new Error('the Gemini API cannot read the repository, and this audit gave it no material');
+  return `${text.slice(0, m.index)}\n\nThe material follows, in full.\n\n${read(m[1])}\n`;
+}
+
+// Reads one generateContent reply ({ status, text }) and returns the answer, or throws why not, in words
+// askFirstAvailable sorts: a 429 passes to the next model; a project with no credit, or a bad key, stops the review.
+export function parseApiReply({ status, text }) {
+  let out;
+  try {
+    out = JSON.parse(text);
+  } catch {
+    throw new Error(`the Gemini API could not be reached (${status || 'no answer'}): ${text.trim().split('\n')[0]}`);
+  }
+  if (status === 402) throw new Error(`the Gemini API project has no credit left: ${out.error?.message ?? ''}`.trim());
+  if (out.error) throw new Error(`the Gemini API answered ${status}: ${out.error.message}`);
+  const reply = out.candidates?.[0];
+  const answer = (reply?.content?.parts ?? [])
+    .filter((p) => !p.thought)
+    .map((p) => p.text ?? '')
+    .join('')
+    .trim();
+  if (reply?.finishReason === 'MAX_TOKENS') throw new Error('the model ran out of room before finishing its answer');
+  if (answer) return answer;
+  const why = out.promptFeedback?.blockReason ?? reply?.finishReason ?? 'none';
+  throw new Error(`the model gave no answer (Gemini API reason ${why})`);
+}
+
+// The audits run synchronously, so the request goes from a child node and this waits for it. The key reaches the
+// child in its environment, never on its command line. node:https rather than fetch, whose 5-minute wait for
+// headers is shorter than a deep review.
+const POST = `
+const https = require('node:https');
+let input = '';
+process.stdin.on('data', (d) => (input += d)).on('end', () => {
+  const { url, body, timeout } = JSON.parse(input);
+  const done = (status, text) => process.stdout.write(JSON.stringify({ status, text }));
+  const headers = { 'content-type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY };
+  const req = https.request(url, { method: 'POST', headers, timeout }, (res) => {
+    let text = '';
+    res.setEncoding('utf8');
+    res.on('data', (d) => (text += d)).on('end', () => done(res.statusCode, text));
+  });
+  req.on('timeout', () => req.destroy(new Error('the model ran out of time before finishing its answer')));
+  req.on('error', (e) => done(0, e.message));
+  req.end(JSON.stringify(body));
+});`;
+const API_TIMEOUT_MS = 10 * 60_000;
+
+export function postApi(url, body, key) {
+  const r = spawnSync(process.execPath, ['-e', POST], {
+    input: JSON.stringify({ url, body, timeout: API_TIMEOUT_MS }),
+    env: { ...process.env, GEMINI_API_KEY: key },
+    encoding: 'utf8',
+    windowsHide: true,
+    maxBuffer: 64 * 1024 * 1024,
+    timeout: API_TIMEOUT_MS + 60_000,
+  });
+  if (r.error) return { status: 0, text: r.error.message };
+  try {
+    return JSON.parse(r.stdout);
+  } catch {
+    return { status: 0, text: (r.stderr || 'the request gave no answer').trim() };
+  }
+}
+
+// Returns how askModel asks a model through the Gemini API, or null when GEMINI_API_KEY is not set.
+export function geminiApi(key = process.env.GEMINI_API_KEY, post = postApi, read = undefined) {
+  if (!key) return null;
+  return (prompt, model) => {
+    const id = API_MODELS[model];
+    if (!id) throw new Error('this model is not on the Gemini API');
+    const body = {
+      contents: [{ role: 'user', parts: [{ text: apiPrompt(prompt, read) }] }],
+      generationConfig: { thinkingConfig: { thinkingLevel: EFFORT }, maxOutputTokens: 65_536 },
+    };
+    return parseApiReply(post(`${API}/${id}:generateContent`, body, key));
+  };
 }
 
 // agy says when a used-up quota comes back ("Resets in 151h45m8s"); without that, the model is tried again in an hour.
@@ -186,7 +288,9 @@ const USED_UP = /individual quota|resets in/i;
 const PASS_ON = [
   [/quota|rate.?limit|resource.?exhausted|\b429\b|overloaded|capacity/i, 'was too busy'],
   [/ran out of time/, 'ran out of time'],
+  [/ran out of room/, 'ran out of room for its answer'],
   [/not allowed to do/, 'tried a command it may not run'],
+  [/not on the Gemini API/, 'is not on the Gemini API'],
 ];
 
 const when = (d) =>

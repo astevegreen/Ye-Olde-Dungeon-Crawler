@@ -55,5 +55,9 @@ it. Sessions add to it by day; sprint lanes file follow-up issues instead. Movin
   (`scripts/lib/second-look.mjs`, `scripts/lib/agy.mjs` CONTEXT, `docReferences.test.ts`). Only its invariants list
   in `project-rules.md` restates `ARCHITECTURE.md`; shrinking it to pointers changes a rail, so it needs the rail
   audit. [7 Nov 2026, agent context batch B]
+- TypeScript 7 (Dependabot #109, held 7 Nov): its package drops the JS compiler API, so `scripts/check-engine-encapsulation.ts`
+  (`ts.findConfigFile`, `ts.sys`, `createCompilerHost`, the type checker) fails `npm run lint` with 85 type errors.
+  Moving to 7 needs that gate on a pinned `typescript@5` alias (an npm alias import) or rewritten for the new API;
+  `tsc` itself is the faster part. [7 Nov 2026, #109 CI log]
 
 ## Docs

@@ -10,7 +10,8 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { NO_API, ORDER, askFirstAvailable, askModel, buildPrompt, byLine, diffStats, pickDepth } from './lib/agy.mjs';
+import { ORDER, askFirstAvailable, askModel, buildPrompt, byLine, diffStats, pickDepth } from './lib/agy.mjs';
+import { NO_API } from './lib/gemini-api.mjs';
 import { RAILS, RAIL_MODELS, railFiles, verdict } from './lib/second-look.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');

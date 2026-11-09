@@ -6,7 +6,8 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ORDER, apiFor, askFirstAvailable, askModel, buildPrompt, byLine, pickDepth } from './lib/agy.mjs';
+import { ORDER, askFirstAvailable, askModel, buildPrompt, byLine, pickDepth } from './lib/agy.mjs';
+import { apiFor } from './lib/gemini-api.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const USAGE = 'usage: node scripts/gemini-audit.mjs specs <issue numbers...> | weekly | narrative [--dry-run]';

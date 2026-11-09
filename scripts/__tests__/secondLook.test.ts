@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { ARGON, FLASH, NO_API, OPUS, SONNET, askModel } from '../lib/agy.mjs';
+import { ARGON, FLASH, OPUS, SONNET, askModel } from '../lib/agy.mjs';
+import { NO_API } from '../lib/gemini-api.mjs';
 import { RAILS, RAIL_MODELS, blockers, loosens, railFiles, verdict } from '../lib/second-look.mjs';
 
 const ROOT = path.resolve(__dirname, '../..');

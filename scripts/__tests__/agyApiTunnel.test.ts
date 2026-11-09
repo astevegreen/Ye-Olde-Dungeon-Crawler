@@ -3,7 +3,7 @@
 // The rest of the fallback is in agyApi.test.ts.
 import { describe, expect, it } from 'vitest';
 import { spawn, spawnSync } from 'node:child_process';
-import { API, parseApiReply, postApi } from '../lib/agy.mjs';
+import { API, parseApiReply, postApi } from '../lib/gemini-api.mjs';
 
 // Starts a proxy in its own process (postApi blocks this one) and resolves once it prints its port. `said` collects
 // what it prints after that.

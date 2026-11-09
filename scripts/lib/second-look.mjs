@@ -35,6 +35,7 @@ export const RAILS = [
   'scripts/lib/second-look',
   'scripts/rail-audit.md',
   'scripts/lib/agy.mjs',
+  'scripts/lib/gemini-api',
   'scripts/deploy-scope',
   'scripts/lib/deploy-scope',
   'package.json',

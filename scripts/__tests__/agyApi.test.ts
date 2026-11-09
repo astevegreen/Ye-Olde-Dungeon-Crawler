@@ -3,26 +3,19 @@ import { describe, expect, it } from 'vitest';
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
+import { ARGON, FLASH, OPUS, SONNET, askFirstAvailable, askModel, buildPrompt, parseReply } from '../lib/agy.mjs';
+import type { ApiReply } from '../lib/gemini-api.mjs';
 import {
   API,
   API_NOTE,
-  ARGON,
   CONTEXT,
-  FLASH,
   NO_API,
   apiFor,
-  OPUS,
-  SONNET,
   apiPrompt,
-  askFirstAvailable,
-  askModel,
-  buildPrompt,
   geminiApi,
   parseApiReply,
-  parseReply,
   postApi,
-  type ApiReply,
-} from '../lib/agy.mjs';
+} from '../lib/gemini-api.mjs';
 
 const NOW = Date.parse('2026-11-07T12:00:00Z');
 const memory = () => ({ outUntil: () => null, markOut: () => {} });

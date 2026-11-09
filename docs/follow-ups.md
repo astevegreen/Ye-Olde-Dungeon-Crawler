@@ -33,10 +33,8 @@ it. Sessions add to it by day; sprint lanes file follow-up issues instead. Movin
 ## Presentation
 
 ## Tests, gates and tooling
-- `scripts/lib/agy.mjs` is 408 lines: its Gemini API half (`apiPrompt`, `parseApiReply`, the HTTPS post,
-  `geminiApi`) belongs in its own file, split the same way in all three repos. [7 Nov 2026, Gemini API fallback]
 - The "(diff truncated; read the rest from disk)" line is written in `scripts/second-look.mjs:75` and matched by
-  `TRUNCATED` in `scripts/lib/agy.mjs:168`: one shared constant would stop a reworded marker from sending part of a
+  `TRUNCATED` in `scripts/lib/gemini-api.mjs`: one shared constant would stop a reworded marker from sending part of a
   diff to the API. [7 Nov 2026, Gemini API fallback]
 - The workflows pin each action by major tag (`actions/checkout@v7`, `.github/workflows/deploy.yml:24` and the
   others), so a moved tag runs at once, past Dependabot's 7-day cooldown (`.github/dependabot.yml:3-4`); pinning by
@@ -52,7 +50,7 @@ it. Sessions add to it by day; sprint lanes file follow-up issues instead. Movin
   rail-audited change should narrow it to the gate scripts, `npx vitest *`, `gh run *`, `git worktree *`,
   `git ls-remote *`. [7 Nov 2026, agent context batch B]
 - `.agents/` is not a copy of `.claude/`: it is the read-only analyst rule set that agy's second look reviews against
-  (`scripts/lib/second-look.mjs`, `scripts/lib/agy.mjs` CONTEXT, `docReferences.test.ts`). Only its invariants list
+  (`scripts/lib/second-look.mjs`, `scripts/lib/gemini-api.mjs` CONTEXT, `docReferences.test.ts`). Only its invariants list
   in `project-rules.md` restates `ARCHITECTURE.md`; shrinking it to pointers changes a rail, so it needs the rail
   audit. [7 Nov 2026, agent context batch B]
 - TypeScript 7 (Dependabot #109, held 7 Nov): its package drops the JS compiler API, so `scripts/check-engine-encapsulation.ts`

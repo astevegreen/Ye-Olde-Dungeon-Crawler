@@ -44,7 +44,7 @@
     "@types/node": "^26.6.6",
     "knip": "^6.44.1",
     "tsx": "^4.23.15",
-    "typescript": "^5.7.3",
+    "typescript": "^7.0.2",
     "vite": "^8.3.5",
     "vite-plugin-singlefile": "^2.3.4",
     "vitest": "^5.0.1",

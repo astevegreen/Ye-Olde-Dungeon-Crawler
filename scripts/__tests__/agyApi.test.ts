@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
-import { ARGON, FLASH, OPUS, SONNET, askFirstAvailable, askModel, buildPrompt, parseReply } from '../lib/agy.mjs';
+import { askFirstAvailable, askModel, buildPrompt, lightModels, parseReply } from '../lib/agy.mjs';
 import type { ApiReply } from '../lib/gemini-api.mjs';
 import {
   API,
@@ -17,6 +17,13 @@ import {
   postApi,
 } from '../lib/gemini-api.mjs';
 
+// Sample ids, as agy names them. Only the fast Gemini ones are ever asked (agy.mjs, LIGHT); the rest show how the
+// API treats any other id.
+const HYDROGEN = 'gemini-4-hydrogen-high';
+const FLASH = 'gemini-3.8-flash-high';
+const ARGON = 'gemini-4-argon-high';
+const OPUS = 'claude-opus-5-5-high';
+const SONNET = 'claude-sonnet-5-5-high';
 const NOW = Date.parse('2026-11-07T12:00:00Z');
 const memory = () => ({ outUntil: () => null, markOut: () => {} });
 const missing = () => ({ error: { code: 'ENOENT' } });
@@ -90,6 +97,10 @@ describe('the Gemini API fallback', () => {
       `No findings.\n\n${API_NOTE}`,
     );
     expect(sent[0].url).toBe(`${API}/gemini-3.8-flash:generateContent`);
+    // The API's id is agy's without the effort, so a new model needs no table here.
+    const next = posts(ok('No findings.'));
+    askModel(missing, buildPrompt('Review this.', material), HYDROGEN, [], geminiApi('k', next.post, read, []));
+    expect(next.sent[0].url).toBe(`${API}/gemini-4-hydrogen:generateContent`);
     expect(sent[0].key).toBe('test-key');
     expect(sent[0].body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: 'high' });
     expect(sent[0].body.contents[0].parts[0].text).toMatch(/\+one line\n$/);
@@ -108,7 +119,7 @@ describe('the Gemini API fallback', () => {
     expect(() => parseReply({ error: { code: 'ENOENT' } })).toThrow('GEMINI_API_KEY is not set');
   });
 
-  it("passes a busy model, and a 5xx, even as a page, on; Claude's models cost no request", () => {
+  it("passes a busy model, and a 5xx, even as a page, on; a model that is not Gemini's costs no request", () => {
     const { post, sent } = posts(
       failed(429, 'Resource has been exhausted (e.g. check quota).'),
       { status: 503, text: '<html>Service Unavailable</html>' },
@@ -122,7 +133,7 @@ describe('the Gemini API fallback', () => {
     expect(() => parseApiReply(failed(503, 'The model is overloaded.'))).toThrow(/overloaded \(503\)/);
   });
 
-  it('passes a deep review over a busy Argon and Opus to Flash', () => {
+  it("passes the review over a busy model, and one that is not Gemini's, to the next", () => {
     const { post } = posts(failed(429, 'Too many requests.'), ok('Deep findings.'));
     const ask = viaApi(post, buildPrompt('Review this spec.', material));
     const result = askFirstAvailable([ARGON, OPUS, FLASH, SONNET], ask, memory(), () => NOW);
@@ -219,7 +230,7 @@ describe('the Gemini API fallback, round two', () => {
     expect(apiPrompt(buildPrompt('Review this.', material), quoted, [])).toMatch(/\+const TRUNCATED/);
   });
 
-  it('passes on a 5xx page that is not JSON, and stops on a wrong model id (404)', () => {
+  it('passes on a 5xx page that is not JSON, and on a model the API no longer has (404)', () => {
     const caught = (f: () => unknown) => {
       try {
         f();
@@ -231,9 +242,19 @@ describe('the Gemini API fallback, round two', () => {
     const page = caught(() => parseApiReply({ status: 503, text: '<html>Service Unavailable</html>' }));
     expect(page.message).toMatch(/overloaded \(503\)/);
     expect(page.stop).toBeUndefined();
-    const wrong = caught(() => parseApiReply(failed(404, 'models/gemini-4-argon is not found')));
-    expect(wrong.message).toMatch(/no model by that id \(404\)/);
-    expect(wrong.stop).toBe(true);
+    const wrong = caught(() => parseApiReply(failed(404, 'models/gemini-3.8-flash is not found')));
+    expect(wrong.message).toMatch(/not on the Gemini API \(404\)/);
+    expect(wrong.stop).toBeUndefined();
+    // With no agy to list the models, a retired one is still asked: the review moves on to the next, and is never
+    // answered by nobody.
+    const retired = posts(failed(404, 'models/gemini-3.8-flash is not found'), ok('No findings.'));
+    const result = askFirstAvailable([FLASH, HYDROGEN], viaApi(retired.post, buildPrompt('Review this.', material)), memory(), () => NOW);
+    expect(result.model).toBe(HYDROGEN);
+    expect(result.passed).toEqual([{ model: FLASH, why: 'is not on the Gemini API' }]);
+    const allGone = posts(failed(404, 'not found'), failed(404, 'not found'));
+    expect(() =>
+      askFirstAvailable(lightModels(null), viaApi(allGone.post, buildPrompt('Review this.', material)), memory(), () => NOW),
+    ).toThrow(/no model answered: Gemini 4 Hydrogen \(high\) is not on the Gemini API; Gemini 3\.8 Flash \(high\) is not on the Gemini API$/);
     const timedOut = () => ({ error: Object.assign(new Error('t'), { code: 'ETIMEDOUT' }) });
     const late = caught(() => parseApiReply(postApi(`${API}/x:generateContent`, {}, 'k', timedOut)));
     expect(late.message).toMatch(/ran out of time/);

@@ -4,17 +4,14 @@
 import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { ARGON, EFFORT, FLASH, HEADLESS } from './agy.mjs';
+import { EFFORT, HEADLESS } from './agy.mjs';
 
-// The Gemini API, for a session without agy (in the cloud). It has the Gemini models only, under their own ids;
-// Claude's are passed over. It reads no files and runs nothing, so the prompt carries what agy would have read
+// The Gemini API, for a session without agy (in the cloud). It has the Gemini models only, under agy's id without
+// the effort ("gemini-4-hydrogen-high" is "gemini-4-hydrogen"); any other model is passed over. It reads no files and runs nothing, so the prompt carries what agy would have read
 // by itself (the repo's rules for Gemini, CONTEXT) and the material, and its answer says it saw only those.
 export const API = 'https://generativelanguage.googleapis.com/v1beta/models';
-// A function, not a constant: agy.mjs and this file import each other, and the ids are read only when a model is asked.
-export const apiModels = () => ({
-  [ARGON]: 'gemini-4-argon',
-  [FLASH]: 'gemini-3.8-flash',
-});
+export const apiModel = (model) =>
+  model.startsWith('gemini-') && model.endsWith(`-${EFFORT}`) ? model.slice(0, -EFFORT.length - 1) : null;
 const REPO = path.resolve(import.meta.dirname, '..', '..');
 // The files the review prompts judge against, which agy reads by itself; a folder (ending in /) is its .md files.
 export const CONTEXT = ['ARCHITECTURE.md', '.agents/rules/'];
@@ -69,8 +66,8 @@ export const NO_API = () => {
 export const apiFor = (kind) => (kind === 'repo' || kind === 'spec' ? NO_API : undefined);
 
 // Reads one generateContent reply ({ status, text }) and returns the answer, or throws why not. By status: busy
-// (429, 5xx) passes to the next model; anything else (no credit, a bad key, a wrong model id, a
-// refused request) stops the review. Only a reply that finished (STOP) is an answer: any other ending is cut off.
+// (429, 5xx) passes to the next model, and so does an id the API does not have (404: with no agy to list the
+// models, a retired one is still asked); anything else (no credit, a bad key, a refused request) stops the review. Only a reply that finished (STOP) is an answer: any other ending is cut off.
 export function parseApiReply({ status, text }) {
   let out;
   try {
@@ -84,7 +81,7 @@ export function parseApiReply({ status, text }) {
     const said = out.error.message ?? '';
     const code = out.error.code ?? status;
     if (code === 429 || code >= 500) throw new Error(`the Gemini API is overloaded (${code}): ${said}`);
-    if (code === 404) throw stop(`the Gemini API has no model by that id (404): ${said}`);
+    if (code === 404) throw new Error(`this model is not on the Gemini API (404): ${said}`);
     if (code === 402) throw stop(`the Gemini API project has no credit left: ${said}`);
     throw stop(`the Gemini API refused the request (${code}): ${said}`);
   }
@@ -187,7 +184,7 @@ export function postApi(url, body, key, spawn = spawnSync) {
 export function geminiApi(key = process.env.GEMINI_API_KEY, post = postApi, read = undefined, context = CONTEXT) {
   if (!key) return null;
   return (prompt, model) => {
-    const id = apiModels()[model];
+    const id = apiModel(model);
     if (!id) throw new Error('this model is not on the Gemini API');
     const body = {
       contents: [{ role: 'user', parts: [{ text: apiPrompt(prompt, read, context) }] }],

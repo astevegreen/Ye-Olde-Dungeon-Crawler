@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ORDER, askFirstAvailable, askModel, buildPrompt, byLine, pickDepth } from './lib/agy.mjs';
+import { askFirstAvailable, askModel, buildPrompt, byLine, pickDepth, reviewModels } from './lib/agy.mjs';
 import { apiFor } from './lib/gemini-api.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -50,7 +50,9 @@ function askGemini(promptName, material, what) {
   }
   const prompt = buildPrompt(text, file);
   const pick = pickDepth(what);
-  const answer = askFirstAvailable(ORDER[pick.depth], (model) =>
+  const picked = reviewModels((args) => run('agy', args), pick.depth);
+  if (picked.note) console.error(picked.note);
+  const answer = askFirstAvailable(picked.models, (model) =>
     askModel((args) => run('agy', args), prompt, model, ['--add-dir', tmp], apiFor(what.kind)),
   );
   return { ...answer, ...pick };
@@ -64,8 +66,7 @@ function post(number, text) {
   gh('issue', 'comment', String(number), '--body-file', file);
 }
 
-// The answering model may be a Claude model when a Gemini model ahead of it in the order could not answer;
-// the by-line names it.
+// The answering model may be a Claude model (agy.mjs, ORDERS); the by-line names it.
 const report = (label, answer) => `**Gemini audit: ${label}**\n_${byLine(answer)}_\n\n${answer.response}`;
 const skipped = (err) => `Gemini audit skipped: ${err.message}`;
 

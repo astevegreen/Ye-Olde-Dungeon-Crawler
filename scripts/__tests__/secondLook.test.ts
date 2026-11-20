@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { ARGON, FLASH, OPUS, SONNET, askModel } from '../lib/agy.mjs';
+import { askModel, lightModels } from '../lib/agy.mjs';
 import { NO_API } from '../lib/gemini-api.mjs';
-import { RAILS, RAIL_MODELS, blockers, loosens, railFiles, verdict } from '../lib/second-look.mjs';
+import { RAILS, blockers, loosens, railFiles, railModel, verdict } from '../lib/second-look.mjs';
 
 const ROOT = path.resolve(__dirname, '../..');
+// Sample ids, as agy names them (agy.mjs, LIGHT and CLAUDE).
+const HYDROGEN = 'gemini-4-hydrogen-high';
+const FLASH = 'gemini-3.8-flash-high';
+const ARGON = 'gemini-4-argon-high';
+const OPUS = 'claude-opus-5-5-high';
+const SONNET = 'claude-sonnet-5-5-high';
 
 describe('the rails a change can loosen', () => {
   it('names hooks, guards, gates, git hooks, CI, settings, the push lock and the review itself', () => {
@@ -87,7 +93,7 @@ describe('the verdict', () => {
       verdict: 'retry',
       why: 'the second look did not run: no model answered: Gemini 3.8 Flash (high) was too busy; a change is never pushed on a review that did not run',
     });
-    expect(verdict({ rails, rail: { answer: 'LOOSENS: no\nIt adds a step.', model: ARGON }, look: { error: 'agy is not installed' } }).verdict).toBe('retry');
+    expect(verdict({ rails, rail: { answer: 'LOOSENS: no\nIt adds a step.', model: OPUS }, look: { error: 'agy is not installed' } }).verdict).toBe('retry');
   });
   it('holds a second-look blocker like a reviewer blocker', () => {
     expect(verdict({ look: { answer: '- [blocker] a.ts:1 wrong\n- [blocker] b.ts:2 untested' } })).toEqual({
@@ -100,23 +106,25 @@ describe('the verdict', () => {
       verdict: 'ship',
       why: 'the rail audit says it loosens nothing',
     });
-    expect(verdict({ rails, rail: { answer: 'LOOSENS: yes\n.githooks/pre-push:12 skips the sim', model: ARGON }, look: { answer: '- [blocker] x' } })).toEqual({
+    expect(verdict({ rails, rail: { answer: 'LOOSENS: yes\n.githooks/pre-push:12 skips the sim', model: HYDROGEN }, look: { answer: '- [blocker] x' } })).toEqual({
       verdict: 'owner',
       why: 'the rail audit says it loosens a rail; it waits for the owner; also the second look found 1 [blocker]',
     });
   });
   it('never ships a rail change no audit answered: it is run again, never left for the owner', () => {
-    expect(verdict({ rails, rail: { error: 'no model answered: Gemini 4 Argon (high) was too busy' } })).toEqual({
+    expect(verdict({ rails, rail: { error: 'no model answered: Gemini 4 Hydrogen (high) was too busy' } })).toEqual({
       verdict: 'retry',
-      why: 'no model answered: Gemini 4 Argon (high) was too busy; a change to .githooks/pre-push is never pushed unaudited',
+      why: 'no model answered: Gemini 4 Hydrogen (high) was too busy; a change to .githooks/pre-push is never pushed unaudited',
     });
-    expect(verdict({ rails, rail: { answer: 'Looks fine to me.', model: ARGON } }).verdict).toBe('retry');
+    expect(verdict({ rails, rail: { answer: 'Looks fine to me.', model: OPUS } }).verdict).toBe('retry');
     expect(verdict({ rails }).verdict).toBe('retry');
   });
-  it('takes a rail audit from Argon, Opus or Flash, in that order, and never from Sonnet (owner, 28 Oct)', () => {
-    // Flash answers when the deep models are out of usage, so a rail change never waits for them.
-    expect(RAIL_MODELS).toEqual([ARGON, OPUS, FLASH]);
-    for (const model of RAIL_MODELS) {
+  it("takes a rail audit from Opus or Gemini's fast models, and never from Sonnet or a deep Gemini model (owner, 28 Oct and 19 Nov)", () => {
+    // The fast models answer when Opus is out of usage, so a rail change never waits for it.
+    const rail = [OPUS, ...lightModels(null)];
+    expect(rail).toEqual([OPUS, HYDROGEN, FLASH]);
+    for (const model of rail) {
+      expect(railModel(model), model).toBe(true);
       expect(verdict({ rails, rail: { answer: 'LOOSENS: no\nIt adds a step.', model }, look: { answer: 'No findings.' } }), model).toEqual({
         verdict: 'ship',
         why: 'the rail audit says it loosens nothing',
@@ -125,8 +133,11 @@ describe('the verdict', () => {
     // The Claude reviewer already covers Sonnet's family: its "no" is run again.
     expect(verdict({ rails, rail: { answer: 'LOOSENS: no\nIt adds a step.', model: SONNET }, look: { answer: 'No findings.' } })).toEqual({
       verdict: 'retry',
-      why: 'the rail audit came from Claude Sonnet 5.5 (high), and only Argon, Opus or Flash may give it; a change to .githooks/pre-push is never pushed unaudited',
+      why: "the rail audit came from Claude Sonnet 5.5 (high), and only Opus or Gemini's fast models may give it; a change to .githooks/pre-push is never pushed unaudited",
     });
+    // Argon's usage is too small to spend (owner, 19 Nov 2026): an old report from it is run again too.
+    for (const model of [SONNET, ARGON, 'gemini-4-neon-high', undefined]) expect(railModel(model), String(model)).toBe(false);
+    expect(verdict({ rails, rail: { answer: 'LOOSENS: no', model: ARGON }, look: { answer: 'No findings.' } }).verdict).toBe('retry');
     expect(verdict({ rails, rail: { answer: 'LOOSENS: no' } }).verdict).toBe('retry');
   });
 });
@@ -136,9 +147,9 @@ describe('the verdict', () => {
 describe('the rail audit and the Gemini API', () => {
   it('never sends a rail audit to the API, even with a key; the ordinary second look may', () => {
     const noAgy = () => ({ error: Object.assign(new Error('spawn agy ENOENT'), { code: 'ENOENT' }) });
-    expect(() => askModel(noAgy, 'audit', ARGON, [], NO_API)).toThrow(/cannot read the repository/);
+    expect(() => askModel(noAgy, 'audit', HYDROGEN, [], NO_API)).toThrow(/cannot read the repository/);
     const script = fs.readFileSync(path.join(ROOT, 'scripts', 'second-look.mjs'), 'utf-8');
-    expect(script).toMatch(/'rail-audit\.md',[\s\S]*?RAIL_MODELS,\s*tmp,\s*NO_API,\s*\)/);
+    expect(script).toMatch(/'rail-audit\.md',[\s\S]*?models\('rail'\),\s*tmp,\s*NO_API,\s*\)/);
     expect(script).not.toMatch(/'second-look\.md',[^;]*NO_API/);
   });
 });

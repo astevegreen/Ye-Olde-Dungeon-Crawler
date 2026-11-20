@@ -2,14 +2,37 @@
 
 export const HEADLESS: string;
 export const EFFORT: string;
-export const ARGON: string;
-export const OPUS: string;
-export const FLASH: string;
-export const SONNET: string;
+/** Gemini's fast model families, newest first, as agy names them without the effort. */
+export const LIGHT: readonly string[];
+/** Gemini's deep model families, never asked. */
+export const HEAVY: readonly string[];
+/** The model ids in what `agy models` prints. */
+export function parseModels(stdout: string | undefined): string[];
+/** The models agy offers, or null when it cannot say. */
+export function listModels(run: (args: string[]) => AgyRun): string[] | null;
+/** The fast Gemini models to ask, newest family and version first; LIGHT as written when `listed` is null. */
+export function lightModels(listed: readonly string[] | null, light?: readonly string[]): string[];
+/** The listed Gemini models in neither LIGHT nor HEAVY. */
+export function unsorted(listed: readonly string[] | null, light?: readonly string[], heavy?: readonly string[]): string[];
+export type ClaudeKind = 'opus' | 'sonnet';
+/** Claude's two models in agy, without the effort, as asked when agy cannot list its models. */
+export const CLAUDE: Readonly<Record<ClaudeKind, string>>;
+/** The newest listed version of a Claude model, null when agy no longer offers it; CLAUDE's when `listed` is null. */
+export function claudeModel(listed: readonly string[] | null, kind: ClaudeKind, claude?: Readonly<Record<ClaudeKind, string>>): string | null;
+export type Order = 'deep' | 'standard' | 'rail' | 'gemini';
+export interface Asked {
+  light: readonly string[];
+  opus: string | null;
+  sonnet: string | null;
+}
+/** Who is asked, in order, by kind of review. */
+export const ORDERS: Record<Order, (asked: Asked) => (string | null)[]>;
+/** The models a review asks, read from `agy models`, and a note for the report (empty when there is none). */
+export function reviewModels(run: (args: string[]) => AgyRun, order?: Order): { models: string[]; note: string };
+/** A model's name for the report, read from its id. */
 export function modelName(model: string): string;
 
 export type Depth = 'deep' | 'standard';
-export const ORDER: Record<Depth, readonly string[]>;
 export const LARGE: number;
 
 export interface Reviewed {

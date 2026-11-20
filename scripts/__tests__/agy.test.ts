@@ -3,24 +3,39 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'n
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {
-  ARGON,
-  FLASH,
-  OPUS,
-  ORDER,
+  CLAUDE,
+  HEAVY,
+  LIGHT,
+  ORDERS,
   RESUME_TIMEOUT,
-  SONNET,
   askFirstAvailable,
   askModel,
   buildPrompt,
   byLine,
+  claudeModel,
   diffStats,
+  lightModels,
+  listModels,
   modelName,
+  parseModels,
   parseReply,
   pickDepth,
   quotaFile,
   resetsAt,
+  reviewModels,
+  unsorted,
+  type AgyRun,
+  type Order,
   type QuotaStore,
 } from '../lib/agy.mjs';
+
+// Sample ids, as agy names them. Only the fast Gemini ones are ever asked (agy.mjs, LIGHT); the rest stand for any
+// model a quota file or an old report may still name.
+const HYDROGEN = 'gemini-4-hydrogen-high';
+const FLASH = 'gemini-3.8-flash-high';
+const ARGON = 'gemini-4-argon-high';
+const OPUS = 'claude-opus-5-5-high';
+const SONNET = 'claude-sonnet-5-5-high';
 
 // The message agy actually returned when the Argon quota ran out (2026-10-16).
 const QUOTA =
@@ -55,15 +70,121 @@ function ask(models: string[], outcomes: Record<string, string | Error>, store =
   return { result, asked, store };
 }
 
+// What `agy models` printed on 2026-11-19, two days after Neon's release, with 3.8 Flash still offered.
+const AGY_MODELS = [
+  'Fetching available models...',
+  'gemini-4-neon-high\tGemini 4 Neon (High)',
+  'gemini-4-neon-xhigh\tGemini 4 Neon (XHigh)',
+  'gemini-4-argon-medium\tGemini 4 Argon (Medium)',
+  'gemini-4-argon-high\tGemini 4 Argon (High)',
+  'gemini-4-hydrogen-high\tGemini 4 Hydrogen (High)',
+  'gemini-4-hydrogen-xhigh\tGemini 4 Hydrogen (XHigh)',
+  'gemini-4-hydrogen-low\tGemini 4 Hydrogen (Low)',
+  'gemini-pro-orchestrator-neon\tOrchestrator (Neon)',
+  'gemini-pro-orchestrator-g1-pro\tOrchestrator (Argon)',
+  'gemini-3.8-flash-high\tGemini 3.8 Flash (High)',
+  'gemini-3.8-flash-medium\tGemini 3.8 Flash (Medium)',
+  'claude-opus-5-5-high\tClaude Opus 5.5 (High)',
+  'claude-sonnet-5-5-high\tClaude Sonnet 5.5 (High)',
+  'gpt-oss-120b-medium\tGPT-OSS 120B (Medium)',
+  '',
+].join('\n');
+const LISTED = parseModels(AGY_MODELS);
+const agyLists =
+  (stdout: string) =>
+  (args: string[]): AgyRun => {
+    expect(args).toEqual(['models']);
+    return { status: 0, stdout, stderr: '' };
+  };
+const noAgy = (): AgyRun => ({ error: { code: 'ENOENT' } });
+
 describe('which model reviews what', () => {
-  it('runs every model at high effort', () => {
-    for (const model of [ARGON, OPUS, FLASH, SONNET]) expect(model).toMatch(/-high$/);
+  it("runs every model at high effort, and reads its name from its id", () => {
+    for (const model of lightModels(null)) expect(model).toMatch(/-high$/);
+    for (const model of lightModels(LISTED)) expect(model).toMatch(/-high$/);
+    expect(modelName(HYDROGEN)).toBe('Gemini 4 Hydrogen (high)');
+    expect(modelName(FLASH)).toBe('Gemini 3.8 Flash (high)');
+    expect(modelName(ARGON)).toBe('Gemini 4 Argon (high)');
     expect(modelName(OPUS)).toBe('Claude Opus 5.5 (high)');
+    expect(modelName(SONNET)).toBe('Claude Sonnet 5.5 (high)');
+    expect(modelName('a')).toBe('a');
   });
 
-  it('spends Argon only on a deep review; a standard review starts on Flash', () => {
-    expect(ORDER.deep).toEqual([ARGON, OPUS, FLASH, SONNET]);
-    expect(ORDER.standard).toEqual([FLASH, SONNET, OPUS]);
+  // Owner, 19 Nov 2026: "I want to have the 2nd reviewer only use the less expensive "flash" type models-- the latest
+  // one of these is now Hydrogen."
+  it("asks only Gemini's fast models, newest first: never Neon or Argon", () => {
+    expect(LISTED).toHaveLength(14);
+    expect(lightModels(LISTED)).toEqual([HYDROGEN, FLASH]);
+    expect(reviewModels(agyLists(AGY_MODELS))).toEqual({ models: [HYDROGEN, FLASH], note: '' });
+    expect(LIGHT[0]).toBe('gemini-4-hydrogen');
+    for (const heavy of ['argon', 'carbon', 'neon']) expect(HEAVY, heavy).toContain(heavy);
+  });
+
+  it('drops a retired model by itself, and asks a new version of a fast family first, with no edit', () => {
+    const retired = LISTED.filter((id) => !id.includes('flash'));
+    expect(lightModels(retired)).toEqual([HYDROGEN]);
+    const newer = [...LISTED, 'gemini-4.5-hydrogen-high', 'gemini-10-flash-high', 'gemini-5-neon-high'];
+    expect(lightModels(newer)).toEqual(['gemini-4.5-hydrogen-high', HYDROGEN, 'gemini-10-flash-high', FLASH]);
+  });
+
+  it('names a Gemini family nobody has sorted in a note, and does not ask it', () => {
+    const listed = [...LISTED, 'gemini-5-helium-high', 'gemini-5-helium-low', 'gemini-5-carbon-high'];
+    expect(unsorted(listed)).toEqual(['gemini-5-helium-high']);
+    expect(unsorted(LISTED)).toEqual([]);
+    // A family of two words is one family: named while unsorted, asked once it is in LIGHT, and not taken for Flash.
+    const lite = [...LISTED, 'gemini-5-flash-lite-high'];
+    expect(unsorted(lite)).toEqual(['gemini-5-flash-lite-high']);
+    expect(lightModels(lite)).toEqual([HYDROGEN, FLASH]);
+    expect(lightModels(lite, ['gemini-5-flash-lite', ...LIGHT])).toEqual(['gemini-5-flash-lite-high', HYDROGEN, FLASH]);
+    const { models, note } = reviewModels(agyLists(`${AGY_MODELS}gemini-5-helium-high\tGemini 5 Helium (High)\n`));
+    expect(models).toEqual([HYDROGEN, FLASH]);
+    expect(note).toMatch(
+      /^New Gemini model in agy: gemini-5-helium-high\. .* add it to LIGHT in scripts\/lib\/agy\.mjs; if not, to HEAVY\.$/,
+    );
+  });
+
+  it('asks the known fast models as written when agy cannot list its models', () => {
+    const signedOut = (): AgyRun => ({ status: 1, stdout: '', stderr: 'sign in first' });
+    for (const run of [noAgy, signedOut, agyLists('Fetching available models...\n')]) {
+      expect(listModels(run)).toBeNull();
+      expect(reviewModels(run)).toEqual({ models: [HYDROGEN, FLASH], note: '' });
+    }
+    // A retired one is then still asked: agy's words for it (2026-11-19) pass the review to the next model.
+    const gone = new Error(
+      'agy exited 1: error: invalid model selection (--model "gemini-3.8-flash-high" --effort ""): model gemini-3.8-flash-high is not recognized as a known model or custom model in settings',
+    );
+    const { result } = ask([FLASH, HYDROGEN], { [FLASH]: gone, [HYDROGEN]: 'ok' });
+    expect(result.model).toBe(HYDROGEN);
+    expect(result.passed).toEqual([{ model: FLASH, why: 'is no longer offered by agy' }]);
+  });
+
+  it('names the list to edit when agy lists no fast model it knows, and Gemini alone cannot review', () => {
+    const onlyDeep = 'gemini-5-neon-high\tGemini 5 Neon (High)\nclaude-opus-5-5-high\tClaude Opus 5.5 (High)\n';
+    expect(() => reviewModels(agyLists(onlyDeep))).toThrow(/lists none of the fast Gemini models .* LIGHT in scripts\/lib\/agy\.mjs/);
+    const { models, note } = reviewModels(agyLists(onlyDeep), 'deep');
+    expect(models).toEqual([OPUS]);
+    expect(note).toMatch(/^No Gemini model reviews: agy lists none of the fast Gemini models .* LIGHT in scripts\/lib\/agy\.mjs\.$/);
+    expect(() => reviewModels(agyLists('gemini-5-neon-high\tGemini 5 Neon (High)\n'), 'deep')).toThrow(/lists none of the fast/);
+  });
+
+  // Owner, 19 Nov 2026: "agy does also have Sonnet and Opus-- you should also use those models for 2nd review because
+  // I don't use them in agy anyway".
+  it("has agy's Opus and Sonnet review too: deep starts on Opus, standard on Gemini, the rail audit skips Sonnet", () => {
+    expect(Object.keys(ORDERS)).toEqual(['deep', 'standard', 'rail', 'gemini']);
+    const asks = (order: Order, stdout = AGY_MODELS) => reviewModels(agyLists(stdout), order).models;
+    expect(asks('deep')).toEqual([OPUS, HYDROGEN, FLASH, SONNET]);
+    expect(asks('standard')).toEqual([HYDROGEN, FLASH, SONNET, OPUS]);
+    expect(asks('rail')).toEqual([OPUS, HYDROGEN, FLASH]);
+    expect(asks('gemini')).toEqual([HYDROGEN, FLASH]);
+    for (const order of Object.keys(ORDERS) as Order[]) expect(asks(order).some((id) => /argon|carbon|neon/.test(id)), order).toBe(false);
+    // With no list, the Claude models are asked as written; with one, the newest version, and a dropped one is left out.
+    expect(reviewModels(noAgy, 'deep').models).toEqual([OPUS, HYDROGEN, FLASH, SONNET]);
+    expect(`${CLAUDE.opus}-high`).toBe(OPUS);
+    const newer = [...LISTED, 'claude-opus-6-high', 'claude-opus-5-10-high', 'claude-opus-6-medium'];
+    expect(claudeModel(newer, 'opus')).toBe('claude-opus-6-high');
+    expect(claudeModel(newer, 'sonnet')).toBe(SONNET);
+    expect(claudeModel(LISTED.filter((id) => !id.includes('sonnet')), 'sonnet')).toBeNull();
+    expect(asks('deep', AGY_MODELS.replace(/^claude-sonnet.*\n/gm, ''))).toEqual([OPUS, HYDROGEN, FLASH]);
   });
 
   it('gives a spec a deep review and a whole-repo audit a standard one', () => {

@@ -9,30 +9,114 @@ import { geminiApi } from './gemini-api.mjs';
 
 // Every model runs at high effort; agy names the effort in the model id.
 export const EFFORT = 'high';
-export const ARGON = `gemini-4-argon-${EFFORT}`;
-export const OPUS = `claude-opus-5-5-${EFFORT}`;
-export const FLASH = `gemini-3.8-flash-${EFFORT}`;
-export const SONNET = `claude-sonnet-5-5-${EFFORT}`;
-const NAMES = {
-  [ARGON]: 'Gemini 4 Argon',
-  [OPUS]: 'Claude Opus 5.5',
-  [FLASH]: 'Gemini 3.8 Flash',
-  [SONNET]: 'Claude Sonnet 5.5',
-};
-export const modelName = (model) => `${NAMES[model] ?? model} (${EFFORT})`;
 
-// The order each depth of review asks the models in; a model that is out of usage passes to the next.
-// Argon reads deepest but has the smallest quota, so only a deep review spends it; Opus is the next deepest.
-// A standard review starts on Flash, which is fast and has usage to spare, and never spends Argon's.
-export const ORDER = {
-  deep: [ARGON, OPUS, FLASH, SONNET],
-  standard: [FLASH, SONNET, OPUS],
+// Which models review (owner, 19 Nov 2026): Gemini's fast, cheap models, the "flash" kind, and the two Claude
+// models agy offers, Opus and Sonnet, whose agy usage the owner spends on nothing else. Gemini's deep models
+// (Argon, Carbon, Neon) have too little usage to spend on reviews: they are never asked.
+//
+// LIGHT is the one list to edit when Google releases a model. It holds the fast models, newest first, as agy
+// names them without the effort. Only the family, the words after the version, is matched against what `agy models` lists, so:
+// - a retired model (3.8 Flash) drops out by itself, and may stay in this list;
+// - a new version of a known family ("gemini-4.5-hydrogen") is picked up by itself, ahead of the older version;
+// - a new fast family is one new line at the top.
+export const LIGHT = ['gemini-4-hydrogen', 'gemini-3.8-flash'];
+// The families that are never asked. A Gemini family in neither list is new: unsorted() names it for the report.
+export const HEAVY = ['argon', 'carbon', 'neon'];
+
+// The family is what follows the version, and may be more than one word ("flash-lite").
+const family = (base) => base.replace(/^gemini-\d+(?:\.\d+)*-/, '');
+// A Gemini model at this effort, as agy lists it: gemini-<version>-<family>-<effort>.
+const LISTED = new RegExp(String.raw`^gemini-(\d+(?:\.\d+)*)-([a-z]+(?:-[a-z]+)*)-${EFFORT}$`);
+const newerFirst = (a, b) => b.localeCompare(a, 'en', { numeric: true });
+
+// The model ids in what `agy models` prints: one "<id><tab><name>" line per model.
+export const parseModels = (stdout) => [...(stdout ?? '').matchAll(/^(\S+)\t/gm)].map((m) => m[1]);
+
+// The models agy offers, or null when it cannot say (agy missing, as in a cloud session, or not signed in).
+export function listModels(run) {
+  const r = run(['models']);
+  const ids = r.error || r.status !== 0 ? [] : parseModels(r.stdout);
+  return ids.length > 0 ? ids : null;
+}
+
+// The models a review asks, in order: the fast families newest first, and within a family the newest version
+// first. `listed` is listModels' answer; with none, LIGHT is asked as written, and a retired model passes to the next.
+export function lightModels(listed, light = LIGHT) {
+  if (!listed) return light.map((base) => `${base}-${EFFORT}`);
+  const families = light.map(family);
+  return listed
+    .map((id) => ({ id, m: LISTED.exec(id) }))
+    .filter(({ m }) => m && families.includes(m[2]))
+    .sort((a, b) => families.indexOf(a.m[2]) - families.indexOf(b.m[2]) || newerFirst(a.m[1], b.m[1]))
+    .map(({ id }) => id);
+}
+
+// The listed Gemini models whose family is in neither LIGHT nor HEAVY: released since this file was last edited.
+export function unsorted(listed, light = LIGHT, heavy = HEAVY) {
+  const known = [...light.map(family), ...heavy];
+  return (listed ?? []).filter((id) => LISTED.test(id) && !known.includes(LISTED.exec(id)[2]));
+}
+
+// Claude's two models in agy, as written when agy cannot list its models. With a list, the newest version of each
+// is read from it ("claude-opus-6-high" needs no edit here), and one agy no longer offers is left out.
+export const CLAUDE = { opus: 'claude-opus-5-5', sonnet: 'claude-sonnet-5-5' };
+export function claudeModel(listed, kind, claude = CLAUDE) {
+  if (!listed) return `${claude[kind]}-${EFFORT}`;
+  const named = new RegExp(String.raw`^claude-${kind}-(\d+(?:-\d+)*)-${EFFORT}$`);
+  const versions = listed.filter((id) => named.test(id)).sort((a, b) => newerFirst(named.exec(a)[1], named.exec(b)[1]));
+  return versions[0] ?? null;
+}
+
+// Who is asked, in order, by kind of review. The fast Gemini models are `light`, newest first.
+// - deep: Opus, the deepest reader left, then Gemini, then Sonnet.
+// - standard: Gemini first, then Sonnet; Opus last.
+// - rail: the rail audit. Opus, then Gemini; never Sonnet, since the Claude reviewer already covers that family
+//   (owner, 28 Oct 2026, whose order was Argon, Opus, then Flash).
+// - gemini: Gemini alone, for a script whose point is Gemini's view.
+export const ORDERS = {
+  deep: ({ light, opus, sonnet }) => [opus, ...light, sonnet],
+  standard: ({ light, opus, sonnet }) => [...light, sonnet, opus],
+  rail: ({ light, opus }) => [opus, ...light],
+  gemini: ({ light }) => light,
 };
+
+// What a script asks: { models, note }. `note` is a line for the report when agy lists a Gemini family nobody has
+// sorted, or none of the fast ones. With nobody to ask, the review cannot run, and the error says which list to edit.
+export function reviewModels(run, order = 'gemini') {
+  const listed = listModels(run);
+  const light = lightModels(listed);
+  const none = `agy lists none of the fast Gemini models this script knows (${LIGHT.join(', ')}): add the current one to LIGHT in scripts/lib/agy.mjs`;
+  const opus = claudeModel(listed, 'opus');
+  const sonnet = claudeModel(listed, 'sonnet');
+  const models = ORDERS[order]({ light, opus, sonnet }).filter(Boolean);
+  if (models.length === 0) throw new Error(none);
+  const fresh = unsorted(listed);
+  const notes = [
+    light.length === 0 ? `No Gemini model reviews: ${none}.` : '',
+    fresh.length
+      ? `New Gemini model in agy: ${fresh.join(', ')}. No review asks it yet: if it is a fast, cheap model, add it to LIGHT in scripts/lib/agy.mjs; if not, to HEAVY.`
+      : '',
+  ];
+  return { models, note: notes.filter(Boolean).join('\n') };
+}
+
+// A model's name for the report, from its id: "gemini-4-hydrogen-high" is "Gemini 4 Hydrogen (high)".
+export function modelName(model) {
+  const m = /^(.+)-(low|medium|high|xhigh|max)$/.exec(model);
+  if (!m) return model;
+  const name = m[1]
+    .replace(/(\d)-(?=\d)/g, '$1.')
+    .split('-')
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(' ');
+  return `${name} (${m[2]})`;
+}
 
 // A change of more than this many lines (added plus removed) gets a deep review wherever it is.
 export const LARGE = 300;
 
-// How deep a review must be, from what it reviews, with the reason in words for the report.
+// How deep a review must be, from what it reviews, with the reason in words for the report. The depth picks
+// the order the models are asked in (ORDERS), and is named with its reason in the report.
 // kind: "spec" (a plan, before any code), "repo" (a whole-repo audit) or "change" (a diff's files and lines).
 // deepPaths: the path prefixes where a mistake costs most in this repo.
 export function pickDepth({ kind, files = [], lines = 0 }, deepPaths = []) {
@@ -190,13 +274,15 @@ export function quotaFile(file = QUOTA_FILE) {
 // ("Quota exceeded for quota metric ... per minute"), so the word alone only means busy.
 const USED_UP = /individual quota|resets in/i;
 // Not used up, so tried again next time, but this model won't answer now: it is too busy, too slow for the time
-// limit (Argon and Opus are the slowest), or it tried a command (models differ in keeping to "run no command").
+// limit, it tried a command (models differ in keeping to "run no command"), or Google has retired it.
 const PASS_ON = [
   [/quota|rate.?limit|resource.?exhausted|\b429\b|overloaded|capacity/i, 'was too busy'],
   [/ran out of time/, 'ran out of time'],
   [/ran out of room/, 'ran out of room for its answer'],
   [/not allowed to do/, 'tried a command it may not run'],
   [/not on the Gemini API/, 'is not on the Gemini API'],
+  // agy's words for an id it does not have (19 Nov 2026): reached only when `agy models` could not be read.
+  [/not recognized as a known model/, 'is no longer offered by agy'],
 ];
 
 const when = (d) =>

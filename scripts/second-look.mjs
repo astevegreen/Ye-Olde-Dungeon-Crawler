@@ -1,8 +1,10 @@
 // `node scripts/second-look.mjs [--rails-only] [--range <base>..<head>] "<the owner's words>"`: a second review of
 // the change about to be pushed, by another model through agy (headless and read-only), run beside the reviewer
 // agent. It reviews origin/main..HEAD, the commits the push sends, or the range given. A change touching a rail
-// (scripts/lib/second-look.mjs) also gets a deep rail audit first, by Argon, Opus or Flash (never Sonnet), asking
-// whether it loosens a check; --rails-only runs that audit alone. It prints the findings, then one line,
+// (scripts/lib/second-look.mjs) also gets a deep rail audit first, by Opus or Gemini's fast models (never Sonnet),
+// asking whether it loosens a check; --rails-only runs that audit alone. Both reviews ask Gemini's fast models and
+// agy's Claude models, as `agy models` lists them (lib/agy.mjs, LIGHT and ORDERS; owner, 19 Nov 2026): never
+// Gemini's deep models, whose usage is too small, and the rail audit never Sonnet. It prints the findings, then one line,
 // `Verdict: <ship|fix|owner|retry>: <why>`, and exits 0 only for ship: a [blocker] holds the push like a reviewer
 // blocker, a loosened rail holds it for the owner, and a review that did not run (no model answered, git failed)
 // waits to be run again.
@@ -10,9 +12,9 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ORDER, askFirstAvailable, askModel, buildPrompt, byLine, diffStats, pickDepth } from './lib/agy.mjs';
+import { askFirstAvailable, askModel, buildPrompt, byLine, diffStats, pickDepth, reviewModels } from './lib/agy.mjs';
 import { NO_API } from './lib/gemini-api.mjs';
-import { RAILS, RAIL_MODELS, railFiles, verdict } from './lib/second-look.mjs';
+import { RAILS, railFiles, verdict } from './lib/second-look.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const USAGE = 'usage: node scripts/second-look.mjs [--rails-only] [--range <base>..<head>] "<the owner\'s words>"';
@@ -47,13 +49,14 @@ function change(range) {
 }
 
 // Asks agy with one prompt file and the material, trying the models in order; { answer, model, by } or { error }.
+// models: a function, called inside the try, so a model list agy cannot give is a review that did not run.
 // api: askModel's `api` (the Gemini API where agy is not installed); the rail audit passes NO_API.
 function ask(promptFile, material, pick, models, tmp, api = undefined) {
   const file = path.join(tmp, `${path.basename(promptFile, '.md')}-material.md`);
   writeFileSync(file, material);
   const prompt = buildPrompt(readFileSync(path.join(ROOT, 'scripts', promptFile), 'utf8'), file);
   try {
-    const answer = askFirstAvailable(models, (model) =>
+    const answer = askFirstAvailable(models(), (model) =>
       askModel((args) => run('agy', args), prompt, model, ['--add-dir', tmp], api),
     );
     return { answer: answer.response, model: answer.model, by: byLine({ ...answer, ...pick }) };
@@ -76,17 +79,25 @@ function secondLook(request, { railsOnly, range }, tmp) {
   const shown = diff.length > MAX_DIFF ? `${diff.slice(0, MAX_DIFF)}\n... (diff truncated; read the rest from disk)\n` : diff;
   const what = `the commits ${base.slice(0, 8)}..${head}, which the push sends`;
   const out = [];
+  // agy is asked for its models once; a note (a Gemini family nobody has sorted, or no fast one) ends the report.
+  let listing;
+  let note = '';
+  const models = (order) => () => {
+    const picked = reviewModels((args) => (listing ??= run('agy', args)), order);
+    note = picked.note;
+    return picked.models;
+  };
   let rail = null;
   if (rails.length) {
-    // Every rail change gets the deep review, whatever its size, from Argon, Opus or Flash, never Sonnet. Never
-    // through the Gemini API, which sees only the diff and the rules files: rails wait for agy (owner, 7 Nov:
-    // "Rails wait for the PC").
+    // Every rail change gets the deep review, whatever its size, from Opus, then Gemini's fast models, never
+    // Sonnet (lib/agy.mjs, ORDERS.rail). Never through the Gemini API, which sees only the diff and the rules
+    // files: rails wait for agy (owner, 7 Nov: "Rails wait for the PC").
     const pick = pickDepth({ kind: 'change', ...stats }, RAILS);
     rail = ask(
       'rail-audit.md',
       `# The request\n\n${request}\n\n# The rail files it touches\n\n${rails.map((f) => `- ${f}`).join('\n')}\n\n# ${what}\n\n\`\`\`diff\n${shown}\`\`\`\n`,
       pick,
-      RAIL_MODELS,
+      models('rail'),
       tmp,
       NO_API,
     );
@@ -95,9 +106,10 @@ function secondLook(request, { railsOnly, range }, tmp) {
   let look = null;
   if (!railsOnly) {
     const pick = pickDepth({ kind: 'change', ...stats }, DEEP_PATHS);
-    look = ask('second-look.md', `# The owner's request\n\n${request}\n\n# ${what}\n\n\`\`\`diff\n${shown}\`\`\`\n`, pick, ORDER[pick.depth], tmp);
+    look = ask('second-look.md', `# The owner's request\n\n${request}\n\n# ${what}\n\n\`\`\`diff\n${shown}\`\`\`\n`, pick, models(pick.depth), tmp);
     out.push(look.error ? `Second look not run: ${look.error}` : `Second look by ${look.by}\n\n${look.answer}`);
   }
+  if (note) out.push(note);
   return { text: out.join('\n\n'), decided: verdict({ rails, rail, look }) };
 }
 

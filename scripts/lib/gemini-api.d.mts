@@ -2,8 +2,8 @@
 import type { ApiAsk, Reviewed } from './agy.mjs';
 
 export const API: string;
-/** The Gemini API's id for each agy model it has (read at call time); Claude's models are not on it. */
-export function apiModels(): Record<string, string>;
+/** The Gemini API's id for an agy model: a Gemini id without the effort; null for any other model. */
+export function apiModel(model: string): string | null;
 /** The repo files agy reads by itself, which the API prompt carries instead. */
 export const CONTEXT: readonly string[];
 /** The line an answer through the API ends with. */

@@ -110,7 +110,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/handoff-nudge.mjs",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/handoff-nudge.mjs\"",
             "timeout": 10
           }
         ]
@@ -133,12 +133,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/typecheck.mjs",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/typecheck.mjs\"",
             "timeout": 120
           },
           {
             "type": "command",
-            "command": "node .claude/hooks/handoff-nudge.mjs",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/handoff-nudge.mjs\"",
             "timeout": 30
           }
         ]

@@ -13,7 +13,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { askFirstAvailable, askModel, buildPrompt, byLine, diffStats, pickDepth, reviewModels } from './lib/agy.mjs';
-import { NO_API } from './lib/gemini-api.mjs';
+import { CUT_LINE, NO_API } from './lib/gemini-api.mjs';
 import { RAILS, railFiles, verdict } from './lib/second-look.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -76,7 +76,7 @@ function secondLook(request, { railsOnly, range }, tmp) {
   if (!diff.trim()) return { text: 'Second look skipped: no commits to push since origin/main.', decided: { verdict: 'ship', why: 'nothing to push' } };
   const stats = diffStats(diff);
   const rails = railFiles(stats.files);
-  const shown = diff.length > MAX_DIFF ? `${diff.slice(0, MAX_DIFF)}\n... (diff truncated; read the rest from disk)\n` : diff;
+  const shown = diff.length > MAX_DIFF ? `${diff.slice(0, MAX_DIFF)}\n${CUT_LINE}\n` : diff;
   const what = `the commits ${base.slice(0, 8)}..${head}, which the push sends`;
   const out = [];
   // agy is asked for its models once; a note (a Gemini family nobody has sorted, or no fast one) ends the report.

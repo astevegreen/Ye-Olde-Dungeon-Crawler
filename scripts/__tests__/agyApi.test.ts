@@ -9,6 +9,7 @@ import {
   API,
   API_NOTE,
   CONTEXT,
+  CUT_LINE,
   NO_API,
   apiFor,
   apiPrompt,
@@ -228,6 +229,18 @@ describe('the Gemini API fallback, round two', () => {
   it('counts the cut-off marker only on a line of its own, not quoted inside a diff line', () => {
     const quoted = reader(`${DIFF}\n+const TRUNCATED = '... (diff truncated; read the rest from disk)';\n`);
     expect(apiPrompt(buildPrompt('Review this.', material), quoted, [])).toMatch(/\+const TRUNCATED/);
+  });
+
+  it('refuses a diff cut with the exported CUT_LINE, which second-look.mjs imports, with Windows line ends too', () => {
+    expect(CUT_LINE).toBe('... (diff truncated; read the rest from disk)');
+    for (const end of ['\n', '\r\n']) {
+      const cut = reader(`${DIFF}${end}${CUT_LINE}${end}`);
+      expect(() => apiPrompt(buildPrompt('Review this.', material), cut, [])).toThrow(/truncated diff/);
+    }
+    const secondLook = readFileSync(path.join(import.meta.dirname, '..', 'second-look.mjs'), 'utf8');
+    expect(secondLook).toMatch(/^import \{[^}]*\bCUT_LINE\b[^}]*\} from '\.\/lib\/gemini-api\.mjs';$/m);
+    expect(secondLook).toContain('${CUT_LINE}');
+    expect(secondLook).not.toContain('diff truncated');
   });
 
   it('passes on a 5xx page that is not JSON, and on a model the API no longer has (404)', () => {

@@ -6,6 +6,8 @@ export const API: string;
 export function apiModel(model: string): string | null;
 /** The repo files agy reads by itself, which the API prompt carries instead. */
 export const CONTEXT: readonly string[];
+/** The line the callers put where they cut a long diff; the API refuses material that has it on a line of its own. */
+export const CUT_LINE: string;
 /** The line an answer through the API ends with. */
 export const API_NOTE: string;
 /** askModel's `api` for an audit that reads the whole repository: refuses. */

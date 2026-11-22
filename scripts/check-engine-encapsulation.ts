@@ -1,6 +1,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import ts from 'typescript';
+// TypeScript 7 ships no JS compiler API (only `typescript/unstable/*`), so this gate keeps the
+// type checker of TypeScript 5 under an npm alias; `tsc` itself is TypeScript 7.
+import ts from 'typescript-5';
 import { readOverlays } from './lib/gate-overlays';
 
 /**

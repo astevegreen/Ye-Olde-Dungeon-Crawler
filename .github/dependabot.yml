@@ -14,6 +14,11 @@ updates:
       npm-minor-and-patch:
         patterns: ['*']
         update-types: [minor, patch]
+    ignore:
+      # `typescript-5` is TypeScript 5 under an npm alias, kept for the compiler API that
+      # scripts/check-engine-encapsulation.ts needs and TypeScript 7 no longer ships.
+      - dependency-name: typescript-5
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: github-actions
     directory: /

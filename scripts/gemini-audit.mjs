@@ -6,6 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { askFirstAvailable, askModel, buildPrompt, byLine, pickDepth, reviewModels } from './lib/agy.mjs';
 import { apiFor } from './lib/gemini-api.mjs';
 
@@ -19,7 +20,9 @@ const PINNED = { weekly: 'Gemini weekly audit', narrative: 'How the code is orga
 const argv = process.argv.slice(2);
 const DRY = argv.includes('--dry-run');
 const [mode, ...numbers] = argv.filter((a) => a !== '--dry-run');
-const tmp = mkdtempSync(path.join(os.tmpdir(), 'gemini-audit-'));
+// Made on first use, so a test can import this file without leaving a folder behind.
+let tmpDir;
+const tmp = () => (tmpDir ??= mkdtempSync(path.join(os.tmpdir(), 'gemini-audit-')));
 
 function run(cmd, args) {
   return spawnSync(cmd, args, {
@@ -39,35 +42,46 @@ function gh(...args) {
   return r.stdout;
 }
 
-// what: what is reviewed, for pickDepth. Returns { model, response, passed, depth, why }, so the comment can say
-// which model answered and why it was chosen.
-function askGemini(promptName, material, what) {
+// what: what is reviewed, for pickDepth. Returns { model, response, passed, depth, why, note }, so the comment can
+// say which model answered, why it was chosen, and what the model list needs (a new Gemini family, or none of the
+// fast ones listed). agy and store are for tests.
+export function askGemini(promptName, material, what, agy = (args) => run('agy', args), store = undefined) {
   const text = readFileSync(path.join(ROOT, 'scripts', 'gemini-prompts', `${promptName}.md`), 'utf8');
   let file;
   if (material) {
-    file = path.join(tmp, 'material.md');
+    file = path.join(tmp(), 'material.md');
     writeFileSync(file, material);
   }
   const prompt = buildPrompt(text, file);
   const pick = pickDepth(what);
-  const picked = reviewModels((args) => run('agy', args), pick.depth);
+  const picked = reviewModels(agy, pick.depth);
   if (picked.note) console.error(picked.note);
-  const answer = askFirstAvailable(picked.models, (model) =>
-    askModel((args) => run('agy', args), prompt, model, ['--add-dir', tmp], apiFor(what.kind)),
+  const answer = askFirstAvailable(
+    picked.models,
+    (model) => askModel(agy, prompt, model, ['--add-dir', tmp()], apiFor(what.kind)),
+    store,
   );
-  return { ...answer, ...pick };
+  return { ...answer, ...pick, note: picked.note };
 }
 
 function post(number, text) {
   const body = `${MARKER}\n${text}\n`;
   if (DRY) return console.log(`--- would comment on issue #${number} ---\n${body}`);
-  const file = path.join(tmp, `comment-${number}.md`);
+  const file = path.join(tmp(), `comment-${number}.md`);
   writeFileSync(file, body);
   gh('issue', 'comment', String(number), '--body-file', file);
 }
 
-// The answering model may be a Claude model (agy.mjs, ORDERS); the by-line names it.
-const report = (label, answer) => `**Gemini audit: ${label}**\n_${byLine(answer)}_\n\n${answer.response}`;
+// The answering model may be a Claude model (agy.mjs, ORDERS); the by-line names it. The model-list note, when
+// there is one, is quoted under the by-line, so the owner reads it in the comment rather than in a log.
+export const report = (label, answer) =>
+  [
+    `**Gemini audit: ${label}**`,
+    `_${byLine(answer)}_`,
+    ...(answer.note ? [answer.note.split('\n').map((line) => `> ${line}`).join('\n')] : []),
+    '',
+    answer.response,
+  ].join('\n');
 const skipped = (err) => `Gemini audit skipped: ${err.message}`;
 
 function issueText(n) {
@@ -133,14 +147,23 @@ function repoWide(promptName, label) {
   post(n, text);
 }
 
-try {
-  if (mode === 'specs') specs();
-  else if (mode === 'weekly') repoWide('weekly-audit', 'weekly');
-  else if (mode === 'narrative') repoWide('narrative', 'how the code is organised,');
-  else throw new Error(USAGE);
-} catch (err) {
-  console.error(err.message);
-  process.exitCode = 1;
-} finally {
-  rmSync(tmp, { recursive: true, force: true });
+// Removes the folder askGemini and post write to, if they made one.
+export function cleanUp() {
+  if (tmpDir) rmSync(tmpDir, { recursive: true, force: true });
+  tmpDir = undefined;
+}
+
+// Run as a script, not imported by a test.
+if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
+  try {
+    if (mode === 'specs') specs();
+    else if (mode === 'weekly') repoWide('weekly-audit', 'weekly');
+    else if (mode === 'narrative') repoWide('narrative', 'how the code is organised,');
+    else throw new Error(USAGE);
+  } catch (err) {
+    console.error(err.message);
+    process.exitCode = 1;
+  } finally {
+    cleanUp();
+  }
 }

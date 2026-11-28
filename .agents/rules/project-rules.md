@@ -25,16 +25,16 @@ You read this repository and write reports and recommendations. Claude Code is t
 - Paste real command output. "Should pass" is not "does pass."
 
 ## Invariants to check against
-One line each; the cited section of `ARCHITECTURE.md` holds the full rule and how it's enforced. A clean `npm run lint` is necessary but not sufficient.
-- **Headless purity (§2):** code on the simulation path (engine, content hooks and handlers, injected callbacks) uses no DOM, Canvas, audio, or timing globals.
-- **Imports (§2, §3):** the engine imports no other layer; `src/ui/`, `src/rendering/`, and `src/content/` reach the engine only through `src/engine/index.ts`; only `src/main.ts` imports content packs; `src/ui/` imports `src/rendering/` types only.
-- **No engine creep (§3):** campaign mechanics, names, and narrative live in `src/content/`; `src/engine/` gains only generic capabilities (primitive, hook point, registry, manifest field).
-- **Pack-neutral presentation (§3):** `src/ui/`, `src/rendering/`, and `src/main/**` name no pack; pack wording comes from the manifest, pack art from `spriteRecipes` and the manifest's `atlas`, and colors and fonts from the role tokens, never new hex values (`check:ui-palette`, ADR-0011).
-- **Determinism (§7.2):** simulation randomness and IDs come from `engine.prng`/`engine.rng`, never `Math.random()` or `Date.now()`.
-- **Encapsulation (§7.2):** outside `src/engine/`, engine state changes through `GameEngine`/`Player`/`Entity` methods or `engine.commandBus`, never by writing engine fields; allowlist entries need a stated reason.
-- **Save format (§5):** a breaking save-format change bumps `CURRENT_SCHEMA_VERSION` with exactly one forward-only step in `migrator.ts`; a dead player's state is never saved.
-- **Protected files (§8.1):** a commit that changes `actionPipeline.ts`, `engine.ts`, or `migrator.ts` names its exception in the message as `§8.1 exception N`.
-- **Documentation sync (§8.2):** a change that makes `ARCHITECTURE.md` or a `docs/architecture/**` sub-doc untrue updates that document in the same commit.
+`ARCHITECTURE.md` states each rule and how it's enforced. This list only says where: read the cited sections before judging a change against them. A clean `npm run lint` is necessary but not sufficient.
+- **Headless purity:** §2
+- **Imports and layering:** §2, §3
+- **No engine creep:** §3
+- **Pack-neutral presentation:** §3
+- **Determinism (PRNG discipline):** §7.2
+- **Encapsulation:** §7.2
+- **Save format:** §5
+- **Protected files:** §8.1
+- **Documentation sync:** §8.2
 
 ## Skills
 Skills live in `.agents/skills/<name>/SKILL.md`; each writes a report in the format above.

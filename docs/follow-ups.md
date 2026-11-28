@@ -27,10 +27,6 @@ it. Sessions add to it by day; sprint lanes file follow-up issues instead. Movin
   awk and scratchpad lines); the auto-mode classifier refused the pruning as self-modification, so the owner or a
   rail-audited change should narrow it to the gate scripts, `npx vitest *`, `gh run *`, `git worktree *`,
   `git ls-remote *`. [7 Nov 2026, agent context batch B]
-- `.agents/` is not a copy of `.claude/`: it is the read-only analyst rule set that agy's second look reviews against
-  (`scripts/lib/second-look.mjs`, `scripts/lib/gemini-api.mjs` CONTEXT, `docReferences.test.ts`). Only its invariants list
-  in `project-rules.md` restates `ARCHITECTURE.md`; shrinking it to pointers changes a rail, so it needs the rail
-  audit. [7 Nov 2026, agent context batch B]
 - Playwright: the gameplay specs that test logic only run in Chromium alone (`playwright.config.ts:63-70`, per-project
   `testMatch`), four named by the 6 Nov audit. Off the sprint (was K9): it drops Firefox and WebKit coverage, so the rail
   audit will likely say it loosens a gate. [27 Nov 2026, sprint planning-day pass]

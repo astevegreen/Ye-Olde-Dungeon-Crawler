@@ -17,8 +17,6 @@ it. Sessions add to it by day; sprint lanes file follow-up issues instead. Movin
 ## Presentation
 
 ## Tests, gates and tooling
-- `.github/dependabot.yml:3-4` says security updates skip the cooldown; unverified, as docs.github.com was blocked
-  in the cloud session that wrote it. [6 Nov 2026, toolchain upgrades handoff]
 - A push that only deletes branches runs every pre-push gate, all three browsers included (`.githooks/pre-push:30`
   lets only `handoffs` pushes skip); a deletion carries no code. A rail change: it gets the rail audit.
   [7 Nov 2026, housekeeping]

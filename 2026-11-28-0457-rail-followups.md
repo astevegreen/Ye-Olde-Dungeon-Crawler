@@ -29,3 +29,4 @@ Complete
 - CI deploy.yml: 06092fb0 success, deployed; 8cddb58c success, ships nothing
 - The new hook skip runs only once `C:\Antigravity\YODC` (core.hooksPath) is pulled; its `main` was at 664f2fc1
 - Not seen yet: a Dependabot update PR against the SHA pins
+Resumed: 2026-11-28 12:24 UTC

@@ -160,6 +160,8 @@ function secondLook(request, { railsOnly, range }, tmp) {
   // never Sonnet (lib/agy.mjs, ORDERS.rail). Never through the Gemini API, which sees only the diff and the rules
   // files: rails wait for agy (owner, 7 Nov: "Rails wait for the PC").
   const railed = rails.length > 0;
+  // --rails-only on a change that touches no rail has nothing to ask.
+  if (railsOnly && !railed) return { text: 'Rail audit skipped: the change touches no rail.', decided: { verdict: 'ship', why: 'no rail touched' } };
   if (railed) pick = pickDepth({ kind: 'change', ...stats }, RAILS);
   const text = railsOnly ? prompt('rail-audit.md') : railed ? `${prompt('second-look.md')}\n\n${prompt('rail-audit.md')}` : prompt('second-look.md');
   const railList = railed ? `# The rail files it touches\n\n${rails.map((f) => `- ${f}`).join('\n')}\n\n` : '';

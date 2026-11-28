@@ -23,7 +23,7 @@ however small.
 
 This is not a report: write no file, and run no command at all, not even git. Answer in your reply. Its first line
 is exactly `LOOSENS: yes` or `LOOSENS: no`. After `yes`, one line per loosening: `path:line`, what is loosened,
-and what it would no longer catch. After `no`, one line saying why not. At most 8 lines in all.
+and what it would no longer catch. After `no`, one line saying why not. The rail answer takes at most 8 lines.
 
 When this prompt follows a review prompt, answer both in the one reply: the `LOOSENS:` line and its lines first,
-then a line `Findings:`, then the review's findings in its format.
+then a line `Findings:`, then the review's findings in its format (the 8-line limit is for the rail answer only).

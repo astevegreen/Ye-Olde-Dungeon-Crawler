@@ -423,7 +423,7 @@ export const isDoc = (f) => (/\.(md|txt)$/i.test(f) || f.startsWith('docs/')) &&
 export function skipReason({ files = [], lines = 0 }, { deep = false, rails = false, author = '' } = {}) {
   if (/^dependabot(\[bot\])?$/i.test(author)) return 'it is a Dependabot update';
   if (deep || rails) return null;
-  const all = (test) => files.length > 0 && files.every(test);
+  const all = (test) => files.length > 0 && files.every((f) => test(f));
   if (all(isLockfile)) return 'it changes only lockfiles';
   if (all(isTest)) return 'it changes only tests';
   if (all(isDoc)) return 'it changes only docs';

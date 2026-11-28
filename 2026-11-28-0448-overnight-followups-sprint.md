@@ -35,3 +35,4 @@ Sonnet 5.5 at medium thinking: checks, a dry run and relaying.
 ## Verification
 - gate-stamp: green on 664f2fc1. second-look `--rails-only`: ship. ci:watch: success, not deployed.
 - Dry run not run (gh is on astevegreen). agy said Opus is "out of usage until Tue 1 Dec"; maybe agy's quota only.
+Resumed: 2026-11-28 12:57 UTC

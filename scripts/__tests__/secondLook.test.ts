@@ -149,7 +149,8 @@ describe('the rail audit and the Gemini API', () => {
     const noAgy = () => ({ error: Object.assign(new Error('spawn agy ENOENT'), { code: 'ENOENT' }) });
     expect(() => askModel(noAgy, 'audit', HYDROGEN, [], NO_API)).toThrow(/cannot read the repository/);
     const script = fs.readFileSync(path.join(ROOT, 'scripts', 'second-look.mjs'), 'utf-8');
-    expect(script).toMatch(/'rail-audit\.md',[\s\S]*?models\('rail'\),\s*tmp,\s*NO_API,\s*\)/);
-    expect(script).not.toMatch(/'second-look\.md',[^;]*NO_API/);
+    // One call: a rail change asks the rail order and refuses the API; any other change keeps the API path.
+    expect(script).toContain("models(railed ? 'rail' : pick.depth), tmp, railed ? NO_API : undefined)");
+    expect(script).toMatch(/railed \? `\$\{prompt\('second-look\.md'\)\}\\n\\n\$\{prompt\('rail-audit\.md'\)\}`/);
   });
 });

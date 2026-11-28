@@ -202,9 +202,11 @@ describe('which model reviews what', () => {
     });
   });
 
-  it('gives a change over 300 lines a deep review anywhere, and a smaller one elsewhere a standard review', () => {
-    expect(pickDepth({ kind: 'change', files: ['src/ui/hud.ts'], lines: 301 }, ['src/engine/']).depth).toBe('deep');
-    expect(pickDepth({ kind: 'change', files: ['src/ui/hud.ts'], lines: 300 }, ['src/engine/']).depth).toBe('standard');
+  it('decides depth by paths alone: a big change off the high-risk paths stays standard (owner, 28 Nov 2026)', () => {
+    expect(pickDepth({ kind: 'change', files: ['src/ui/hud.ts'], lines: 2000 }, ['src/engine/'])).toEqual({
+      depth: 'standard',
+      why: 'it changes 2000 lines and touches none of the high-risk paths',
+    });
   });
 
   it("counts a diff's files and changed lines, not its headers", () => {
@@ -254,7 +256,7 @@ describe('which model reviews what', () => {
 describe('falling back when a model has no usage left', () => {
   it('never asks the next model when the first answers', () => {
     const { result, asked } = ask(['a', 'b'], { a: 'looks fine', b: 'unused' });
-    expect(result).toEqual({ model: 'a', response: 'looks fine', passed: [] });
+    expect(result).toEqual({ model: 'a', response: 'looks fine', passed: [], seconds: 0, tokens: null });
     expect(asked).toEqual(['a']);
   });
 

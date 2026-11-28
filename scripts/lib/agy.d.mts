@@ -33,7 +33,6 @@ export function reviewModels(run: (args: string[]) => AgyRun, order?: Order): { 
 export function modelName(model: string): string;
 
 export type Depth = 'deep' | 'standard';
-export const LARGE: number;
 
 export interface Reviewed {
   kind: 'spec' | 'repo' | 'change';
@@ -74,7 +73,14 @@ export function askModel(
   model: string,
   extra?: string[],
   api?: ApiAsk | null,
+  meter?: Meter | null,
 ): string;
+/** Adds up the tokens agy reports, for the ledger. */
+export interface Meter {
+  tokens?: number;
+}
+/** The tokens one agy run used (usage.total_tokens), or null. */
+export function replyTokens(run: AgyRun | undefined): number | null;
 
 export function resetsAt(message: string, now: number): Date;
 export interface QuotaStore {
@@ -94,11 +100,57 @@ export interface Answer {
   model: string;
   response: string;
   passed: Passed[];
+  seconds: number;
+  tokens: number | null;
 }
 export function askFirstAvailable(
   models: readonly string[],
-  ask: (model: string) => string,
+  ask: (model: string, meter: Meter) => string,
   store?: QuotaStore,
   now?: () => number,
 ): Answer;
 export function byLine(answer: Pick & { model: string; passed?: Passed[] }): string;
+
+/** The quota ledger, one JSON line per review call, shared by every repo on this PC. */
+export const LEDGER_FILE: string;
+export interface LedgerLine {
+  at?: string;
+  repo?: string;
+  pr?: number | null;
+  sha?: string;
+  mode?: 'full' | 'delta' | 'carry' | 'skip' | 'batch';
+  depth?: string;
+  model?: string | null;
+  passed?: string[];
+  seconds?: number | null;
+  tokens?: number | null;
+  verdict?: string;
+  [field: string]: unknown;
+}
+export function appendLedger(entry: LedgerLine, file?: string, now?: () => number): void;
+export function readLedger(file?: string): LedgerLine[];
+
+export const SMALL: number;
+export function isLockfile(file: string): boolean;
+export function isTest(file: string): boolean;
+export function isDoc(file: string): boolean;
+/** Why agy may skip a change (docs, tests, lockfiles, Dependabot, a small one off the high-risk paths and rails), or null. */
+export function skipReason(
+  stats: { files?: readonly string[]; lines?: number },
+  where?: { deep?: boolean; rails?: boolean; author?: string },
+): string | null;
+
+export const CARRY: number;
+export interface Prior {
+  sha: string;
+  verdict: string;
+  blockers?: readonly string[];
+  notes?: readonly string[];
+}
+/** Whether a run reuses an earlier pass (carry), reviews only the changes since (delta), or reviews it all (full). */
+export function carryOver(
+  prior: Prior | null,
+  delta: { lines: number },
+  where?: { deep?: boolean; rails?: boolean; pass?: readonly string[]; fixable?: readonly string[] },
+): { mode: 'carry' | 'delta' | 'full'; why: string };
+export function deltaPreamble(prior: Prior): string;

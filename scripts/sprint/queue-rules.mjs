@@ -8,9 +8,14 @@
  */
 import { namedReset, resumeAfter } from './usage-limit.mjs';
 
-/** Sprint sessions comment as the bot; only the owner's own account answers for the owner. */
+/**
+ * Sprint sessions comment as the bot; only the owner's own account answers for the owner. The bot is the
+ * GitHub App `greenbean-agent` (gh names it `app/greenbean-agent`, GraphQL `greenbean-agent`, REST
+ * `greenbean-agent[bot]`) or, until it is retired, the user account `greenbeanbot`.
+ */
 export const OWNER = 'astevegreen';
-export const BOT = 'greenbeanbot';
+export const BOTS = ['app/greenbean-agent', 'greenbean-agent', 'greenbean-agent[bot]', 'greenbeanbot'];
+const isBot = (login) => BOTS.includes(login);
 /**
  * scripts/gemini-audit.mjs starts every comment with this. An audit is a note for the plan session and the
  * implementer, posted as the bot: never an answer, a send-back or a sprint step, so the rules skip it.
@@ -21,7 +26,7 @@ export const AUDIT = '<!-- gemini-audit -->';
  * open question's issue, and gh may be signed in as the owner when it posts, so a digest is never an answer.
  */
 const DIGEST = 'Decisions digest';
-const isDigest = (c) => (c.author === BOT || c.author === OWNER) && c.body.trimStart().startsWith(DIGEST);
+const isDigest = (c) => (isBot(c.author) || c.author === OWNER) && c.body.trimStart().startsWith(DIGEST);
 /** Under this, the supervisor starts nothing; over it, a lane retries work the machine failed. */
 export const MEMORY_FLOOR_MB = 4096;
 /** The labels that say where a sprint issue stands. `move` keeps one of them on each issue. */
@@ -404,7 +409,7 @@ const findLast = (xs, f) => [...xs].reverse().find(f) ?? null;
 
 /** The owner's newest comment after the bot's newest one: an answer the lanes may act on. */
 export function ownerReply(issue) {
-  const lastBot = findLast(issue.comments, (c) => c.author === BOT);
+  const lastBot = findLast(issue.comments, (c) => isBot(c.author));
   return findLast(issue.comments, (c) => c.author === OWNER && (!lastBot || c.at > lastBot.at));
 }
 
@@ -436,7 +441,7 @@ export function answerTo(world, issue) {
   if (own) return { ...own, on: issue.number };
   const decisions = world.doc.decisionsIssue ? byNumber(world, world.doc.decisionsIssue) : null;
   if (!decisions || decisions.number === issue.number) return null;
-  const lastBot = findLast(issue.comments, (c) => c.author === BOT);
+  const lastBot = findLast(issue.comments, (c) => isBot(c.author));
   const found = findLast(
     decisions.comments,
     (c) => c.author === OWNER && !isDigest(c) && (!lastBot || c.at > lastBot.at) && answerIn(c.body, issue.number) !== null,
@@ -463,7 +468,7 @@ const MINOR = /\[minor\]|\bminor\b/i;
 /** What one sprint comment on held work says: a blocker, a machine failure, a send-back, minor concerns only, or nothing the rules read. */
 function heldKind(c) {
   // An architect's decision is part of the build, never a verdict on it, whatever it is about (time-outs too).
-  if (c.author !== BOT || !SESSION.test(c.body) || /Decision \(architect\)/.test(c.body)) return null;
+  if (!isBot(c.author) || !SESSION.test(c.body) || /Decision \(architect\)/.test(c.body)) return null;
   if (BLOCKER.test(c.body)) return 'blocker';
   if (MACHINE.test(c.body)) return 'machine';
   if (c.body.startsWith('Integrator:')) return 'integrator';
@@ -481,18 +486,18 @@ function heldKind(c) {
  * Anything else (an answer relayed by the bot, a bare note) waits for the owner.
  */
 export function heldRetry(issue, freeMb) {
-  const counted = issue.comments.filter((c) => c.author === OWNER || c.author === BOT);
+  const counted = issue.comments.filter((c) => c.author === OWNER || isBot(c.author));
   const last = counted.at(-1);
   if (!last) return { retry: false, owner: true, why: 'no comment says why it is held' };
   if (last.author === OWNER) return { retry: true, owner: false, why: 'the owner replied', concerns: oneLine(last.body) };
   const lastOwner = findLast(counted, (c) => c.author === OWNER);
   const since = counted.filter((c) => !lastOwner || c.at > lastOwner.at);
-  const start = since.findLastIndex((c) => c.author === BOT && c.body.startsWith(RETRYING));
+  const start = since.findLastIndex((c) => isBot(c.author) && c.body.startsWith(RETRYING));
   const deciding = since.slice(start + 1).reverse().find((c) => heldKind(c) !== null);
   const kind = deciding ? heldKind(deciding) : null;
   const concerns = deciding ? oneLine(deciding.body) : null;
   if (kind === 'machine') {
-    const retries = since.filter((c) => c.author === BOT && c.body.startsWith(`${RETRYING}: the machine`)).length;
+    const retries = since.filter((c) => isBot(c.author) && c.body.startsWith(`${RETRYING}: the machine`)).length;
     if (retries >= MACHINE_RETRIES) {
       return { retry: false, owner: true, why: `a [blocker]: it failed on the machine again after ${retries} retries with memory free, so the code is slow, not the host` };
     }
@@ -582,7 +587,7 @@ export function laneQueue(world, lane, taken = []) {
 const readFolder = (body) => /^Research: read ([^\s.,:;()]+)/.exec(body)?.[1] ?? null;
 const isHunt = (i) => /^H\d+$/.test(i.id ?? '');
 const huntSince = (i) =>
-  findLast(i.comments, (c) => c.author === BOT && c.body.startsWith('Research: hunt candidates'))?.body.match(/sha (\w+)/)?.[1] ??
+  findLast(i.comments, (c) => isBot(c.author) && c.body.startsWith('Research: hunt candidates'))?.body.match(/sha (\w+)/)?.[1] ??
   /since (\S+)/.exec(i.title)?.[1] ??
   null;
 
@@ -596,8 +601,8 @@ export function researchQueue(world) {
   for (const i of world.issues.filter((x) => x.labels.includes(`lane:${RESEARCH}`))) {
     i.comments.forEach((c, k) => {
       const m = /^Research: started (\S+) (\S+) pid (\d+)/.exec(c.body);
-      if (c.author !== BOT || !m) return;
-      const read = i.comments.slice(k + 1).some((r) => r.author === BOT && readFolder(r.body) === m[2]);
+      if (!isBot(c.author) || !m) return;
+      const read = i.comments.slice(k + 1).some((r) => isBot(r.author) && readFolder(r.body) === m[2]);
       if (!read) started.push({ issue: i.number, item: m[1], folder: m[2], pid: Number(m[3]), at: c.at });
     });
   }
@@ -837,7 +842,7 @@ export function decisionsDigest(world) {
   const nextAt = last ? new Date(last.at.getTime() + DAY) : null;
   const due = questions.length > 0 && (!nextAt || world.now >= nextAt);
   const ask = (i) => {
-    const q = findLast(i.comments, (c) => c.author === BOT);
+    const q = findLast(i.comments, (c) => isBot(c.author));
     const text = oneLine(q ? q.body : i.body, 400);
     return `- #${i.number} ${short(i)} (${i.labels.find((l) => l.startsWith('lane:')).slice(5)}): ${text}${/recommend/i.test(text) ? '' : ' (no recommendation given)'}`;
   };
@@ -973,8 +978,10 @@ export function run(argv, io) {
     if (command === 'identity') {
       // Sessions comment as the bot, and only the owner's comments answer a question: a session signed in
       // as the owner would answer its own. Sprint sessions may not run `gh api` or `gh auth` themselves.
-      const login = io.gh(['api', 'user', '--jq', '.login']).trim();
-      if (login !== BOT) throw refuse(`gh is signed in as ${login || 'no one'}, not ${BOT}`, `Refuse the start with this error. Never run \`gh auth switch\`: the owner signs gh in as ${BOT}.`);
+      // `gh auth status`, not `gh api user`: an App installation token cannot call /user.
+      const login = io.gh(['auth', 'status', '--active', '--json', 'hosts', '--jq', '.hosts["github.com"][0].login']).trim();
+      const bots = `the agent (${BOTS.join(', ')})`;
+      if (!isBot(login)) throw refuse(`gh is signed in as ${login || 'no one'}, not ${bots}`, `Refuse the start with this error. Never run \`gh auth switch\`: the owner signs gh in as ${bots}.`);
       return { code: 0, line: JSON.stringify({ login, ok: true }) };
     }
     const world = {

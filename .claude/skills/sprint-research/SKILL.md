@@ -20,7 +20,7 @@ You run lane `research` of the sprint in `docs/sprint.md`; read it and `.claude/
 You never edit tracked files, commit or decide a rule. `R` is `C:/Antigravity/YODC-research`. A soak runs for
 hours, longer than this session: you start it detached, record it, and a later session reads it. Only one soak
 runs at a time (the same computer runs the lanes). Start every comment you write with
-"Research:". Sprint sessions comment as `greenbeanbot`; go by `author.login`. A comment over one line goes
+"Research:". Sprint sessions comment as the agent (`app/greenbean-agent`, `greenbean-agent`, `greenbean-agent[bot]` or the old `greenbeanbot`); go by `author.login`. A comment over one line goes
 through a file: write it with the Write tool to `.prompts/tmp/`, then `gh issue comment <n> --body-file <file>`
 (the guard reads every line of a command, so a report line such as `git push …` passed inline is refused).
 

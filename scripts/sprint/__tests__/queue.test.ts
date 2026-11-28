@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
+  BOTS,
   DEFAULT_HOURS,
   MACHINE_RETRIES,
   MEMORY_FLOOR_MB,
@@ -170,6 +171,16 @@ describe('October failures', () => {
       ]),
     ]);
     expect(heldRetry(held!, 8000)).toMatchObject({ retry: false, owner: true, why: expect.stringContaining('[blocker]') });
+    // Every agent login is the bot: its blocker after the owner's reply holds the work.
+    for (const login of BOTS) {
+      const [app] = normalizeIssues([
+        issue(5, '[task] B1: x', ['lane:fixes', 'held'], '', [
+          ['astevegreen', '2026-10-21T09:00:00Z', 'try again'],
+          [login, '2026-10-21T10:00:00Z', 'Lane: held. 1. [blocker] save.ts:12 loses the flag on reload'],
+        ]),
+      ]);
+      expect(heldRetry(app!, 8000), login).toMatchObject({ retry: false, owner: true, why: expect.stringContaining('[blocker]') });
+    }
     // U3 at 23:19Z on 21 Oct: the relay came after the owner's last comment.
     const u3 = at('2026-10-21T23:19:50Z', { 37: ['lane:ux', 'blocked'] });
     expect(laneQueue(u3, 'ux').waiting).toContain('#37 U3 is blocked on a design question: no owner answer yet');
@@ -762,9 +773,15 @@ describe('the cue (window, ledger, lock)', () => {
     expect(q(['lock'], noGh(local)).out).toEqual({ ok: true });
   });
   it('identity passes only when gh is signed in as the bot, whose comments never count as the owner\'s', () => {
-    const as = (login: string) => ({ ...noGh(memory({}).local), gh: () => `${login}\n` });
-    expect(q(['identity'], as('greenbeanbot'))).toEqual({ code: 0, out: { login: 'greenbeanbot', ok: true } });
-    expect(q(['identity'], as('astevegreen'))).toMatchObject({ code: 2, out: { error: 'gh is signed in as astevegreen, not greenbeanbot' } });
+    const calls: string[][] = [];
+    const as = (login: string) => ({ ...noGh(memory({}).local), gh: (args: string[]) => (calls.push(args), `${login}\n`) });
+    for (const login of ['app/greenbean-agent', 'greenbean-agent', 'greenbean-agent[bot]', 'greenbeanbot']) {
+      expect(q(['identity'], as(login))).toEqual({ code: 0, out: { login, ok: true } });
+    }
+    // An App installation token cannot call `gh api user`.
+    expect(calls[0]).toEqual(['auth', 'status', '--active', '--json', 'hosts', '--jq', '.hosts["github.com"][0].login']);
+    expect(q(['identity'], as('astevegreen'))).toMatchObject({ code: 2, out: { error: expect.stringMatching(/^gh is signed in as astevegreen, not the agent \(app\/greenbean-agent, greenbean-agent, greenbean-agent\[bot\], greenbeanbot\)$/) } });
+    expect(q(['identity'], as(''))).toMatchObject({ code: 2, out: { error: expect.stringMatching(/^gh is signed in as no one/) } });
   });
   it('resume reads a saved run log and says when a usage-limit stop may restart', () => {
     const local = memory({}).local;

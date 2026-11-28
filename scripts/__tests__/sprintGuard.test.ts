@@ -225,6 +225,8 @@ describe('commands run through a wrapper', () => {
     'GIT_CONFIG_GLOBAL=/tmp/x git commit -m x',
     'XDG_CONFIG_HOME=/tmp/x git commit -m x',
     'git -c include.path=/tmp/x commit -m x',
+    'git -c inc""lude.path=/tmp/x commit -m x',
+    'git -c include.pa\\th=/tmp/x commit -m x',
     'git -c includeIf.gitdir:/w/.path=/tmp/x commit -m x',
     'git -C /w rebase -x "git push" origin/main',
     'git submodule foreach "git push"',

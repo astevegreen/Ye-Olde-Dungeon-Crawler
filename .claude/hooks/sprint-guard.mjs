@@ -108,9 +108,9 @@ if ((MODE === '--lane' || MODE === '--integrator') && parts.some((p) => isQueue(
 if (MODE === '--lane' || MODE === '--integrator') {
   let cwd = String(input.cwd ?? process.cwd());
   // Git config set from the environment, or a config file git is told to include or read instead, can define an
-  // alias that runs any command or point core.hooksPath elsewhere.
-  if (/\bGIT_CONFIG(_\w+)?\b|\bXDG_CONFIG_HOME\b|\binclude\.path\b|\bincludeif\./i.test(text))
-    deny('no git config from the environment or an included file');
+  // alias that runs any command or point core.hooksPath elsewhere. Read as written and as the shell reads its words.
+  const configFrom = /\bGIT_CONFIG(_\w+)?\b|\bXDG_CONFIG_HOME\b|\binclude\.path\b|\bincludeif\./i;
+  if (configFrom.test(text) || configFrom.test(textRead)) deny('no git config from the environment or an included file');
   // Git's subcommand or checkout in a variable or a substitution (`git $p`, `git $(echo push)`, `git -C "$d" commit`,
   // PowerShell's splatted `git @a`) can't be read.
   if (read.gitHidden) {

@@ -61,6 +61,36 @@ export const railModel = (model) =>
 // markup, numbering or punctuation may come before the tag (`**1. [blocker]**`, ``- `[blocker]` ``, a table cell),
 // so a blocker counts however the model formats its list; a tag after words ("not a [blocker]") is no finding.
 export const blockers = (answer) => (answer.match(/^[^\p{L}\n]*\[blocker\]/gimu) ?? []).length;
+// The blocker lines themselves, as the ledger keeps them for a later review of the fix alone (at most 300 characters
+// each).
+export const blockerLines = (answer) =>
+  String(answer ?? '')
+    .split('\n')
+    .filter((l) => /^[^\p{L}\n]*\[blocker\]/iu.test(l))
+    .map((l) => l.trim().slice(0, 300));
+
+// The earlier second look a new run may build on (agy.mjs, carryOver): the newest ledger line of this repo's second
+// look for the same request whose verdict was ship or fix, from a review that read the change (a full or delta
+// review, never a skip or a carried pass, so carried passes never chain), and that `usable` accepts: the script
+// checks that its commit is an ancestor of HEAD, with no merge commit since and the branch's base before it. The
+// ledger is this PC's own file: a review that ran elsewhere is not built on, and the change is reviewed whole. Only
+// the newest 20 such lines are tried.
+export function priorReview(ledger, request, usable) {
+  return (
+    ledger
+      .filter(
+        (l) =>
+          l.repo === 'yodc' &&
+          l.request === request &&
+          ['ship', 'fix'].includes(l.verdict) &&
+          ['full', 'delta'].includes(l.mode) &&
+          typeof l.sha === 'string',
+      )
+      .slice(-20)
+      .reverse()
+      .find((l) => usable(l.sha)) ?? null
+  );
+}
 
 // The rail audit answers with a line "LOOSENS: yes" or "LOOSENS: no" (scripts/rail-audit.md), the first one counting; null
 // when it gives neither.

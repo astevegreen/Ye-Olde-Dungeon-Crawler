@@ -1,7 +1,7 @@
 Audit one change to this game's repository before it is pushed. It touches the repository's rails: what stops a
-bad change from reaching players unnoticed. The material file holds the request the change was made for, the rail
-files it touches, and the diff. Judge the diff only; read other files only where the diff is unclear, at the paths
-it names.
+bad change from reaching players unnoticed. The material file holds what the owner asked for, in their own words,
+the rail files it touches, and the diff. Judge the diff only; read other files only where the diff is unclear, at
+the paths it names.
 
 The rails: Claude Code hooks and the sprint guard (`.claude/hooks/`), `.claude/settings*.json` (permissions and the
 hooks they wire), the sprint skills and agents that wire the guard, git hooks (`.githooks/`), CI workflows
@@ -17,6 +17,13 @@ allows more or asks less; a hook or guard unwired; a lock that covers fewer path
 condition; and a required review or audit dropped or made advisory. A change that only adds or tightens a check,
 or only rewords, does not loosen.
 
+A loosening the owner's words plainly ask for does not count: answer `LOOSENS: yes` only for loosening beyond what
+they ask, and name each asked-for one on a line starting `Asked for:`. A loosening they do not plainly ask for counts,
+however small.
+
 This is not a report: write no file, and run no command at all, not even git. Answer in your reply. Its first line
 is exactly `LOOSENS: yes` or `LOOSENS: no`. After `yes`, one line per loosening: `path:line`, what is loosened,
-and what it would no longer catch. After `no`, one line saying why not.
+and what it would no longer catch. After `no`, one line saying why not. The rail answer takes at most 8 lines.
+
+When this prompt follows a review prompt, answer both in the one reply: the `LOOSENS:` line and its lines first,
+then a line `Findings:`, then the review's findings in its format (the 8-line limit is for the rail answer only).

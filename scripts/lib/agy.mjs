@@ -2,7 +2,7 @@
 // read. The same rules are in terminal-dusk/tools/gemini/agy.mjs, blockchain-technology-course/tools/agy.mjs and
 // Korean/tools/gemini/agy.mjs (the flashcards repo): change all four. Types: agy.d.mts.
 // Where agy is not installed (a cloud session), the Gemini models are asked through the Gemini API instead.
-import { readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { appendFileSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { geminiApi } from './gemini-api.mjs';
@@ -123,11 +123,10 @@ export function modelName(model) {
   return `${name} (${m[2]})`;
 }
 
-// A change of more than this many lines (added plus removed) gets a deep review wherever it is.
-export const LARGE = 300;
-
 // How deep a review must be, from what it reviews, with the reason in words for the report. The depth picks
-// the order the models are asked in (ORDERS), and is named with its reason in the report.
+// the order the models are asked in (ORDERS), and is named with its reason in the report. Only the paths decide:
+// size alone no longer makes a review deep (owner, 28 Nov 2026), so a big change off the high-risk paths stays
+// with the fast models.
 // kind: "spec" (a plan, before any code), "repo" (a whole-repo audit) or "change" (a diff's files and lines).
 // deepPaths: the path prefixes where a mistake costs most in this repo.
 export function pickDepth({ kind, files = [], lines = 0 }, deepPaths = []) {
@@ -136,7 +135,6 @@ export function pickDepth({ kind, files = [], lines = 0 }, deepPaths = []) {
     return { depth: 'standard', why: 'it reads the whole repo, which has to finish inside the time limit' };
   const hit = files.find((f) => deepPaths.some((p) => f.startsWith(p)));
   if (hit) return { depth: 'deep', why: `it touches ${hit}` };
-  if (lines > LARGE) return { depth: 'deep', why: `it changes ${lines} lines` };
   return { depth: 'standard', why: `it changes ${lines} lines and touches none of the high-risk paths` };
 }
 
@@ -247,16 +245,33 @@ const agyArgs = (prompt, model, extra, timeout = TIMEOUT) => [
 // command (Opus ended a rail audit on `echo blocked`, 28 Oct), or by running out of time (Flash on a 401-line deep
 // review, 5 Nov). Either way its conversation is resumed once, told why, so the reading is not thrown away.
 // Where agy is not installed and GEMINI_API_KEY is set, `api` asks the model instead (see geminiApi).
-export function askModel(run, prompt, model, extra = [], api = geminiApi()) {
-  const first = run(agyArgs(prompt, model, extra));
+// `meter`, when given, adds up the tokens agy reports for every run (the first and a resume) in meter.tokens.
+export function askModel(run, prompt, model, extra = [], api = geminiApi(), meter = null) {
+  const counted = (args) => {
+    const r = run(args);
+    const tokens = replyTokens(r);
+    if (meter && tokens !== null) meter.tokens = (meter.tokens ?? 0) + tokens;
+    return r;
+  };
+  const first = counted(agyArgs(prompt, model, extra));
   if (first.error?.code === 'ENOENT' && api) return api(prompt, model);
   try {
     return parseReply(first);
   } catch (err) {
     if (!err.conversation) throw err;
     const resume = [...extra, '--conversation', err.conversation];
-    if (err.timedOut) return parseReply(run(agyArgs(LATE, model, resume, RESUME_TIMEOUT)));
-    return parseReply(run(agyArgs(REFUSED, model, resume)));
+    if (err.timedOut) return parseReply(counted(agyArgs(LATE, model, resume, RESUME_TIMEOUT)));
+    return parseReply(counted(agyArgs(REFUSED, model, resume)));
+  }
+}
+
+// The tokens one agy run used (its JSON's usage.total_tokens), or null when it reports none.
+export function replyTokens(r) {
+  try {
+    const n = JSON.parse(r?.stdout ?? '')?.usage?.total_tokens;
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
   }
 }
 
@@ -320,9 +335,15 @@ const passedOver = (p) => `${modelName(p.model)} ${p.until ? `is out of usage un
 // Asks each model in turn until one answers, skipping any the store knows is out of usage. Running out of
 // usage, or any reason in PASS_ON, moves on to the next model; anything else (agy missing, not signed in)
 // would fail the same way on every model, so it is thrown with the model's name in front.
-// Returns { model, response, passed }: passed lists the models it went past, for the report.
+// Returns { model, response, passed, seconds, tokens }: passed lists the models it went past, for the report;
+// seconds and tokens (null when agy reported none) cover the whole call, for the ledger. `ask(model, meter)` may add
+// tokens to meter.tokens (askModel's meter). A thrown error carries seconds and tokens too.
 export function askFirstAvailable(models, ask, store = quotaFile(), now = Date.now) {
   const passed = [];
+  const start = now();
+  const meter = { tokens: 0 };
+  const spent = () => ({ seconds: Math.round((now() - start) / 100) / 10, tokens: meter.tokens || null });
+  const fail = (err) => Object.assign(err, spent());
   for (const model of models) {
     const until = store.outUntil(model, now());
     if (until) {
@@ -330,19 +351,115 @@ export function askFirstAvailable(models, ask, store = quotaFile(), now = Date.n
       continue;
     }
     try {
-      return { model, response: ask(model), passed };
+      const response = ask(model, meter);
+      return { model, response, passed, ...spent() };
     } catch (err) {
-      if (err.stop) throw new Error(`${modelName(model)}: ${err.message}`, { cause: err });
+      if (err.stop) throw fail(new Error(`${modelName(model)}: ${err.message}`, { cause: err }));
       const why = PASS_ON.find(([pattern]) => pattern.test(err.message))?.[1];
       if (USED_UP.test(err.message)) {
         const reset = resetsAt(err.message, now());
         store.markOut(model, reset);
         passed.push({ model, until: reset });
       } else if (why) passed.push({ model, why });
-      else throw new Error(`${modelName(model)}: ${err.message}`, { cause: err });
+      else throw fail(new Error(`${modelName(model)}: ${err.message}`, { cause: err }));
     }
   }
-  throw new Error(`no model answered: ${passed.map(passedOver).join('; ')}`);
+  throw fail(new Error(`no model answered: ${passed.map(passedOver).join('; ')}`));
+}
+
+// The quota ledger: one JSON line per review call, from every repo on this PC (the quota is the account's), so the
+// burn rate can be read and the thresholds below tuned on data. Fields: repo, pr (or null), sha, mode (full, delta,
+// carry, skip or batch), depth, model (or null), passed (ids), seconds, tokens, verdict; callers may add more.
+export const LEDGER_FILE = path.join(os.tmpdir(), 'agy-ledger.jsonl');
+
+// Appends one line; a review never fails because it could not write one.
+export function appendLedger(entry, file = LEDGER_FILE, now = Date.now) {
+  try {
+    appendFileSync(file, `${JSON.stringify({ at: new Date(now()).toISOString(), ...entry })}\n`);
+  } catch {
+    // The ledger is a record, not a gate.
+  }
+}
+
+// Every line of the ledger, oldest first; a line that is not JSON is skipped, and a missing file reads as empty.
+export function readLedger(file = LEDGER_FILE) {
+  let text;
+  try {
+    text = readFileSync(file, 'utf8');
+  } catch {
+    return [];
+  }
+  return text.split('\n').flatMap((line) => {
+    try {
+      return line.trim() ? [JSON.parse(line)] : [];
+    } catch {
+      return [];
+    }
+  });
+}
+
+// What agy can't add to (owner, 28 Nov 2026): agy is not asked, and the reviewer and CI still run. A change on a
+// high-risk path or a rail is never skipped. Instruction files (CLAUDE.md, AGENTS.md, GEMINI.md, .claude/, .agents/)
+// are not docs: they are rails or near-rails.
+export const SMALL = 30;
+const LOCKFILES = new Set([
+  'pnpm-lock.yaml',
+  'package-lock.json',
+  'yarn.lock',
+  'Cargo.lock',
+  'poetry.lock',
+  'uv.lock',
+  'Gemfile.lock',
+  'composer.lock',
+]);
+const baseName = (f) => f.slice(f.lastIndexOf('/') + 1);
+export const isLockfile = (f) => LOCKFILES.has(baseName(f));
+export const isTest = (f) =>
+  /(^|\/)(__tests__|tests?|e2e)\//.test(f) || /\.(test|spec)\.[cm]?[jt]sx?$/.test(f) || /(^|\/)test_[^/]*\.py$/.test(f);
+const isInstruction = (f) => ['CLAUDE.md', 'AGENTS.md', 'GEMINI.md'].includes(baseName(f)) || /^\.(claude|agents)\//.test(f);
+export const isDoc = (f) => (/\.(md|txt)$/i.test(f) || f.startsWith('docs/')) && !isInstruction(f);
+
+// Why agy may skip this change, or null when it reviews it.
+export function skipReason({ files = [], lines = 0 }, { deep = false, rails = false, author = '' } = {}) {
+  if (/^dependabot(\[bot\])?$/i.test(author)) return 'it is a Dependabot update';
+  if (deep || rails) return null;
+  const all = (test) => files.length > 0 && files.every((f) => test(f));
+  if (all(isLockfile)) return 'it changes only lockfiles';
+  if (all(isTest)) return 'it changes only tests';
+  if (all(isDoc)) return 'it changes only docs';
+  if (lines < SMALL) return `it changes ${lines} lines, none on a high-risk path or a rail`;
+  return null;
+}
+
+// A pass carried across a small fix (owner, 28 Nov 2026). prior: the earlier review's { verdict, sha }; delta: the
+// stats of the changes since. A passing verdict whose delta is under CARRY lines, off the high-risk paths and the
+// rails, is reused (carry); a pass or a fix otherwise gets a review of the delta alone (delta); anything else, or no
+// earlier review, gets the whole change reviewed again (full).
+export const CARRY = 40;
+export function carryOver(prior, delta, { deep = false, rails = false, pass = ['merge', 'ship'], fixable = ['fix'] } = {}) {
+  if (!prior) return { mode: 'full', why: 'no earlier review to build on' };
+  const at = String(prior.sha).slice(0, 8);
+  if (pass.includes(prior.verdict) && delta.lines < CARRY && !deep && !rails)
+    return { mode: 'carry', why: `carried over from ${at}: the ${delta.lines} lines since touch no high-risk path or rail` };
+  if (pass.includes(prior.verdict) || fixable.includes(prior.verdict))
+    return { mode: 'delta', why: `only the changes since ${at} (${prior.verdict}) are reviewed` };
+  return { mode: 'full', why: `the earlier verdict (${prior.verdict}) is not built on` };
+}
+
+// The material's opening for a review of the delta alone: the earlier verdict, its findings, and what to check.
+export function deltaPreamble(prior) {
+  const at = String(prior.sha).slice(0, 8);
+  const list = (title, items = []) => (items.length ? [`${title}:`, ...items.map((i) => `- ${i}`), ''] : []);
+  return [
+    '# Earlier review',
+    '',
+    `The change up to commit ${at} was reviewed already; its verdict was ${prior.verdict}.`,
+    '',
+    ...list('Its blockers', prior.blockers),
+    ...list('Its notes', prior.notes),
+    `Review only the changes since ${at}, in the diff below: check that they fix the earlier blockers and add no new problem. The rest was reviewed then.`,
+    '',
+  ].join('\n');
 }
 
 // One line for the report: which model answered, how deep a review it was and why, and whom it stood in for.

@@ -98,7 +98,7 @@ describe('docs/sprint.md, read once', () => {
     const current = parseSprintDoc(fs.readFileSync(path.join(__dirname, '../../../docs/sprint.md'), 'utf-8'));
     expect(current.lanes.length).toBeGreaterThan(0);
     expect(sessionTitles(current)).toContain('YODC integrate');
-    expect(current.decisionsIssue).toBe(72);
+    expect(current.decisionsIssue).toBe(122);
     // Every lane the table names has a backlog list, and every item has an ID the queue can match.
     for (const lane of current.lanes) expect(current.backlog[lane.name]?.length, lane.name).toBeGreaterThan(0);
   });
@@ -134,6 +134,17 @@ describe('done IDs (M1 against M1a)', () => {
     const w2 = at('2026-10-21T21:30:00Z', { 49: ['lane:tooling', 'to-integrate'] });
     expect(hasWork(w2, 'YODC plan: tooling')).toMatchObject({ start: true, ready: 0, todo: ['T5', 'T6', 'T7'] });
     expect(hasWork(at('2026-10-23T12:00:00Z'), 'YODC plan: tooling')).toMatchObject({ start: false, todo: [] });
+  });
+});
+
+describe('after-sprint follow-ups (sprint-lane step 2.2)', () => {
+  // Before any October issue exists, so these are the lane's only issues.
+  const t = '2026-10-20T00:00:01Z';
+  it('a lane never takes one, and builds the same issue once it is sprint-ready', () => {
+    const parked = issue(950, '[task] T1-follow: a follow-up of a follow-up', ['lane:tooling', 'after-sprint']);
+    expect(laneQueue(at(t, {}, [parked]), 'tooling').job).toBeNull();
+    const ready = issue(950, parked.title, ['lane:tooling', 'sprint-ready']);
+    expect(laneQueue(at(t, {}, [ready]), 'tooling').job).toMatchObject({ mode: 'build', issue: 950 });
   });
 });
 

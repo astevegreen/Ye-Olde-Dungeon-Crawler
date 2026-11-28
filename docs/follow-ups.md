@@ -11,31 +11,12 @@ it. Sessions add to it by day; sprint lanes file follow-up issues instead. Movin
 - A decision only the owner can make goes to the owner as a question, not here.
 
 ## Engine
-- No test covers a kill rite teaching into full grimoires (the "Every slot in your grimoires is full" suffix) or its
-  `screen_flash` (`src/engine/magic/killRites.ts:148`, `teachRiteSpell`). [3 Nov 2026, reviewer on 1d02df90]
-- A bug report's replay checkpoint and state snapshot are bare `serializeGame()` output with no schema version, so
-  `loadReplayState` (`src/engine/debug/replay.ts:350`) can't gate them: a report from an older build is decoded as
-  current, or fails as `corrupt`. Stamping the version on the checkpoint would let it be refused like any old save.
-  [7 Nov 2026, agy's second look on #110]
-- `ProfileManager.importHero` (`src/engine/storage/profile-manager.ts:512-518`) throws a plain `Error`, not a
-  `SaveLoadError`, for an envelope at the current version whose `data` lacks `profile`, `player` or `map`, or whose
-  hero is dead; its doc promises a typed reason. [7 Nov 2026, agy's second look on #110]
-- `declaredVersion` (`src/engine/storage/loadResult.ts:66-70`) reads `{}`, `[]` or an envelope with a non-numeric
-  `schemaVersion` and no timestamp as version 0, so they fail as `migration-failed` instead of `corrupt`.
-  [7 Nov 2026, agy's second look on #110]
-- `DungeonGenerator.isReachable` (`src/engine/dungeon/dungeon-generator.ts:524`) exempts a vault's whole rect and
-  checks only its `@` connectors, so a blueprint with no `@` passes walled off; and where every room is a vault
-  (`:308`, `joinable` falls back to `rooms`) a connector can join its own vault again. A stamp-time check that a
-  blueprint has an `@` closes the first. [7 Nov 2026, agy's second look on cb0bb7ef]
 
 ## Content (cotw pack)
 
 ## Presentation
 
 ## Tests, gates and tooling
-- The "(diff truncated; read the rest from disk)" line is written in `scripts/second-look.mjs:75` and matched by
-  `TRUNCATED` in `scripts/lib/gemini-api.mjs`: one shared constant would stop a reworded marker from sending part of a
-  diff to the API. [7 Nov 2026, Gemini API fallback]
 - The workflows pin each action by major tag (`actions/checkout@v7`, `.github/workflows/deploy.yml:24` and the
   others), so a moved tag runs at once, past Dependabot's 7-day cooldown (`.github/dependabot.yml:3-4`); pinning by
   commit SHA with the version in a comment closes that. [7 Nov 2026, agy's second look on #106]
@@ -53,5 +34,14 @@ it. Sessions add to it by day; sprint lanes file follow-up issues instead. Movin
   (`scripts/lib/second-look.mjs`, `scripts/lib/gemini-api.mjs` CONTEXT, `docReferences.test.ts`). Only its invariants list
   in `project-rules.md` restates `ARCHITECTURE.md`; shrinking it to pointers changes a rail, so it needs the rail
   audit. [7 Nov 2026, agent context batch B]
+- Playwright: the gameplay specs that test logic only run in Chromium alone (`playwright.config.ts:63-70`, per-project
+  `testMatch`), four named by the 6 Nov audit. Off the sprint (was K9): it drops Firefox and WebKit coverage, so the rail
+  audit will likely say it loosens a gate. [27 Nov 2026, sprint planning-day pass]
+- Soak-shaped unit tests (`src/engine/__tests__/chaosSimulation.test.ts` and its kind) move to the `tooling` Vitest
+  project (`vite.config.ts:13-15`), so `npm test` stays fast. Off the sprint (was K10): the tooling project runs at
+  commit only when tooling changed, which likely loosens a gate. [27 Nov 2026, sprint planning-day pass]
+- The 19 hand-built fake DOMs in the UI tests could share happy-dom, a real DOM where the fakes miss `classList`,
+  focus and events. Off the sprint (was K11): it is a new dev dependency, which the sprint forbids.
+  [6 Nov 2026, test-suite audit]
 
 ## Docs

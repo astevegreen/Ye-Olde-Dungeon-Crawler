@@ -25,7 +25,7 @@ can't read variables and refuses them as the main checkout. Start every comment 
 **The queue.** `Q` below is `node C:/Antigravity/YODC/scripts/sprint/queue.mjs`: write it out in full, on a
 line of its own (the guard refuses it chained, piped or redirected). `Q has-work "YODC integrate"` prints one
 line of JSON: `start`, `reason`, and `issues`, the open `to-integrate` issues, lowest first. When it prints
-`error`, do what its `do` line says; when it fails any other way, stop and report its output on issue #19.
+`error`, do what its `do` line says; when it fails any other way, stop and report its output on issue #121.
 
 Stop in any of these cases:
 - `Q window` prints `phase` `none` or `before`. After the window (`after`) you still land what the lanes
@@ -40,7 +40,7 @@ Stop in any of these cases:
   `git -C I revert --abort` and `git -C I rebase --abort`, each on its own, ignoring "no ... in progress".
 - `gh run list --workflow deploy.yml --branch main --limit 1 --json conclusion,status,headSha,url`. If it is
   completed with conclusion `failure` and its `headSha` is `git -C I rev-parse origin/main` (a later push
-  with no run of its own is not red), main is red: comment on issue #19 "Integrator: main is red at <headSha>
+  with no run of its own is not red), main is red: comment on issue #121 "Integrator: main is red at <headSha>
   (<url>); integration paused." (once; skip if your previous comment there says the same) and stop. Another
   session or the owner fixes main first.
 
@@ -93,7 +93,7 @@ issue, `B` is `sprint/<n>`.
    - `deploy.yml: success`: each issue of the pushed batch is done (step 4); then push the prepared batch (1.4).
    - `deploy.yml: failure ...`: revert (step 2).
    - anything else (no run found yet, still running, cancelled, a gh error): run it again, up to 3 times;
-     then comment on issue #19 with its output and stop.
+     then comment on issue #121 with its output and stop.
 
 ## 2. Revert a red deploy
 CI runs on Linux and can fail where the Windows hooks pass; the site stays on the last green deploy, and every
@@ -101,7 +101,7 @@ later push would carry the failure. Drop any prepared batch: `git -C I switch --
 Revert only what this push added: `git -C I revert --no-commit <pre>..<pushed sha>`,
 then `git -C I commit -m "revert(sprint): <IDs> failed CI on Linux" -m "<failing job and step, one line>" -m "Requested: \"I approve your recommendation for pushes\" (sprint integrator)"`
 (add `-m "§8.1 exception 1: revert of a change that fails CI"` when a protected file is in the diff). Push as
-in 1.4 and watch as in 1.5, in the foreground. If the revert's CI is red too, comment on issue #19
+in 1.4 and watch as in 1.5, in the foreground. If the revert's CI is red too, comment on issue #121
 "Integrator: main is red after <sha>; integration paused." and stop.
 A batch of one: send it back with the CI failure and the words "main now holds this task plus its revert;
 rebase with `git rebase --reapply-cherry-picks origin/main`". A bigger batch: land its issues again one at a
@@ -117,10 +117,10 @@ on `B` unless a `[blocker]` holds it. `blocked` is for design questions only, ne
 
 ## 4. Done
 For each issue of the batch: `gh issue close <n> --comment "Integrator: landed <sha>. Players will see: <the PLAYER-VISIBLE lines of the lane's ready-to-integrate comment>."`
-Then one line per issue on issue #19 "Sprint log": `<sha> <ID> <title>: <player-visible line or "nothing player-visible">`.
+Then one line per issue on issue #121 "Sprint log": `<sha> <ID> <title>: <player-visible line or "nothing player-visible">`.
 Go back to step 1.
 
-When you stop, comment once on issue #19 "Sprint log": pushes made, tasks sent back and why, and why you
+When you stop, comment once on issue #121 "Sprint log": pushes made, tasks sent back and why, and why you
 stopped. Under 10 lines. Then, if this session landed or sent back at least one task and did not stop on a
 usage limit or an error, `RemoteTrigger` `run` the `supervisor` id `Q window` prints (load RemoteTrigger with
 ToolSearch), so the lanes pick up what you sent back now rather than at the next hour.

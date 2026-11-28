@@ -1,4 +1,4 @@
-# Sprint: Act II, The Rot Below
+# Sprint: follow-ups and the polish reserve (November)
 
 **Window:** set when the sprint is cued. `/sprint-start [hours]` opens it from that minute, for 40 hours
 unless it names others, and `node scripts/sprint/queue.mjs window` prints it in UTC and Eastern. This file
@@ -8,8 +8,8 @@ Inside the window this file overrides `CLAUDE.md` wherever they conflict: its "a
 each finished task" and "explain each decision in chat". Outside it, this file is inactive. `ARCHITECTURE.md`
 is never overridden.
 
-**Goal:** build Act II's arc, "The Rot Below", and the polish reserve with as little owner input as possible,
-without lowering quality: every change has tests, passes the gates, gets a reviewer pass, and lands through
+**Goal:** clear the follow-ups (`docs/follow-ups.md`) and the polish reserve overnight, and the follow-ups the
+night itself files, with as little owner input as possible, without lowering quality: every change has tests, passes the gates, gets a reviewer pass, and lands through
 one integrator.
 
 ## Owner's standing permissions (24 Oct, in the session that prepared the sprint)
@@ -28,10 +28,13 @@ one integrator.
    and fixed in lane `fixes` without asking, as polish (permission 1). Anything about balance or feel is a
    proposal, never a fix.
 7. No owner playtest this sprint ("Skip it"): the research lane's soaks stand in.
+8. Follow-ups (27 Nov), "Follow-ups + reserve (Recommended)": the follow-ups moved into this Backlog (IDs `N<n>`),
+   October's unbuilt reserve, and the `-follow` issues lanes file during the window are approved like the
+   reserve (permission 1). Act II shipped in October; its lanes `story` and `lore` are off this sprint.
 
 Each commit's trailer quotes the permission it rests on:
-- Act II (lanes `story` and `lore`, and every item marked "(Act II)"):
-  `Requested: "Act II: The Rot Below" (sprint <ID>)`
+- a follow-up (`N<n>`, or a `-follow` issue of any item):
+  `Requested: "Follow-ups + reserve (Recommended)" (sprint <ID>)`
 - the reserve: `Requested: "A headline feature + polish (Recommended)" (sprint <ID>)`
 - a soak finding: `Requested: "A headline feature + polish (Recommended)" (sprint S<n>, soak finding)`
 - a hunt finding: `Requested: "A headline feature + polish (Recommended)" (sprint S<n>, hunt finding)`
@@ -46,7 +49,7 @@ product and design, money and identity, and destruction; CI, the reviewer and ag
   `CURRENT_SCHEMA_VERSION`), new mechanics, and a name or placement the design leaves open. A task that needs
   one: comment one question on the issue, with options and a recommended answer, label it `blocked`, and move
   on to other work. Never invent a rule. The supervisor puts every open question in one daily digest on the
-  Decisions issue, #72 "Sprint questions" (Planning day).
+  Decisions issue, #122 "Sprint questions" (Planning day).
 - **Technical questions are never asked**: how to build or structure it, APIs, tooling, tests, naming,
   placement in the code, performance, refactors, architecture-doc updates. The Opus session that meets one
   (implementer or plan) decides it as the architect, comments `Decision (architect): <question>: <decision>,
@@ -76,8 +79,6 @@ in its own persistent worktree, so lanes never share a working tree.
 
 | Lane       | Label           | Worktree                          | Where it works                                       |
 | ---------- | --------------- | --------------------------------- | ---------------------------------------------------- |
-| `story`    | `lane:story`    | `C:/Antigravity/YODC-lane-story`  | Act II's arc: faction, hubs, the Great Tap, epilogues, objectives, art (`src/content/cotw/`) |
-| `lore`     | `lane:lore`     | `C:/Antigravity/YODC-lane-lore`   | Act II's words and town: vignettes, town, dialogue, barks, shrines, bestiary (`src/content/cotw/`) |
 | `ux`       | `lane:ux`       | `C:/Antigravity/YODC-lane-ux`     | Player aids and UX: `src/ui/`, `src/rendering/`, `src/main/`, `index.html` |
 | `fixes`    | `lane:fixes`    | `C:/Antigravity/YODC-lane-fixes`  | Engine and content bugs: `src/engine/`, `src/content/` |
 | `tooling`  | `lane:tooling`  | `C:/Antigravity/YODC-lane-tooling`| `e2e/soak/`, `scripts/` (never `scripts/sprint/`)    |
@@ -85,7 +86,6 @@ in its own persistent worktree, so lanes never share a working tree.
 
 The integrator works in `C:/Antigravity/YODC-integrate`. The main checkout is only fetched and fast-forwarded.
 While the window is open, the pre-push hook refuses a push to main from any other folder (`scripts/sprint/push-lock.mjs`).
-Both Act II lanes edit `src/content/cotw/index.ts`: keep each change to its own lines, so cherry-picks apply.
 
 ## Flow
 
@@ -107,200 +107,71 @@ Both Act II lanes edit `src/content/cotw/index.ts`: keep each change to its own 
 Labels: `lane:*`, `spec-review`, `sprint-ready`, `in-progress`, `to-integrate`, `held`, `blocked`, `proposal`. Which issue is
 ready, whose comment counts, when held work is retried, whether a session has work and the status block are
 decided by the queue (`scripts/sprint/queue.mjs`, Machinery), never by hand.
-Progress, questions and every push go to the pinned issue #19 "Sprint log". Its body is the status block,
+Progress, questions and every push go to the pinned issue #121 "Sprint log". Its body is the status block,
 which the supervisor rewrites every hour; comments hold the history.
-
-## Act II: The Rot Below (approved design)
-
-A blight eats Yggdrasil's roots under floors 26–49. The Sap-tappers drive silver spigots into the roots and
-drink the sap; the Rot is what leaks, and Níðhöggr gnaws behind it. Three hubs, one per stretch of Act II,
-each hold one NPC and one choice. The hero either takes the tappers' offer (tapped) or mends the root
-(mended), and the tally colours the ending. Built from existing primitives: no engine change, no protected
-file, no save-format change (flags, counters and factions are open records saved whole).
-
-- **The Sap-tappers**, a faction (`sap_tappers`) shown in the Story tab once met. Its standing is only a
-  visible mirror; the ending reads two counters, `rot_tapped` and `rot_mended`.
-- **Hub 26, Tarnished Silver Veins:** a sap-tapper deserter by a campfire. She explains the spigots and the
-  Rot. Choice: take a tapper's flask (tapped), pull the spigot (mended, and nearby monsters wake), or leave.
-- **Hub 34, World-Bark Descent:** a bark-skinned root-warden, kin of the old grove-folk. She tells of the
-  Great Tap, which the tappers will open under floor 40. Choice: swear to break it (the hero is sworn) or
-  accept the tappers' safe-conduct (tapped).
-- **The Great Tap, floor 40:** a labelled countdown, "The Great Tap", runs for a sworn hero, from the oath or
-  from reaching floor 40 (Sprint question 3). Break the spigot in time: mended. If the countdown runs out, it
-  opens (Sprint question 3).
-- **Hub 43, the Maw's brink:** a sap-tapper elder who speaks for Níðhöggr: the tappers feed the wyrm on
-  purpose. Choice: drink from her cup (tapped, and the display-only mark "Sap-drunk") or ward the Maw
-  (mended). Hel's galdr altar shares the floor.
-- **The ending:** each of the two endings gains a closing paragraph, "Tapped" or "Mended", by the rule
-  Sprint question 1 settles. A hero who skipped the hubs reads "Mended". No new ending.
-- **The world answers:** one objective line per hub and one for the Great Tap, each hub's pointing at its NPC
-  (`pointTo` names entities only, so the Great Tap's line points at nothing and its bearing falls back to the
-  nearest stairs down); town patches (spigots, green shoots, black sap) and town dialogue that follow the tally; the
-  Act II vignettes on floors 26, 34 and 43 rewritten in place; companion barks for floors 26–49; four
-  sap-shrines with lore verses; the root-creatures' bestiary verses rewritten as blighted kin.
-- **Every one-time option** needs a `hasFlag … value:false` guard: NPC choices cost no turn and never resolve
-  by themselves.
-- **A hero already past a hub floor** misses that hub; the ending then counts it as neither.
-
-Wording in each NPC's voice is the sprint's to write, short and in the pack's Norse register. These are the
-owner's, asked on the "Sprint questions" issue with a recommendation each; plan sessions file only the items
-an answered question settles:
-1. **The ending's rule** (A2): (a) the tally, "Tapped" when `rot_tapped` is 2 or more; (b) a standing
-   threshold, which kills could swing. Recommended: (a).
-2. **What the tappers' offers give** (A3, A5): (a) existing items, a temporary buff and the display-only
-   mark; (b) a permanent stat, a balance call. Recommended: (a).
-3. **The Great Tap's countdown** (A4, A6, L2). While any countdown runs, the hero cannot rest on any floor,
-   town included (`src/engine/actions/autoRest.ts:84-88`). When it starts: (a) at the oath on floor 34, about
-   500 turns, so no resting from the oath until the spigot breaks or time runs out; (b) when the sworn hero
-   first reaches floor 40, about 150 turns, so no resting only there (a hook, as the Siphon ritual starts its
-   countdown, `hostageRitual.ts:681-691`). When it runs out: (c) it counts as tapped and floods the town with
-   black sap; (d) nothing happens. Recommended: (b) and (c), the length tuned by a soak (E1).
-4. **Fighters and the deserter** (L8): no Sap-tapper fighters this sprint (the Rot's creatures exist); the
-   deserter follows the hero to town after a mend as a stretch item. Recommended: both.
-5. **The three NPCs' names** (A3–A5): (a) the sprint writes them, distinct from every existing name, and the
-   reviewer checks the register; (b) the owner names them. Recommended: (a).
 
 ## Backlog
 
 Work in this order inside a lane. Each item is one line `- **<ID>** <what>`, under a `### <lane>` heading;
 the queue reads the IDs and their order from here, as pushed to `origin/main`, so a change lands for every
 session at once. An item too big for about 300 changed lines becomes `<ID>a`, `<ID>b`, each provable on its
-own. IDs never repeat an earlier sprint's letter (B, H, M, R, S, T and U are October's). Sources: the Act II
-design sketch and the backlog survey of 24 Oct, the playtest logs (`C:/Antigravity/YODC/.prompts/playtest/log.md`,
-`log-yodc-07.md`), and the proposal issues #20, #53, #56, #62, #63 and #69.
-
-### story (Act II's arc)
-
-- **A1** Scaffold `src/content/cotw/rot.ts`: the `sap_tappers` faction (`FactionDefinition`, `factions.ts:24-30`;
-  standing 0 in `initialWorldState.factions`, `index.ts:255-263`); a pre-hook that sets its `metFlag` when the
-  hero bumps a hub NPC (copy `IVALDA_MET_HOOK`, `ironClans.ts:227-237`) and calls `modifyFaction(ws, id, 0)` so
-  older saves get the key; the tally predicates on `rot_tapped` and `rot_mended`; the "Sap-drunk" mark
-  (`HeroMarkDefinition`, `manifest.ts:596`; `index.ts:267`); four tracked milestones (`index.ts:180-195`); the
-  hooks appended at the end of `actionHooks` (`index.ts:234`). Act II's tiles, choices and placements stay in
-  `rot.ts`, each joined to the pack by one spread line at the end of its array (the way the barrows join:
-  `tiles.ts:197`, `choices.ts:158`, `index.ts:347`), so lane `lore`'s lines never touch the same ones.
-- **A2** The ending's two paragraphs on each ending: four `conditionalNarrative` entries (`quest.ts:110` and
-  `:148`; type `manifest.ts:535-540`; no `before`, so each closes its ending), by Sprint question 1's rule, and
-  a test that every combination of the hub choices gives exactly one paragraph per ending. Waits for: A1.
-- **A3** Hub 26: the deserter's campfire-grotto vault (`vaults.ts`, the shape of `:345-392`), placed by
-  `scriptedVaultPlacements` (`index.ts:375`) with her `ScriptedVaultNpc` (`manifest.ts:1389-1397`), and her
-  choice `rot_hub_26` (the `IVALDA_CHOICE` pattern, `ironClans.ts:68-108`): flask, spigot or leave. No guards in
-  the vault. Floors 26, 34 and 43 each open a zone in its threshold room (`floorLayouts.ts:26`, `:28`, `:30`),
-  and no scripted vault sits on a threshold floor yet: a test shows this vault placed, its NPC reachable, on 15
-  seeds before A4 and A5 copy it. Waits for: A1.
-- **A4** Hub 34: the root-warden's vault, placement and choice; the oath sets `great_tap_sworn`, and starts
-  the countdown too if Sprint question 3 says (a). Waits for: A1, A3.
-- **A5** Hub 43: the elder's vault, placement and choice, beside `galdr_altar_hel` (`index.ts:359`; floor 47
-  already pairs a vault with an altar). Waits for: A1, A3.
-- **A6** The Great Tap: its tile and choice in `rot.ts`, placed on floor 40 (`middle_room_center`, the
-  `fixedTilePlacements` shape of `index.ts:340-361`), and the labelled `TimedEventDefinition` "The Great Tap"
-  (model `SIPHON_TIMED_EVENT`, `hostageRitual.ts:518-532`; listed at `index.ts:241`), started by Sprint
-  question 3's rule: the oath, or a hook when a sworn hero first reaches floor 40. Its expiry consequences hold
-  nothing floor-specific: the town reads a flag. Waits for: A1, A4.
-- **A7** Objectives: one line per hub and one for the Great Tap, before `cotw_objective_act2`
-  (`objectives.ts:57`), each hub's with `pointTo` its NPC (`manifest.ts:691`: entity ids only, so the Great
-  Tap's line has none), done when its resolved flag is set or `deepest` passes its floor (the done rule is an
-  OR, `src/engine/quest/objectives.ts:10-14`). Waits for: A3, A4, A5, A6.
-- **A8** Art: sprites and portraits for the three NPCs (`sprites/allySprites.ts:45`, `portraitSprites.ts:70`),
-  the Great Tap's tile recipe (`sprites/tiles.ts`), and their `spriteRecipes.test.ts` aliases. Waits for: A3,
-  A4, A5, A6.
-- **A9** `rotArc.test.ts` on the real `cotwManifest` (models: `ironClans.test.ts`, `nornicReliquaries.test.ts`):
-  every NPC `choiceId` and tile handler resolves; every flag set is read somewhere; the three hub vaults appear
-  on 15 seeds with their NPC reachable; the Great Tap is placed on floor 40; the objective chain advances; a
-  save round trip keeps the flags, counters and standing. Waits for: A7.
-
-### lore (Act II's words and town)
-
-- **L1** Rewrite the Act II vignettes on floors 26, 34 and 43 in place (`narrative.ts:100-117`), naming the
-  hubs' flags. Waits for: A3, A4, A5.
-- **L2** Town patches that follow the tally: `TOWN_PATCHES` entries (`townStages.ts:79-136`, gated as at
-  `:42-44`) for spigots and green shoots, which need new `townThing` tiles (`tiles.ts:49-78`), and black sap
-  after the Great Tap opens, which reuses `town_black_sap` (`tiles.ts:55`) on cells the `roots` patch
-  (`townStages.ts:89-104`) leaves alone, since the last due patch wins a cell; `townStages.test.ts` lane-walk
-  entries. Waits for: A1, A6.
-- **L3** Act II town dialogue: a `setDialogue` hook inserted right after `COTW_TOWN_REACTIVE_HOOK` (`index.ts:218`) and
-  `COTW_HOMECOMING_HOOK` (`:213`), since the last writer wins (pattern `narrative.ts:177-398`), for Olaf, Mimir,
-  Torvald and Gunther. Waits for: A1.
-- **L4** Companion barks for floors 26–37: widen the floor gate (`narrative.ts:416`), for `hearth_frost_hound`
-  and `ember_fang_wolf`.
-- **L5** Companion barks for floors 38–49, with Rot-state variants in the `byMark` idiom (`narrative.ts:401`).
-  Waits for: A1.
-- **L6** Four sap-shrines on floors 28, 33, 38 and 41 (no galdr or scripted floor): a tile and a read-only
-  choice each (one key per placed tile, as `BARROWS`, `ironClans.ts:151-225`), four `loreEntries` verses
-  (model `runestones.ts:90`, `index.ts:197`), and the shrine's tile recipe (`sprites/tiles.ts`) and
-  `spriteRecipes.test.ts` alias. They live in a new `sapShrines.ts`, joined by one spread line each right after
-  the barrows' (`tiles.ts:197`, `choices.ts:158`, `index.ts:347`), never at the arrays' ends, where A6 adds.
-- **L7** Bestiary as blighted kin: rewrite the `hintVerse` of `root_wraith`, `bark_husk_miner`,
-  `amber_sap_weeper`, `rotwood_crawler` and `root_bound_berserker` (`killRites.ts:249-310`) and the descriptions
-  of the families that list them (`monsterCategories.ts`, at `:28`, `:30`, `:51`, `:53` and `:117`). Lore only;
-  no monster changes.
-- **L8** Stretch, by Sprint question 4: the deserter moves to Bjarnarhaven after a mend (the
-  `moveIvaldaToTown` pattern, `ironClans.ts:283-302`). Waits for: A3, L2.
+own. IDs never repeat an earlier sprint's letter (B, H, M, R, S, T and U are October's; A, L and K's Act II
+items were late October's). Sources: `docs/follow-ups.md` (the `N` items, moved here on 27 Nov), the backlog
+survey of 24 Oct, the 6 Nov test-suite audit, the playtest logs (`C:/Antigravity/YODC/.prompts/playtest/log.md`,
+`log-yodc-07.md`), and the proposal issues #20, #53, #56, #62, #63 and #69, which GitHub no longer serves: the
+item's own line is the spec.
 
 ### ux (player aids)
 
-- **X1** (Act II) Tests only, since both models are already generic: a `storyTab.test.ts` case for the
-  Sap-tappers in `buildStanding` (`src/ui/characterMenu/storyModel.ts:138-158`): hidden before meeting, shown
-  after, the tier labels, the bar at ±100; and one for the Great Tap's countdown in the sidebar
-  (`src/ui/sidebar/sidebarModel.ts:142-146`). No presentation code changes. Waits for: A1, A6.
-- **X2** The hero-creation stat − and + buttons get accessible names (`index.html:182-184`).
 - **X3** An overburdened hero who cannot move is told once to drop something, instead of "cannot move!" again
-  and again (`src/engine/actions/movement.ts:53`).
-- **X4** The "First stat" choice at hero creation says it is about spells (`index.html:168`,
-  `src/ui/title-screen.ts:381`).
-- **X5** Rest (`KeyR`) with the map open does nothing and says nothing (#20, #69: 4–15 seeds per soak).
-  Question: stay silent, or print a line.
-- **X6** Reproduce, then fix or close: the console's Rest entry hides at full health and Seiðr although Rest
-  now settles Void Debt (`src/ui/console/consoleModel.ts:109`).
-- **X7** Reproduce, then fix or close: the F1 Spellbook card overlaps the log at 1366×768 (#37); a
-  `visual-check` capture first.
+  and again (`src/engine/actions/movement.ts:52-54`).
+- **X5** Rest (`KeyR`) with the map open does nothing and says nothing (`src/rendering/map-overlay.ts:74-96`
+  takes every key). Question: stay silent, or print a line.
 - **X8** Reproduce, then fix or close: shop focus returns to the same row, not the moved selection
-  (`src/ui/keepFocus.ts`, #51).
+  (`src/ui/keepFocus.ts:37-56` restores the control with the same id or `data-*`).
 - **X9** Hrefna speaks to the newest teaching, not the fixed order altar, debt, first spell
-  (`src/content/cotw/hrefna.ts:79`, #63; a test pins today's order). Question: newest first, or keep the order.
-- **X10** Playtest leftovers, each reproduced on today's build first, then fixed or closed: shop number keys
-  renumber after a sold-out row; Esc deselects before closing the inventory; the pack weight differs between
-  inventory (17.1/40) and shop (6.3/30) (question: which to show); "(3x)" beside "×2"; the "+1" badge reads as
-  renown; Thrain assumes a Rune of Return; Thrym's lines repeat on floor 4; at 1920×1080 the map fills half its
-  pane. Splits into X10a–X10h, one leftover each, in that order; X10c (the pack weight) waits for its question.
+  (`src/content/cotw/hrefna.ts:80-84`; a test pins today's order). Question: newest first, or keep the order.
+- **X10** Playtest leftovers, each reproduced on today's build first, then fixed or closed, one issue each:
+  X10a shop number keys renumber after a sold-out row (`src/ui/shop/shopDialog.ts:207-208`); X10c the pack
+  weight differs between inventory (the total) and shop (the pack's own load, `shopDialog.ts:667`), waits for
+  its question (which to show); X10d "(3x)" (`src/ui/inventory/inventoryController.ts:116`, `:124`) beside "×2"
+  (`inventoryTab.ts:263`); X10e the "+1" badge reads as renown; X10f Thrain assumes a Rune of Return
+  (`src/content/cotw/town.ts:169`); X10g Thrym's lines repeat on floor 4; X10h at 1920×1080 the map fills half
+  its pane (a `visual-check` capture first). X10b (Esc deselects before closing the inventory) is dropped: it is
+  intended (`inventoryController.ts:806-814`), so changing it is a feel call.
 
-### fixes (unverified bugs; a failing test first, or close with a reason)
+### fixes (bugs and their tests; a failing test first, or close with a reason)
 
-- **F1** Take all from a worn belt, purse or rune pouch moves nothing but spends a turn (#70;
-  `src/engine/actions/inventory-actions.ts:414`, the fix pattern at `:326`).
-- **F2** The canvas may stay black after the GPU drops its context: nothing redraws on `contextrestored` (#47).
-  Reproduce or close.
-- **F3** A tactical effect batch can be cut short under about 12 fps by the stall deadline
-  (`src/rendering/fxRunner.ts:226-227`, #63 candidate 6). Reproduce or close.
-- **F4** Rally Howl at full health logs "(+0 HP to <hound>, you feel hastened…)" (`src/content/cotw/town.ts:218`).
+- **N1** Tests only: a kill rite that teaches into full grimoires logs the "Every slot in your grimoires is full"
+  suffix and fires its `screen_flash` (`src/engine/magic/killRites.ts:148-157`, `teachRiteSpell`; nothing
+  asserts either).
+- **N2** A bug report's replay checkpoint and state snapshot are bare `serializeGame()` output with no schema
+  version, so `loadReplayState` (`src/engine/debug/replay.ts:347-353`) decodes a report from an older build as
+  current, or fails it as `corrupt`. Stamp the version on the checkpoint so an old one is refused like any old
+  save (read `CURRENT_SCHEMA_VERSION`; `migrator.ts` itself is not edited).
+- **N3** `ProfileManager.importHero` throws a plain `Error` (`src/engine/storage/profile-manager.ts:513`,
+  `:517`) for an envelope at the current version whose `data` lacks `profile`, `player` or `map`, or whose hero
+  is dead; its doc promises a typed `SaveLoadError` reason (`asImportError`, `:593`).
+- **N4** `declaredVersion` (`src/engine/storage/loadResult.ts:67-71`) reads `{}`, `[]` or an envelope with a
+  non-numeric `schemaVersion` and no timestamp as version 0, so they fail as `migration-failed`, not `corrupt`.
+- **N5** `DungeonGenerator.isReachable` (`src/engine/dungeon/dungeon-generator.ts:502`, the vault exemption at
+  `:524-529`) checks only a vault's `@` connectors, so a blueprint with no `@` passes walled off: a stamp-time
+  check that a blueprint has an `@` (`src/engine/dungeon/vaultStamp.ts:128-150`) closes it. Where every room is
+  a vault (`:308`, `joinable` falls back to `rooms`) a connector can join its own vault again; fix that too if
+  it stays under about 300 lines, else split N5a, N5b.
 
 ### tooling
 
-- **K1** (Act II) Act II soaks: a `SOAK_FLAGS` setting that sets world flags through
-  `window.__cotwEngine.setWorldFlag` before the deep-start jump (`e2e/soak.spec.ts:246-301`), so a
-  `--start-floor` soak can start with earlier hubs settled; and check that the bot bumps a hub NPC.
-- **K2** soak-report's "all findings" table counts findings tagged stairs or latency
-  (`scripts/lib/soak-report.ts` never reads `tag`). Reproduce or close.
-- **K3** The soak oracle "same line N times" fires in 39 of 41 R4 seeds although U1b collapses the display
-  (`e2e/soak/oracles.ts:453`, #69). Question: are the repeated lines intended (R4 option 3).
-- **K4** The soak bot casts Phase Door: known in 41 of 41 R4 runs, never cast (`e2e/soak/playerBot.ts:711`,
-  #69 option 1). Question: approve R4 option 1.
-- **K5** SonarCloud complexity: split the worst S3776 functions outside `scripts/sprint/`, starting with
-  `scripts/lib/soak-report.ts:173` (77). Question: is this worth sprint time.
-- **K6** The 24 test files that assign `globalThis.document`/`window` by hand use `vi.stubGlobal` instead
-  (`vite.config.ts` already unstubs after each test), so no test's global leaks into the next file
-  (6 Nov test-suite audit).
+- **K5** SonarCloud complexity: split the worst S3776 functions outside `scripts/sprint/`, one function per
+  issue (K5a, K5b, …), starting with `soakReport` (`scripts/lib/soak-report.ts:194`, about 277 lines).
+  Question: is this worth sprint time.
+- **K6** The 34 test files under `src/` and `tests/` that assign `globalThis.document`/`window` by hand use
+  `vi.stubGlobal` instead (`vite.config.ts:116` already sets `unstubGlobals`), so no test's global leaks into
+  the next file. Splits into K6a, K6b, K6c, about 10 files each.
 - **K7** One round-trip table with a `roundTrip()` helper for the six `src/engine/storage/__tests__/*RoundTrip.test.ts`
-  files, each case a row; no case dropped (6 Nov test-suite audit).
-- **K8** A shared sprite-sheet helper for the sprite tests in `src/rendering/__tests__/` that each build their
-  own fake sheet (6 Nov test-suite audit).
-- **K9** The gameplay specs that test logic only, no layout, run in Chromium alone (`playwright.config.ts`
-  per-project `testMatch`); four were named by the 6 Nov audit. A rail change: it gets the rail audit.
-- **K10** Soak-shaped unit tests (`src/engine/__tests__/chaosSimulation.test.ts` and its kind) move to the
-  `tooling` Vitest project (`vite.config.ts`), so `npm test` stays fast. A rail change: the rail audit.
-- **K11** The 19 hand-built fake DOMs in the UI tests share happy-dom, a new dev dependency: it is a real DOM
-  where the fakes miss `classList`, focus and events, and one environment replaces 19 partial ones. One
-  file at a time, each still passing (6 Nov test-suite audit).
+  files, each case a row; no case dropped. Splits K7a, K7b if it passes about 300 changed lines.
+- **K8** A shared fake sprite sheet for the about 14 tests in `src/rendering/__tests__/` that each build their
+  own, kept beside them in `src/rendering/__tests__/` (`tests/setup/` is a rail).
 
 ### research (decides nothing; first line of each report: "Proposal, not a rule")
 
@@ -310,10 +181,6 @@ report covers. The queue reads them here, with any `Waits for:` line in the item
 The bug hunt runs on its own every 12 hours (`sprint-research` step 4); the first, H1, reads `src/` since
 74e30d5e, where October's last hunt stopped.
 
-- **E1** (Act II) An Act II soak: does each hub's vault appear, does the bot reach its NPC, and how many turns
-  the Great Tap's countdown has left when the bot reaches the spigot; findings that are bugs become `fixes` issues
-  (permission 6). Waits for: A3–A6, K1. Soaks: one with `--start-floor 26`, `--count 12`. Report: per seed,
-  each hub found and its NPC reached, the countdown's turns left, and each bug filed.
 - **E2** Runestone policy on one build, and two old questions from the same runs: the floor-5 deaths (R2 2 of
   12, R3 2 of 5, R5 8 of 28, against 7 of 16 before a65a8f76) and why the floor-10 stone is missed in 6 of 6
   runs from town. Waits for: nothing. Soaks: one from town with `--runestones first`, then one with
@@ -435,11 +302,11 @@ review starts from numbers instead of transcripts:
   it reproduces on `origin/main` or is marked "reproduce or close", and no item contradicts another or "What
   still stops a task". Its concerns are fixed in this file first.
 - Plan sessions spec each lane's first 6 issues (`/sprint-plan <lane>`, every lane but research). Every design
-  question goes in one issue, the Decisions issue #72 "Sprint questions": one numbered question per comment,
+  question goes in one issue, the Decisions issue #122 "Sprint questions": one numbered question per comment,
   with options and a recommended answer. The owner answers them in one sitting before the window opens, by
   number; plan sessions then file the items those answers settle.
 - During the window, a design question goes on its task issue, labelled `blocked`, and the lane works on other
-  issues. Once a day at most, the supervisor posts every open one on #72 in one digest with one @-mention
+  issues. Once a day at most, the supervisor posts every open one on #122 in one digest with one @-mention
   (`queue.mjs decisions --write`). The owner answers there, one line per question (`#<issue> <answer>`), or
   on the task issue; only the owner's own comments answer, and the queue reads both places.
 

@@ -27,7 +27,7 @@ line of its own (the guard refuses it chained, piped or redirected). It holds th
 issue is ready, whose comment counts, when held work is retried, what a session would find to do, when a
 usage-limit stop may restart) and this computer's sprint state (the window, the ids of the triggers you
 created, your lock), and prints one line of JSON. When it prints `error`, do what its `do` line says; when it
-fails any other way, `Q unlock`, then stop and report its output on issue #19. Never work its rules out by hand.
+fails any other way, `Q unlock`, then stop and report its output on issue #121. Never work its rules out by hand.
 
 `$ARGUMENTS` is `dry-run`: do every check and print what you would start, disable and comment, but take no
 lock, and create, update, record and comment nothing (`Q status` and `Q decisions` without `--write`).
@@ -55,7 +55,7 @@ earlier run or this file.
   - When no title's session is running or stuck, and `has-work "YODC integrate"` prints `"start": false`:
     1. `RemoteTrigger` `update` the triggers `supervisor` and `wake` name (each one not null) with
        `{"enabled": false}`;
-    2. comment "Sprint over" on issue #19 "Sprint log" with the lane lines of `Q status`;
+    2. comment "Sprint over" on issue #121 "Sprint log" with the lane lines of `Q status`;
     3. stop.
   - When `supervisor` is null or the update is refused, start that comment "@astevegreen" and give the link
     https://claude.ai/code/routines/<id>, since only the owner can switch it off then.
@@ -102,7 +102,7 @@ this account. For each title with an id, `RemoteTrigger` `get` it and `list_runs
 
 **Memory floor.** A `has-work` reason starting `memory:` means free memory is under the floor, raised for each
 session this run already started: start nothing more this run, though you still read every session and name
-stuck ones. With `--starting 0`, comment "@astevegreen Supervisor: <that reason>; started nothing" on issue #19
+stuck ones. With `--starting 0`, comment "@astevegreen Supervisor: <that reason>; started nothing" on issue #121
 once, so GitHub notifies the owner. Don't archive anything or end any process outside step 2b.
 
 To start one, `RemoteTrigger` `create` with this body, then at once `Q started "<title>" <the new trigger's id>`:
@@ -128,7 +128,7 @@ Archiving is the sprint archiver's job; don't try it here.
 ## 4. Report
 **Status block.** Every run, `Q status --write`, with one `--also '<line>'` for each stuck session, each
 session that failed to start, and each usage-limit wait (its title, what is wrong or its `restartAt`, its url).
-It rewrites the body of issue #19 "Sprint log" (the lane counts, the last deploy, free memory and "Needs you")
+It rewrites the body of issue #121 "Sprint log" (the lane counts, the last deploy, free memory and "Needs you")
 and prints `body`, `needsYou`, and `new`: the "Needs you" items the old body didn't have, design questions
 left out.
 
@@ -136,7 +136,7 @@ left out.
 the digest on the Decisions issue: every open question with its recommendation, and the one @-mention the owner
 gets for them. It prints `due`, `questions` and `written`; never comment about questions yourself.
 
-**Comment** on issue #19, under 15 lines, when either holds:
+**Comment** on issue #121, under 15 lines, when either holds:
 - `new` is not empty: start "@astevegreen", so GitHub notifies the owner, and list those items first;
 - it is the first run of the window or a sixth UTC hour (00, 06, 12, 18) and no comment of yours there is under
   an hour old, a session is stuck or never started, a usage limit stopped one, step 2b is not working, or

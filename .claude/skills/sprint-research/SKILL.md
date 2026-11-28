@@ -28,7 +28,7 @@ through a file: write it with the Write tool to `.prompts/tmp/`, then `gh issue 
 line of its own (the guard refuses it chained, piped or redirected). It reads the `### research` list in
 `docs/sprint.md`, each item's waits ("Waits for:" on its line and in its issue), your soak comments and the
 soak's process, and prints the next job as one line of JSON. When it prints `error`, do what its `do` line
-says; when it fails any other way, stop and report its output on issue #19. Never copy the list or work out a
+says; when it fails any other way, stop and report its output on issue #121. Never copy the list or work out a
 wait by hand: on 22 Oct a copy fell 7 hours behind the second backlog.
 
 The queue reads these comments word for word:
@@ -106,4 +106,4 @@ the queue says when one is due and gives its `since` sha.
    unconfirmed candidates in a line each, anything about balance or feel as an option. Add `proposal` and close
    the issue.
 
-When you stop, one line on issue #19 "Sprint log".
+When you stop, one line on issue #121 "Sprint log".

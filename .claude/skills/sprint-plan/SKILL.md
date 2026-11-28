@@ -25,7 +25,7 @@ files, write code or invent game rules. `L` below is the label `lane:$ARGUMENTS`
 line of its own (the guard refuses it chained, piped or redirected). `Q has-work "YODC plan: $ARGUMENTS"`
 prints one line of JSON: `start`, `reason`, `ready` (the lane's open `sprint-ready` issues) and `todo` (the
 lane's backlog IDs with no issue yet, in backlog order; `M1a` counts for `M1`). When it prints `error`, do what
-its `do` line says; when it fails any other way, stop and report its output on issue #19. Never match titles
+its `do` line says; when it fails any other way, stop and report its output on issue #121. Never match titles
 against the backlog by hand.
 
 Stop when `Q window` prints `phase` `after`, or `start` is false. With `phase` `none` (no sprint started yet:
@@ -48,7 +48,7 @@ Lanes `story` and `lore`: the "Act II: The Rot Below" section is the design, and
 bug's details.
 
 ## 2. Check it can be specified
-First read the Decisions issue, #72 "Sprint questions" (`docs/sprint.md`, Planning day): an `astevegreen`
+First read the Decisions issue, #122 "Sprint questions" (`docs/sprint.md`, Planning day): an `astevegreen`
 comment there that answers a question by number settles it, like a line of `docs/sprint.md`.
 A technical question (how to build or structure it, APIs, tooling, tests, naming, placement in the code,
 performance, refactors) is yours to decide as the architect, never the owner's: write it into the spec as
@@ -56,7 +56,7 @@ performance, refactors) is yours to decide as the architect, never the owner's: 
 If the item needs a design decision not written in `docs/sprint.md`, `ARCHITECTURE.md` or those answers
 (game rules, balance feel, scope, a save break, a new mechanic, a name or placement in the game the design
 leaves open):
-- on the planning day (`phase` `none`): comment it on #72 as `Plan: Q<next number> <ID>: <question>`, with
+- on the planning day (`phase` `none`): comment it on #122 as `Plan: Q<next number> <ID>: <question>`, with
   options and a recommended answer. File nothing for the item yet, and go to the next item.
 - during the window (`phase` `open`): create the issue with the Goal and one question, with options and
   `Recommended: <option>, because <why>`, label it `L` and `blocked`, and go to the next item. The supervisor's
@@ -101,7 +101,7 @@ body to a file in your folder, then `gh issue edit <n> --body-file` it); otherwi
 For each issue without `blocked`: `gh issue edit <n> --add-label sprint-ready --remove-label spec-review`.
 A blocked issue never gets `sprint-ready`; remove its `spec-review` too, so it is audited only once.
 
-Then go back to step 1. When you stop, comment once on issue #19 "Sprint log": the lane, the issues created
+Then go back to step 1. When you stop, comment once on issue #121 "Sprint log": the lane, the issues created
 (link, ID, ready or blocked), and every assumption you made. Under 10 lines. Then, in the window, if you filed at
 least one ready issue and did not stop on a usage limit or an error, `RemoteTrigger` `run` the `supervisor` id
 `Q window` prints (load RemoteTrigger with ToolSearch), so the lane starts on it now.

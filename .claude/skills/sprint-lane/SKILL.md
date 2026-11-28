@@ -27,7 +27,7 @@ in a shell variable (`W=…; git -C $W`): the guard can't read variables and ref
 line of its own (the guard refuses it chained, piped or redirected). It holds the lane's rules (which issue is
 ready, whose comment counts as the owner's, when held work is retried, what a stopped session left) and prints
 one line of JSON. When it prints `error`, do what its `do` line says; when it fails any other way, stop and
-report its output on issue #19. The queue rules live only there: never work them out by hand.
+report its output on issue #121. The queue rules live only there: never work them out by hand.
 
 Run the `implementer` and the `reviewer` with model `opus` and `run_in_background: false` every time. A
 session waiting on a background agent looks finished to the supervisor, which would start a second one in `W`.
@@ -65,7 +65,9 @@ and `reason`:
    PASS). A minor concern that is real work (a missing test, a known gap) also gets a follow-up issue,
    `gh issue create --title "[task] <ID>-follow: <what>" --label lane:$ARGUMENTS --label sprint-ready`, its body
    the concern with its file:line, the line `Depends on: #<n>.` and #<n>'s `Requested:` trailer; name it in the
-   note.
+   note. Label it `after-sprint` instead of `sprint-ready` (the queue never picks it; the owner's morning list
+   does) when #<n> is itself a follow-up (its ID ends `-follow`), so the night converges, or when its fix needs a
+   locked path or a new dependency ("What still stops a task"), which no lane can land.
    A `[blocker]` left: `Q move <n> held --note '<the blocker concerns, each with its [blocker] tag>'`. Only a
    blocker holds work.
    Write the note in single quotes, a line break as `\n`, and ’ for an apostrophe.
@@ -75,7 +77,7 @@ and `reason`:
 Then step 1 again.
 
 ## 3. Report
-When you stop, comment once on issue #19 "Sprint log", under 15 lines: the lane, the time, one line per task
+When you stop, comment once on issue #121 "Sprint log", under 15 lines: the lane, the time, one line per task
 (#issue: to-integrate, held or blocked), and why you stopped. Design
 questions reach the owner in the daily digest, never here.
 Then, if you finished at least one task this session and did not stop on a usage limit or an error,

@@ -1,7 +1,7 @@
 /** Types for `queue-rules.mjs`, which `scripts/sprint/queue.mjs` runs under plain node. */
 
 export const OWNER: string;
-export const BOT: string;
+export const BOTS: readonly string[];
 export const AUDIT: string;
 export const MEMORY_FLOOR_MB: number;
 export const WINDOW_FILE: string;

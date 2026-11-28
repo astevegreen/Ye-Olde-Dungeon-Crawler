@@ -314,7 +314,7 @@ review starts from numbers instead of transcripts:
 
 1. `/sprint-start --dry-run` ends `DRY-RUN OK yodc`. It checks:
    - the main checkout is on a clean `main` with nothing unpushed;
-   - `gh` is signed in as `greenbeanbot` (`queue.mjs identity`);
+   - `gh` is signed in as the agent, the GitHub App `greenbean-agent` or the old `greenbeanbot` account (`queue.mjs identity`);
    - this folder's bridge environment is listed;
    - no window is open, and the last archiver is off.
 

@@ -17,10 +17,6 @@ it. Sessions add to it by day; sprint lanes file follow-up issues instead. Movin
 ## Presentation
 
 ## Tests, gates and tooling
-- A push that only deletes branches runs every pre-push gate, all three browsers included (`.githooks/pre-push:30`
-  lets only `handoffs` pushes skip); a deletion carries no code. A rail change: it gets the rail audit.
-  [7 Nov 2026, housekeeping]
-
 - `.claude/settings.local.json` is tracked and still holds broad one-off grants (`npm run *`, `npx tsx *`, `npx tsc *`,
   awk and scratchpad lines); the auto-mode classifier refused the pruning as self-modification, so the owner or a
   rail-audited change should narrow it to the gate scripts, `npx vitest *`, `gh run *`, `git worktree *`,

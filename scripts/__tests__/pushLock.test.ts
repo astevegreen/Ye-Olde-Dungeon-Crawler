@@ -1,6 +1,7 @@
 // The sprint's push lock (scripts/sprint/push-lock.mjs): its rule, and the real pre-push hook refusing a
 // push to main into a bare repository while a window file in the shared git folder says a sprint is open.
-// SKIP_HOOKS=1 stops the hook after the lock, which it never lifts, so no gate runs here.
+// SKIP_HOOKS=1 stops the hook after the lock, which it never lifts, so no gate runs here. The last test
+// clears it to see which pushes reach the gates: the repository it pushes from has a first gate that fails.
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -66,7 +67,17 @@ afterAll(() => {
   for (const root of roots) fs.rmSync(root, { recursive: true, force: true });
 });
 
+// The same, with the gates switched on. npm's own variables go too: under `npm test` they could point the
+// hook's `npm run` at this repository instead of the temporary one.
+const gated: NodeJS.ProcessEnv = Object.fromEntries(
+  Object.entries(env).filter(([k]) => k !== 'SKIP_HOOKS' && !k.toLowerCase().startsWith('npm_')),
+);
+
 function git(cwd: string, ...args: string[]): Promise<{ code: number | null; out: string }> {
+  return gitWith(env, cwd, ...args);
+}
+
+function gitWith(env: NodeJS.ProcessEnv, cwd: string, ...args: string[]): Promise<{ code: number | null; out: string }> {
   return new Promise((resolve, reject) => {
     const child = spawn('git', args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = '';
@@ -126,5 +137,30 @@ describe('.githooks/pre-push', () => {
     fs.rmSync(windowFile);
     await ok(work, 'commit', '-q', '--allow-empty', '-m', 'two');
     expect(await ok(work, 'push', 'origin', 'HEAD:main')).toContain('pre-push: skipped (SKIP_HOOKS=1)');
+  });
+
+  it('runs no gate for handoff notes and deleted branches other than main, and every gate for any other push', async () => {
+    const { work } = await repos();
+    fs.writeFileSync(path.join(work, 'package.json'), JSON.stringify({ scripts: { 'test:tooling': 'exit 1' } }));
+    await ok(work, 'tag', 'v1');
+    await ok(work, 'push', 'origin', 'HEAD:main', 'HEAD:refs/heads/a', 'HEAD:refs/heads/b', 'HEAD:refs/heads/c', 'v1');
+    const push = (...refs: string[]) => gitWith(gated, work, 'push', 'origin', ...refs);
+    const skipped = { code: 0, out: expect.stringContaining('pre-push: only handoff notes or branch deletions, no gates') };
+
+    expect(await push(':a')).toEqual(skipped);
+    expect(await push(':b', 'HEAD:refs/heads/handoffs')).toEqual(skipped);
+
+    // Code beside a deletion, in either order of the hook's ref lines, main's deletion and a deleted tag.
+    const others = [[':c', 'HEAD:refs/heads/d'], ['HEAD:refs/heads/d', ':c'], ['HEAD:refs/heads/d'], [':main'], [':c', ':main'], [':refs/tags/v1']];
+    for (const refs of others) {
+      const gatedPush = await push(...refs);
+      expect(gatedPush.code).not.toBe(0);
+      expect(gatedPush.out).toContain('pre-push: npm run test:tooling');
+    }
+    const left = await ok(work, 'ls-remote', 'origin');
+    expect(left).toContain('refs/heads/c');
+    expect(left).toContain('refs/heads/main');
+    expect(left).toContain('refs/tags/v1');
+    expect(left).not.toMatch(/refs\/heads\/[abd]\b/);
   });
 });

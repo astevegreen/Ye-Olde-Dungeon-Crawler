@@ -1,5 +1,5 @@
 # Handoff: overnight follow-ups sprint
-2026-11-28 04:48 UTC · branch main · HEAD 664f2fc1 · tree clean · folder C:/Antigravity/YODC
+2026-11-28 04:57 UTC · branch main · HEAD 8cddb58c · tree clean · folder C:/Antigravity/YODC
 
 ## Goal
 The owner asked "how to orchestrate work so that all the follow-ups and any newly generated follow-ups can resolved
@@ -14,17 +14,14 @@ Backlog and the morning leftovers (`blocked`, `held`, `after-sprint` issues) are
 - 664f2fc1: the log is #121 and questions #122 (#19 and #72 are gone). Backlog: N1–N5, X3/X5/X8/X9/X10 and K5–K8.
   Story and lore lanes removed; permission 8 added; the `after-sprint` label is never queued (sprint-lane step 2.2).
 - Uncommitted: none.
-- Session `local_67ba05fb…` (branch `claude/strange-gauss-8997f8`): four rail commits audited `LOOSENS: no`
-  (SHA pins, pre-push skips side-branch deletions, `.agents/` shrink, Dependabot check). It was pushing them, and
-  none were on `origin/main` at handoff.
+- 20fec107, 50bb7b95, 06092fb0, 8cddb58c: the four rail follow-ups (SHA pins, the `.agents/` list, the Dependabot
+  note, pre-push skipping side-branch deletions), pushed by another session; CI green; main checkout pulled.
 
 ## Next
-1. `git fetch && git log --oneline 664f2fc1..origin/main`: check the four rail commits landed, or ask that session.
-   They must land before the window: the push lock admits only the integrator.
-2. Once gh is greenbeanbot: `/sprint-start 12 --dry-run`, which must end `DRY-RUN OK yodc`.
-3. Owner: the Preflight in `docs/sprint.md` (pause updates, never sleep, Claude Code 2.1.304 or later), then
+1. Once gh is greenbeanbot: `/sprint-start 12 --dry-run`, which must end `DRY-RUN OK yodc`.
+2. Owner: the Preflight in `docs/sprint.md` (pause updates, never sleep, Claude Code 2.1.304 or later), then
    `/sprint-cue` and `/sprint-start 12`.
-4. Morning: post "What we measure" on #121, and list the open `blocked`, `held` and `after-sprint` issues.
+3. Morning: post "What we measure" on #121, and list the open `blocked`, `held` and `after-sprint` issues.
 
 ## Model
 Sonnet 5.5 at medium thinking: checks, a dry run and relaying.

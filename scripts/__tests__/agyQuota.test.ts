@@ -85,7 +85,8 @@ describe('the quota ledger', () => {
 
 describe('what agy skips', () => {
   it('sorts files into docs, tests and lockfiles, never counting instruction files as docs', () => {
-    expect(['docs/follow-ups.md', 'README.md', 'notes.txt'].every(isDoc)).toBe(true);
+    expect(['docs/follow-ups.md', 'README.md', 'src/content/cotw/LORE.MD'].every(isDoc)).toBe(true);
+    for (const f of ['notes.txt', 'docs/balance.json', 'docs/architecture/diagram.svg']) expect(isDoc(f), f).toBe(false);
     for (const f of ['CLAUDE.md', 'src/AGENTS.md', 'GEMINI.md', '.claude/skills/x/SKILL.md', '.claude/agents/reviewer.md', '.agents/rules/project-rules.md'])
       expect(isDoc(f), f).toBe(false);
     expect(['scripts/__tests__/a.test.ts', 'e2e/run.spec.ts', 'tests/setup/x.ts', 'tools/tests/test_check.py'].every(isTest)).toBe(true);

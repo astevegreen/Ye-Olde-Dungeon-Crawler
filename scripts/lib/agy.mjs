@@ -417,7 +417,8 @@ export const isLockfile = (f) => LOCKFILES.has(baseName(f));
 export const isTest = (f) =>
   /(^|\/)(__tests__|tests?|e2e)\//.test(f) || /\.(test|spec)\.[cm]?[jt]sx?$/.test(f) || /(^|\/)test_[^/]*\.py$/.test(f);
 const isInstruction = (f) => ['CLAUDE.md', 'AGENTS.md', 'GEMINI.md'].includes(baseName(f)) || /^\.(claude|agents)\//.test(f);
-export const isDoc = (f) => (/\.(md|txt)$/i.test(f) || f.startsWith('docs/')) && !isInstruction(f);
+// Markdown only: a .txt or a file under docs/ can be data a build or a check reads (flashcards' tools/gemini/budget.mjs).
+export const isDoc = (f) => /\.md$/i.test(f) && !isInstruction(f);
 
 // Why agy may skip this change, or null when it reviews it.
 export function skipReason({ files = [], lines = 0 }, { deep = false, rails = false, author = '' } = {}) {

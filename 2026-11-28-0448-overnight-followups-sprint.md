@@ -28,6 +28,8 @@ Sonnet 5.5 at medium thinking: checks, a dry run and relaying.
 ## Decisions
 - Reuse the sprint machinery, with no new orchestrator: lanes already file `-follow` issues the queue picks up.
 - X10b is dropped as intended behaviour (`inventoryController.ts:806-814`); K9–K11 are back on `docs/follow-ups.md`.
+- greenbeanbot is suspended (gh: HTTP 403 "Your account was suspended"), so the sprint waits for an appeal, not a
+  switch to astevegreen — owner: "Appeal".
 
 ## Read first
 - docs/sprint.md:15-40 — permissions and trailers; docs/sprint.md:163 — the Backlog

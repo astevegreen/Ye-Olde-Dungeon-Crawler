@@ -69,7 +69,8 @@ const commandsIn = (w) => {
 if (read.refusal) deny(read.refusal);
 
 const ALWAYS = [
-  [/--no-verify\b|\bSKIP_HOOKS\b|core\.hooksPath/, 'hooks are never skipped'],
+  // git reads config keys in any case, so core.hookspath skips the hooks too.
+  [/--no-verify\b|\bSKIP_HOOKS\b|core\.hookspath/i, 'hooks are never skipped'],
   [/\bgh\s+(auth|secret|api|workflow|release|repo|label\s+delete|issue\s+delete)\b/, 'that gh command is the owner\'s'],
   [/\bgit\b[^\n]*\bpush\b[^\n]*(\s-f\b|--force|--delete|\s-d\b|\s\+\S|\s:\S)/, 'no force-push or remote delete'],
   [/\bgit\b[^\n]*\b(reset\s+--hard|clean\s+-\S*f|branch\s+-D|tag\s+-[df]|update-ref\s+-d|filter-branch|filter-repo)\b/, 'that discards work'],

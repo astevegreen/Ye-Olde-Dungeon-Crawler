@@ -27,6 +27,9 @@ describe('every unattended mode', () => {
   it.each([
     'git commit --no-verify -m x',
     'SKIP_HOOKS=1 git push',
+    'git -c core.hooksPath=/dev/null commit -m x',
+    'git -c core.HOOKSPATH=/dev/null commit -m x',
+    'git config core.hookspath .nohooks',
     'git -C /w push --force origin HEAD:main',
     'git push origin --delete sprint/3',
     'git push origin +HEAD:main',

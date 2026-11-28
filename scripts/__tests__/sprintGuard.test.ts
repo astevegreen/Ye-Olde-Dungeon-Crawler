@@ -27,6 +27,9 @@ describe('every unattended mode', () => {
   it.each([
     'git commit --no-verify -m x',
     'SKIP_HOOKS=1 git push',
+    'git -c core.hooksPath=/dev/null commit -m x',
+    'git -c core.HOOKSPATH=/dev/null commit -m x',
+    'git config core.hookspath .nohooks',
     'git -C /w push --force origin HEAD:main',
     'git push origin --delete sprint/3',
     'git push origin +HEAD:main',
@@ -219,6 +222,12 @@ describe('commands run through a wrapper', () => {
     'git -c alias.p=push p',
     'git config alias.p push',
     'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.p GIT_CONFIG_VALUE_0=push git p',
+    'GIT_CONFIG_GLOBAL=/tmp/x git commit -m x',
+    'XDG_CONFIG_HOME=/tmp/x git commit -m x',
+    'git -c include.path=/tmp/x commit -m x',
+    'git -c inc""lude.path=/tmp/x commit -m x',
+    'git -c include.pa\\th=/tmp/x commit -m x',
+    'git -c includeIf.gitdir:/w/.path=/tmp/x commit -m x',
     'git -C /w rebase -x "git push" origin/main',
     'git submodule foreach "git push"',
   ])('refuses %s', (command) => {

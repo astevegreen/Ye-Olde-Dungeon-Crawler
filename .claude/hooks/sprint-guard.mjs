@@ -69,7 +69,8 @@ const commandsIn = (w) => {
 if (read.refusal) deny(read.refusal);
 
 const ALWAYS = [
-  [/--no-verify\b|\bSKIP_HOOKS\b|core\.hooksPath/, 'hooks are never skipped'],
+  // git reads config keys in any case, so core.hookspath skips the hooks too.
+  [/--no-verify\b|\bSKIP_HOOKS\b|core\.hookspath/i, 'hooks are never skipped'],
   [/\bgh\s+(auth|secret|api|workflow|release|repo|label\s+delete|issue\s+delete)\b/, 'that gh command is the owner\'s'],
   [/\bgit\b[^\n]*\bpush\b[^\n]*(\s-f\b|--force|--delete|\s-d\b|\s\+\S|\s:\S)/, 'no force-push or remote delete'],
   [/\bgit\b[^\n]*\b(reset\s+--hard|clean\s+-\S*f|branch\s+-D|tag\s+-[df]|update-ref\s+-d|filter-branch|filter-repo)\b/, 'that discards work'],
@@ -106,8 +107,10 @@ if ((MODE === '--lane' || MODE === '--integrator') && parts.some((p) => isQueue(
 
 if (MODE === '--lane' || MODE === '--integrator') {
   let cwd = String(input.cwd ?? process.cwd());
-  // Git config set from the environment can define an alias that runs any command.
-  if (/\bGIT_CONFIG_(PARAMETERS|COUNT|KEY_\d+)\b/.test(text)) deny('no git config from the environment');
+  // Git config set from the environment, or a config file git is told to include or read instead, can define an
+  // alias that runs any command or point core.hooksPath elsewhere. Read as written and as the shell reads its words.
+  const configFrom = /\bGIT_CONFIG(_\w+)?\b|\bXDG_CONFIG_HOME\b|\binclude\.path\b|\bincludeif\./i;
+  if (configFrom.test(text) || configFrom.test(textRead)) deny('no git config from the environment or an included file');
   // Git's subcommand or checkout in a variable or a substitution (`git $p`, `git $(echo push)`, `git -C "$d" commit`,
   // PowerShell's splatted `git @a`) can't be read.
   if (read.gitHidden) {

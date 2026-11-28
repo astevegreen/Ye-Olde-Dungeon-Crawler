@@ -45,7 +45,10 @@ export interface Pick {
   why: string;
 }
 export function pickDepth(reviewed: Reviewed, deepPaths?: readonly string[]): Pick;
+/** The files a diff changes (a rename or copy names its old path, then its new one) and its +/- line count. */
 export function diffStats(diff: string): { files: string[]; lines: number };
+/** Sort comparator: model versions ("3.8", "5-5") newest first, number by number, locale-free. */
+export function newerFirst(a: string, b: string): number;
 
 export const TIMEOUT: string;
 /** How long a run resumed after a time-out may take. */

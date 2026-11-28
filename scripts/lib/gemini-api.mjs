@@ -67,7 +67,8 @@ export const NO_API = () => {
 // API cannot, so they wait for agy; only a change, whose diff is the material, goes to the API.
 export const apiFor = (kind) => (kind === 'repo' || kind === 'spec' ? NO_API : undefined);
 
-// Reads one generateContent reply ({ status, text }) and returns the answer, or throws why not. By status: busy
+// Reads one generateContent reply ({ status, text }) and returns the answer, or throws why not. A time limit (the
+// answer's, or the TLS handshake's through the proxy tunnel) passes to the next model. By status: busy
 // (429, 5xx) passes to the next model, and so does an id the API does not have (404: with no agy to list the
 // models, a retired one is still asked); anything else (no credit, a bad key, a refused request) stops the review. Only a reply that finished (STOP) is an answer: any other ending is cut off.
 export function parseApiReply({ status, text }) {
@@ -75,7 +76,7 @@ export function parseApiReply({ status, text }) {
   try {
     out = JSON.parse(text);
   } catch {
-    if (/ran out of time/.test(text)) throw new Error(text.trim());
+    if (/ran out of time|handshake did not finish/.test(text)) throw new Error(text.trim());
     if (status === 429 || status >= 500) throw new Error(`the Gemini API is overloaded (${status})`);
     throw stop(`the Gemini API could not be reached (${status || 'no answer'}): ${text.trim().split('\n')[0]}`);
   }
@@ -110,7 +111,7 @@ const tls = require("node:tls");
 let input = "";
 process.stdin.setEncoding("utf8");
 process.stdin.on("data", (d) => (input += d)).on("end", () => {
-  const { url, body, timeout } = JSON.parse(input);
+  const { url, body, timeout, handshake } = JSON.parse(input);
   let sent = false;
   const done = (status, text) => {
     if (sent) return;
@@ -149,16 +150,30 @@ process.stdin.on("data", (d) => (input += d)).on("end", () => {
     if (res.statusCode !== 200) return done(0, "the proxy refused the tunnel (" + res.statusCode + ")");
     // No agent: only then does node:https use createConnection. (agent: false makes a new agent that ignores it
     // and goes direct, leaving the tunnel idle until the proxy cuts it.)
-    send({ createConnection: () => tls.connect({ socket, servername: target.hostname }) });
+    // A tunnel that opens but carries nothing would hold the request to its full idle limit; the TLS handshake
+    // has the handshake limit (ms) to finish, then the request ends with a reason the next model can follow.
+    send({
+      createConnection: () => {
+        const secure = tls.connect({ socket, servername: target.hostname });
+        const limit = setTimeout(() => {
+          const s = handshake / 1000;
+          secure.destroy(new Error("the API's TLS handshake did not finish in " + s + " seconds through the proxy tunnel"));
+        }, handshake);
+        secure.once("secureConnect", () => clearTimeout(limit)).once("close", () => clearTimeout(limit));
+        return secure;
+      },
+    });
   });
   connect.on("error", (e) => done(0, "the proxy could not be reached: " + e.message));
   connect.end();
 });`;
 const API_TIMEOUT_MS = 10 * 60_000;
+const HANDSHAKE_MS = 30_000;
 
-export function postApi(url, body, key, spawn = spawnSync) {
+/** POSTs `body` to `url` from a child node. `spawn` and `handshake` (the TLS handshake's limit, ms) are for tests. */
+export function postApi(url, body, key, spawn = spawnSync, handshake = HANDSHAKE_MS) {
   const r = spawn(process.execPath, ['-e', POST], {
-    input: JSON.stringify({ url, body, timeout: API_TIMEOUT_MS }),
+    input: JSON.stringify({ url, body, timeout: API_TIMEOUT_MS, handshake }),
     env: { ...process.env, GEMINI_API_KEY: key },
     encoding: 'utf8',
     windowsHide: true,

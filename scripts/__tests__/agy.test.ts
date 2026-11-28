@@ -17,6 +17,7 @@ import {
   lightModels,
   listModels,
   modelName,
+  newerFirst,
   parseModels,
   parseReply,
   pickDepth,
@@ -220,6 +221,33 @@ describe('which model reviews what', () => {
       '+one',
     ].join('\n');
     expect(diffStats(diff)).toEqual({ files: ['src/engine/a.ts', 'docs/new.md'], lines: 3 });
+  });
+
+  it('names both paths of a rename, so moving a rail out of its folder still counts as touching it', () => {
+    const pure = [
+      'diff --git a/.githooks/pre-push b/docs/pre-push',
+      'similarity index 100%',
+      'rename from .githooks/pre-push',
+      'rename to docs/pre-push',
+    ].join('\n');
+    expect(diffStats(pure)).toEqual({ files: ['.githooks/pre-push', 'docs/pre-push'], lines: 0 });
+    // A path with " b/" in it makes the header ambiguous: the `rename from` line is the old path.
+    const spaced = [
+      'diff --git a/x b/y b/z',
+      'similarity index 90%',
+      'rename from x b/y',
+      'rename to z',
+      '--- a/x b/y',
+      '+++ b/z',
+      '-old',
+      '+new',
+    ].join('\n');
+    expect(diffStats(spaced)).toEqual({ files: ['x b/y', 'z'], lines: 2 });
+  });
+
+  it('sorts model versions newest first, number by number, without the locale', () => {
+    expect(['3.8', '10', '4', '4.5', '5-5', '9'].sort(newerFirst)).toEqual(['10', '9', '5-5', '4.5', '4', '3.8']);
+    expect(newerFirst('4', '4')).toBe(0);
   });
 });
 

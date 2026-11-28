@@ -5,6 +5,11 @@ on:
     branches: [ main, master ]
   workflow_call:
 
+# The tests only read the code (artifacts and the cache use the runner's own token). Called from deploy.yml,
+# the run gets at most the caller's permissions, which grant the same.
+permissions:
+  contents: read
+
 # A newer push to a pull request cancels its older run. A run called from deploy.yml (a push to
 # main) gets its own group (run id), so it neither waits nor cancels: github.event_name is the caller's `push` there.
 concurrency:

@@ -51,6 +51,12 @@ const LINGERING_PROXY =
   's.on("connect", (req, sock) => sock.write("HTTP/1.1 407 Proxy Authentication Required\\r\\n\\r\\n"));' +
   's.listen(0, () => console.log(s.address().port));';
 
+// A proxy that opens the tunnel, then carries nothing either way and never closes it.
+const SILENT_PROXY =
+  'const s = require("node:http").createServer();' +
+  's.on("connect", (req, sock) => { sock.write("HTTP/1.1 200 Connection Established\\r\\n\\r\\n"); sock.resume(); });' +
+  's.listen(0, () => console.log(s.address().port));';
+
 describe('the Gemini API through the cloud proxy', () => {
   it('sends the request inside the tunnel, and a cut tunnel comes back as a reason, not a crash', async () => {
     await throughProxy(CUTTING_PROXY, async (out) => {
@@ -88,4 +94,26 @@ describe('the Gemini API through the cloud proxy', () => {
       });
     });
   });
+
+  it('ends a tunnel that carries nothing at the handshake limit and passes on, not at the 10-minute one', async () => {
+    // A 15-second cut-off stands in for the 11-minute one: without the handshake limit the child reaches it.
+    const short = (cmd: string, args: string[], opts: { input: string; env: Record<string, string | undefined> }) =>
+      spawnSync(cmd, args, { ...opts, encoding: 'utf8', timeout: 15_000 });
+    await throughProxy(SILENT_PROXY, () => {
+      const start = Date.now();
+      const r = postApi('https://gemini.invalid/v1beta/models/x:generateContent', {}, 'k', short, 500);
+      expect(r.status).toBe(0);
+      expect(r.text).toMatch(/handshake did not finish/);
+      expect(Date.now() - start).toBeLessThan(10_000);
+      // The next model is asked, as after any time limit: the error is not a stop.
+      let err: (Error & { stop?: boolean }) | undefined;
+      try {
+        parseApiReply(r);
+      } catch (e) {
+        err = e as Error & { stop?: boolean };
+      }
+      expect(err?.message).toMatch(/handshake did not finish/);
+      expect(err?.stop).toBeFalsy();
+    });
+  }, 20_000);
 });

@@ -1,12 +1,10 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "env": {
+    "NO_COLOR": "1",
+    "FORCE_COLOR": "0",
     "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "300000",
     "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
-  },
-  "enabledPlugins": {
-    "playwright@claude-plugins-official": false,
-    "github@claude-plugins-official": false,
-    "claude-code-setup@claude-plugins-official": false
   },
   "permissions": {
     "defaultMode": "auto",
@@ -20,6 +18,9 @@
       "PowerShell(node C:/Antigravity/YODC/scripts/sprint/queue.mjs *)"
     ],
     "ask": [
+      "Edit(/.claude/settings.json)",
+      "Edit(/.claude/settings.local.json)",
+      "Edit(/.claude/hooks/**)",
       "Bash(git push *--force*)",
       "Bash(git push -f*)",
       "Bash(git push * -f*)",
@@ -88,7 +89,29 @@
       "Read(node_modules/**)",
       "Read(playwright-report/**)",
       "Read(test-results/**)",
-      "Read(*.log)"
+      "Read(*.log)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Bash(gh repo edit *)",
+      "Bash(gh repo delete *)",
+      "Bash(git remote add *)",
+      "Bash(git remote set-url *)",
+      "Bash(git remote remove *)",
+      "Bash(git remote rename *)",
+      "Bash(git -C * remote add *)",
+      "Bash(git -C * remote set-url *)",
+      "Bash(git -C * remote remove *)",
+      "Bash(git -C * remote rename *)",
+      "PowerShell(gh repo edit *)",
+      "PowerShell(gh repo delete *)",
+      "PowerShell(git remote add *)",
+      "PowerShell(git remote set-url *)",
+      "PowerShell(git remote remove *)",
+      "PowerShell(git remote rename *)",
+      "PowerShell(git -C * remote add *)",
+      "PowerShell(git -C * remote set-url *)",
+      "PowerShell(git -C * remote remove *)",
+      "PowerShell(git -C * remote rename *)"
     ]
   },
   "hooks": {

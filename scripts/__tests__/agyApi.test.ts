@@ -274,6 +274,14 @@ describe('the Gemini API fallback, round two', () => {
     expect(late.stop).toBeUndefined();
   });
 
+  it('passes on to the next model when the TLS handshake through the proxy tunnel runs out of time', () => {
+    const silent = { status: 0, text: "the API's TLS handshake did not finish in 30 seconds through the proxy tunnel" };
+    const replies = posts(silent, ok('No findings.'));
+    const result = askFirstAvailable([FLASH, HYDROGEN], viaApi(replies.post, buildPrompt('Review this.', material)), memory(), () => NOW);
+    expect(result.model).toBe(HYDROGEN);
+    expect(result.passed).toEqual([{ model: FLASH, why: 'could not be reached through the proxy tunnel in time' }]);
+  });
+
   it('tunnels through HTTPS_PROXY, as cloud sessions require', async () => {
     // A proxy in its own process (postApi blocks this one) that refuses every tunnel and prints its port.
     const refusing =

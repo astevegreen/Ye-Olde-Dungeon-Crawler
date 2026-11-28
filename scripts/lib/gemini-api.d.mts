@@ -35,6 +35,7 @@ export function postApi(
     args: string[],
     opts: { input: string; env: Record<string, string | undefined> },
   ) => { error?: Error; stdout?: string; stderr?: string },
+  handshake?: number,
 ): ApiReply;
 export function geminiApi(
   key?: string,

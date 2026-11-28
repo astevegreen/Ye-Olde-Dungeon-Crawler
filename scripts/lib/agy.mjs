@@ -1,6 +1,6 @@
 // How the second look talks to agy: which model reviews what, what every prompt starts with, and how a reply is
-// read. The same rules are in terminal-dusk/tools/gemini/agy.mjs and blockchain-technology-course/tools/agy.mjs:
-// change all three. Types: agy.d.mts.
+// read. The same rules are in terminal-dusk/tools/gemini/agy.mjs, blockchain-technology-course/tools/agy.mjs and
+// Korean/tools/gemini/agy.mjs (the flashcards repo): change all four. Types: agy.d.mts.
 // Where agy is not installed (a cloud session), the Gemini models are asked through the Gemini API instead.
 import { readFileSync, renameSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
@@ -27,7 +27,18 @@ export const HEAVY = ['argon', 'carbon', 'neon'];
 const family = (base) => base.replace(/^gemini-\d+(?:\.\d+)*-/, '');
 // A Gemini model at this effort, as agy lists it: gemini-<version>-<family>-<effort>.
 const LISTED = new RegExp(String.raw`^gemini-(\d+(?:\.\d+)*)-([a-z]+(?:-[a-z]+)*)-${EFFORT}$`);
-const newerFirst = (a, b) => b.localeCompare(a, 'en', { numeric: true });
+// Versions ("3.8", "5-5") newest first, number by number, so "10" is newer than "9". No localeCompare: its order
+// depends on the locale and ICU build; a tie on every number falls back to a code-unit comparison.
+export function newerFirst(a, b) {
+  const nums = (v) => String(v).split(/[.-]/).map(Number);
+  const [x, y] = [nums(a), nums(b)];
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    const d = (y[i] ?? -1) - (x[i] ?? -1);
+    if (d) return d;
+  }
+  if (a === b) return 0;
+  return a < b ? 1 : -1;
+}
 
 // The model ids in what `agy models` prints: one "<id><tab><name>" line per model.
 export const parseModels = (stdout) => [...(stdout ?? '').matchAll(/^(\S+)\t/gm)].map((m) => m[1]);
@@ -129,11 +140,27 @@ export function pickDepth({ kind, files = [], lines = 0 }, deepPaths = []) {
   return { depth: 'standard', why: `it changes ${lines} lines and touches none of the high-risk paths` };
 }
 
-// The files a unified diff changes, and how many lines it adds or removes.
+// The files a unified diff changes, and how many lines it adds or removes. A rename or copy names both paths, the
+// old one first (from the `rename from` / `copy from` and `... to` lines, else the header's `a/` and `b/` paths):
+// moving a rail or a high-risk file out of its folder removes it there, so it is audited like any other change to it.
 export function diffStats(diff) {
-  const files = [...diff.matchAll(/^diff --git a\/.+? b\/(.+)$/gm)].map((m) => m[1]);
-  const lines = diff.split('\n').filter((l) => /^[+-]/.test(l) && !/^(\+\+\+|---) /.test(l)).length;
-  return { files, lines };
+  const files = [];
+  let entry = null;
+  let lines = 0;
+  for (const raw of diff.split('\n')) {
+    const line = raw.replace(/\r$/, '');
+    const head = /^diff --git a\/(.+?) b\/(.+)$/.exec(line);
+    const moved = entry && !entry.changed && /^(?:rename|copy) (from|to) (.+)$/.exec(line);
+    if (head) {
+      entry = { file: head[2], from: head[1] === head[2] ? undefined : head[1], changed: 0 };
+      files.push(entry);
+    } else if (moved) entry[moved[1] === 'from' ? 'from' : 'file'] = moved[2];
+    else if (/^[+-]/.test(line) && !/^(\+\+\+|---) /.test(line)) {
+      lines++;
+      if (entry) entry.changed++;
+    }
+  }
+  return { files: files.flatMap(({ file, from }) => (from && from !== file ? [from, file] : [file])), lines };
 }
 
 // How long agy may run before it is cut off (its --print-timeout); the prompt tells the model so it can pace itself.
@@ -278,6 +305,7 @@ const USED_UP = /individual quota|resets in/i;
 const PASS_ON = [
   [/quota|rate.?limit|resource.?exhausted|\b429\b|overloaded|capacity/i, 'was too busy'],
   [/ran out of time/, 'ran out of time'],
+  [/handshake did not finish/, 'could not be reached through the proxy tunnel in time'],
   [/ran out of room/, 'ran out of room for its answer'],
   [/not allowed to do/, 'tried a command it may not run'],
   [/not on the Gemini API/, 'is not on the Gemini API'],

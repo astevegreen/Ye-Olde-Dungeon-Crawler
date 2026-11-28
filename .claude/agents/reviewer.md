@@ -53,4 +53,6 @@ or
 CONCERNS
 1. [blocker|minor] <file:line> <what is wrong> - <which criterion or rule>
 
-Blockers are wrong behaviour, broken rules or missing tests. Style preferences are not concerns.
+Blockers are wrong behaviour, broken rules or missing tests: only a blocker holds the change. Everything else is
+minor and ships with your note on it, so never call a minor point a blocker to stop it. Style preferences are not
+concerns.

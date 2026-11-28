@@ -17,9 +17,6 @@ it. Sessions add to it by day; sprint lanes file follow-up issues instead. Movin
 ## Presentation
 
 ## Tests, gates and tooling
-- The workflows pin each action by major tag (`actions/checkout@v7`, `.github/workflows/deploy.yml:24` and the
-  others), so a moved tag runs at once, past Dependabot's 7-day cooldown (`.github/dependabot.yml:3-4`); pinning by
-  commit SHA with the version in a comment closes that. [7 Nov 2026, agy's second look on #106]
 - `.github/dependabot.yml:3-4` says security updates skip the cooldown; unverified, as docs.github.com was blocked
   in the cloud session that wrote it. [6 Nov 2026, toolchain upgrades handoff]
 - A push that only deletes branches runs every pre-push gate, all three browsers included (`.githooks/pre-push:30`
